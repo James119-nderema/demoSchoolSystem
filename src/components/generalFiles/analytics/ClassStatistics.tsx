@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { DataAPI, MarksAPI } from '../../../services/baseUrl';
 
 interface SubjectStatistics {
   subject_name: string;
@@ -79,18 +80,8 @@ const ClassStatistics: React.FC = () => {
 
   const fetchClasses = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('/api/classes/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setClasses(data.results || data);
-      }
+      const data = await DataAPI.getClasses();
+      setClasses(data.results || data);
     } catch (err) {
       console.error('Error fetching classes:', err);
     }
@@ -103,36 +94,14 @@ const ClassStatistics: React.FC = () => {
       setNoDataResponse(null);
       setError(null);
       
-      const token = localStorage.getItem('staff_access_token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const queryParams = new URLSearchParams({
+      const params = {
         class_id: selectedClassId,
         term: selectedTerm,
         academic_year: selectedAcademicYear,
         exam_type: selectedExamType
-      });
+      };
 
-      const response = await fetch(`/api/input-marks/class-analytics/?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.message || errorData.error || `HTTP ${response.status}`);
-        setClassData(null);
-        setNoDataResponse(null);
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await MarksAPI.getClassAnalytics(params);
       
       // Check if it's a "no data" response
       if (data.no_data) {

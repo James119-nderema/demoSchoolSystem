@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthAPI } from '../../services/baseUrl';
 
 export default function ParentForgotPassword() {
   const [email, setEmail] = useState('');
@@ -14,23 +15,10 @@ export default function ParentForgotPassword() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/parents/forgot_password/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage('Password reset instructions have been sent to your email address.');
-      } else {
-        setError(data.error || 'Failed to send reset email. Please try again.');
-      }
-    } catch (err) {
-      setError('Network error occurred. Please try again.');
+      await AuthAPI.parentForgotPassword(email);
+      setMessage('Password reset instructions have been sent to your email address.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

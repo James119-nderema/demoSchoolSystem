@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MarksAPI } from '../../../services/baseUrl';
 
 interface Result {
   id: number;
@@ -77,19 +78,9 @@ const ViewResults: React.FC = () => {
 
   const fetchDropdownData = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('http://localhost:8000/api/input-marks/dropdown-data/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClasses(data.classes);
-        setSubjects(data.subjects);
-      }
+      const data = await MarksAPI.getDropdownData();
+      setClasses(data.classes);
+      setSubjects(data.subjects);
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err);
     }
@@ -97,22 +88,10 @@ const ViewResults: React.FC = () => {
 
   const fetchResults = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('http://localhost:8000/api/input-marks/results/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setResults(data.results || data);
-      } else {
-        setError('Failed to fetch results');
-      }
+      const data = await MarksAPI.getResults();
+      setResults(data.results || data);
     } catch (err) {
-      setError('Network error occurred');
+      setError('Failed to fetch results');
     } finally {
       setLoading(false);
     }
@@ -120,18 +99,8 @@ const ViewResults: React.FC = () => {
 
   const fetchStatistics = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('http://localhost:8000/api/input-marks/results/statistics/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStatistics(data);
-      }
+      const data = await MarksAPI.getStatistics();
+      setStatistics(data);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
     }

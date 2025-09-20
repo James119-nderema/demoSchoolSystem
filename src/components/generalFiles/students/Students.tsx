@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DataAPI } from '../../../services/baseUrl';
 
 interface Student {
   id: number;
@@ -64,27 +65,10 @@ export default function Students() {
 
   const fetchStudents = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
-      const response = await fetch('http://localhost:8000/api/students/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data.results || data);
-      } else {
-        setError('Failed to fetch students');
-      }
-    } catch (err) {
-      setError('Network error occurred');
+      const data = await DataAPI.getStudents();
+      setStudents(data.results || data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch students');
     } finally {
       setLoading(false);
     }
@@ -96,8 +80,6 @@ export default function Students() {
     setError('');
     
     try {
-      const token = localStorage.getItem('access_token');
-      
       // Prepare the data, converting empty strings to null for optional date fields
       const studentData = {
         ...formData,
@@ -110,37 +92,24 @@ export default function Students() {
         gender: formData.gender || null
       };
       
-      const response = await fetch('http://localhost:8000/api/students/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(studentData),
+      await DataAPI.createStudent(studentData);
+      setShowAddModal(false);
+      setFormData({
+        full_name: '',
+        admission_number: '',
+        admission_class: '',
+        current_class: '',
+        date_of_birth: '',
+        gender: '',
+        parent_guardian_name: '',
+        parent_guardian_phone: '',
+        parent_guardian_email: '',
+        address: '',
+        status: 'active'
       });
-
-      if (response.ok) {
-        setShowAddModal(false);
-        setFormData({
-          full_name: '',
-          admission_number: '',
-          admission_class: '',
-          current_class: '',
-          date_of_birth: '',
-          gender: '',
-          parent_guardian_name: '',
-          parent_guardian_phone: '',
-          parent_guardian_email: '',
-          address: '',
-          status: 'active'
-        });
-        fetchStudents();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Failed to add student');
-      }
-    } catch (err) {
-      setError('Network error occurred');
+      fetchStudents();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add student');
     } finally {
       setIsSubmitting(false);
     }
@@ -162,28 +131,13 @@ export default function Students() {
 
     try {
       setUploadProgress('Uploading and processing file...');
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/students/bulk_upload/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataUpload,
-      });
-
-      const result = await response.json();
-      
-      if (response.ok) {
-        setUploadProgress(`Successfully uploaded ${result.created_count} students. ${result.error_count} errors.`);
-        setShowUploadModal(false);
-        setUploadFile(null);
-        fetchStudents();
-      } else {
-        setError(result.error || 'Upload failed');
-        setUploadProgress('');
-      }
-    } catch (err) {
-      setError('Network error during upload');
+      const result = await DataAPI.bulkUploadStudents(formDataUpload);
+      setUploadProgress(`Successfully uploaded ${result.created_count} students. ${result.error_count} errors.`);
+      setShowUploadModal(false);
+      setUploadFile(null);
+      fetchStudents();
+    } catch (err: any) {
+      setError(err.message || 'Upload failed');
       setUploadProgress('');
     } finally {
       setIsUploading(false);

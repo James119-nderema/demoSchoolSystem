@@ -4,6 +4,7 @@ import ParentSidebar from '../sidebars/ParentSidebar';
 import StudentAnalytics from './StudentAnalytics';
 import FeeInformation from './FeeInformation';
 
+import { ParentsAPI } from '../../services/baseUrl';
 
 interface Student {
   id: number;
@@ -68,17 +69,10 @@ export default function ParentDashboard() {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/parents/dashboard/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      } else if (response.status === 401) {
+      const data = await ParentsAPI.getDashboard();
+      setDashboardData(data);
+    } catch (error: any) {
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         localStorage.removeItem('parent_access_token');
         localStorage.removeItem('parent_refresh_token');
         localStorage.removeItem('parent_info');
@@ -86,8 +80,6 @@ export default function ParentDashboard() {
       } else {
         setError('Failed to fetch dashboard data');
       }
-    } catch (err) {
-      setError('Network error occurred');
     }
   };
 

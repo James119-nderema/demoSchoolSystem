@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { MarksAPI } from '../services/baseUrl';
 
 interface ClassRankingData {
   class_id: number;
@@ -53,25 +54,13 @@ const SchoolDashboard: React.FC = () => {
         throw new Error('Authentication token not found');
       }
 
-      const queryParams = new URLSearchParams({
+      const params = {
         term: '1',
         academic_year: '2024-2025',
         exam_type: 'exam_1'
-      });
+      };
 
-      const response = await fetch(`/api/input-marks/school-analytics/?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard data: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await MarksAPI.getSchoolAnalytics(params);
       setDashboardData(data);
       setError(null);
     } catch (err) {

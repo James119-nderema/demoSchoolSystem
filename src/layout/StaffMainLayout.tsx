@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import StaffSidebar from '../components/staff/StaffSidebar';
+import StaffSidebar from '../components/sidebars/StaffSidebar';
 import { useAuthValidation } from '../hooks/useAuthValidation';
 import { clearAuthData } from '../utils/authUtils';
 

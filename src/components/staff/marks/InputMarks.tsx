@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MarksAPI } from '../../../services/baseUrl';
 
 interface Student {
   id: number;
@@ -64,22 +65,10 @@ const InputMarks: React.FC = () => {
 
   const fetchDropdownData = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('http://localhost:8000/api/input-marks/dropdown-data/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDropdownData(data);
-      } else {
-        setError('Failed to fetch dropdown data');
-      }
+      const data = await MarksAPI.getDropdownData();
+      setDropdownData(data);
     } catch (err) {
-      setError('Network error occurred');
+      setError('Failed to fetch dropdown data');
     }
   };
 
@@ -87,28 +76,16 @@ const InputMarks: React.FC = () => {
     if (!selectedClass) return;
     
     try {
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch(`http://localhost:8000/api/input-marks/class-students/${selectedClass}/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const data = await MarksAPI.getClassStudents(selectedClass);
+      setStudents(data.students);
+      // Initialize marks for all students
+      const initialMarks: { [key: number]: number } = {};
+      data.students.forEach((student: Student) => {
+        initialMarks[student.id] = 0;
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data.students);
-        // Initialize marks for all students
-        const initialMarks: { [key: number]: number } = {};
-        data.students.forEach((student: Student) => {
-          initialMarks[student.id] = 0;
-        });
-        setStudentMarks(initialMarks);
-      } else {
-        setError('Failed to fetch students');
-      }
+      setStudentMarks(initialMarks);
     } catch (err) {
-      setError('Network error occurred');
+      setError('Failed to fetch students');
     }
   };
 
@@ -162,35 +139,20 @@ const InputMarks: React.FC = () => {
         results: results
       };
 
-      const token = localStorage.getItem('staff_access_token');
-      const response = await fetch('http://localhost:8000/api/input-marks/results/bulk_input/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submitData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSuccess(`Successfully processed ${data.successful_records} out of ${data.total_records} records`);
-        if (data.failed_records > 0) {
-          setError(`${data.failed_records} records failed: ${data.errors.join(', ')}`);
-        }
-        
-        // Reset form
-        setSelectedClass('');
-        setSelectedSubject('');
-        setExamType('');
-        setTerm('');
-        setTotalMarks('');
-        setStudents([]);
-        setStudentMarks({});
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to submit marks');
+      const data = await MarksAPI.bulkInput(submitData);
+      setSuccess(`Successfully processed ${data.successful_records} out of ${data.total_records} records`);
+      if (data.failed_records > 0) {
+        setError(`${data.failed_records} records failed: ${data.errors.join(', ')}`);
       }
+      
+      // Reset form
+      setSelectedClass('');
+      setSelectedSubject('');
+      setExamType('');
+      setTerm('');
+      setTotalMarks('');
+      setStudents([]);
+      setStudentMarks({});
     } catch (err) {
       setError('Network error occurred');
     } finally {

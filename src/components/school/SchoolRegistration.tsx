@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { DataAPI } from '../../services/baseUrl'
 
 interface SchoolFormData {
   school_name: string
@@ -57,31 +58,17 @@ export default function SchoolRegistration() {
     setMessage('')
 
     try {
-      const response = await fetch('http://localhost:8000/api/schools/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setMessage('School registered successfully! Redirecting to login...')
-        setMessageType('success')
-        resetForm()
-        
-        // Redirect to login page after 2 seconds
-        setTimeout(() => {
-          navigate('/login')
-        }, 2000)
-      } else {
-        setMessage(data.error || 'Failed to create school')
-        setMessageType('error')
-      }
-    } catch (error) {
-      setMessage('Network error. Please try again.')
+      await DataAPI.createSchool(formData);
+      setMessage('School registered successfully! Redirecting to login...')
+      setMessageType('success')
+      resetForm()
+      
+      // Redirect to login page after 2 seconds
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+    } catch (error: any) {
+      setMessage(error.message || 'Failed to create school')
       setMessageType('error')
     }
 
@@ -97,15 +84,9 @@ export default function SchoolRegistration() {
     setLoadingSchools(true)
 
     try {
-      const response = await fetch('http://localhost:8000/api/schools/list/')
-      const data = await response.json()
-
-      if (response.ok) {
-        setSchools(data.schools)
-      } else {
-        console.error('Failed to load schools')
-      }
-    } catch (error) {
+      const data = await DataAPI.getSchoolsList();
+      setSchools(data.schools)
+    } catch (error: any) {
       console.error('Network error:', error)
     }
 

@@ -18,6 +18,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isStatisticsOpen, setIsStatisticsOpen] = useState(false);
+  const [isReportCardsOpen, setIsReportCardsOpen] = useState(false);
 
   const menuItems = [
     {
@@ -145,6 +146,28 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       )
     },
     {
+      name: 'Report Cards',
+      path: '/staff/report-card',
+      hasDropdown: true,
+      subItems: [
+        {
+          name: 'Student Report Cards',
+          path: '/staff/report-card/pdf',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )
+        },
+    
+      ],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+      )
+    },
+    {
       name: 'Profile',
       path: '/staff/profile',
       icon: (
@@ -173,6 +196,10 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
            location.pathname.startsWith('/staff/statistics/');
   };
 
+  const isReportCardsActive = () => {
+    return location.pathname.startsWith('/staff/report-card');
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
     setIsMobileMenuOpen(false); // Close mobile menu after navigation
@@ -186,13 +213,20 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     setIsStatisticsOpen(!isStatisticsOpen);
   };
 
-  // Auto-open Results dropdown when on Results-related pages
+  const handleReportCardsToggle = () => {
+    setIsReportCardsOpen(!isReportCardsOpen);
+  };
+
+  // Auto-open dropdowns when on related pages
   useEffect(() => {
     if (isResultsActive()) {
       setIsResultsOpen(true);
     }
     if (isStatisticsActive()) {
       setIsStatisticsOpen(true);
+    }
+    if (isReportCardsActive()) {
+      setIsReportCardsOpen(true);
     }
   }, [location.pathname]);
 
@@ -245,9 +279,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
                   isResultsOpen={isResultsOpen}
                   isStatisticsActive={isStatisticsActive}
                   isStatisticsOpen={isStatisticsOpen}
+                  isReportCardsActive={isReportCardsActive}
+                  isReportCardsOpen={isReportCardsOpen}
                   handleNavigation={handleNavigation} 
                   handleResultsToggle={handleResultsToggle}
                   handleStatisticsToggle={handleStatisticsToggle}
+                  handleReportCardsToggle={handleReportCardsToggle}
                   onLogout={onLogout} 
                 />
               </div>
@@ -268,9 +305,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               isResultsOpen={isResultsOpen}
               isStatisticsActive={isStatisticsActive}
               isStatisticsOpen={isStatisticsOpen}
+              isReportCardsActive={isReportCardsActive}
+              isReportCardsOpen={isReportCardsOpen}
               handleNavigation={handleNavigation} 
               handleResultsToggle={handleResultsToggle}
               handleStatisticsToggle={handleStatisticsToggle}
+              handleReportCardsToggle={handleReportCardsToggle}
               onLogout={onLogout} 
             />
           </div>
@@ -289,11 +329,14 @@ const SidebarContent: React.FC<{
   isResultsOpen: boolean;
   isStatisticsActive: () => boolean;
   isStatisticsOpen: boolean;
+  isReportCardsActive: () => boolean;
+  isReportCardsOpen: boolean;
   handleNavigation: (path: string) => void;
   handleResultsToggle: () => void;
   handleStatisticsToggle: () => void;
+  handleReportCardsToggle: () => void;
   onLogout: () => void;
-}> = ({ staffInfo, menuItems, isActive, isResultsActive, isResultsOpen, isStatisticsActive, isStatisticsOpen, handleNavigation, handleResultsToggle, handleStatisticsToggle, onLogout }) => {
+}> = ({ staffInfo, menuItems, isActive, isResultsActive, isResultsOpen, isStatisticsActive, isStatisticsOpen, isReportCardsActive, isReportCardsOpen, handleNavigation, handleResultsToggle, handleStatisticsToggle, handleReportCardsToggle, onLogout }) => {
   return (
     <>
       {/* Logo/School Info */}
@@ -328,9 +371,17 @@ const SidebarContent: React.FC<{
             {item.hasDropdown ? (
               <>
                 <button
-                  onClick={item.name === 'Results' ? handleResultsToggle : handleStatisticsToggle}
+                  onClick={
+                    item.name === 'Results' ? handleResultsToggle : 
+                    item.name === 'Statistics' ? handleStatisticsToggle :
+                    item.name === 'Report Cards' ? handleReportCardsToggle :
+                    handleStatisticsToggle
+                  }
                   className={`${
-                    (item.name === 'Results' ? isResultsActive() : isStatisticsActive())
+                    (item.name === 'Results' ? isResultsActive() : 
+                     item.name === 'Statistics' ? isStatisticsActive() :
+                     item.name === 'Report Cards' ? isReportCardsActive() :
+                     false)
                       ? 'bg-indigo-800 text-white'
                       : 'text-indigo-100 hover:bg-indigo-600 hover:text-white'
                   } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
@@ -341,7 +392,10 @@ const SidebarContent: React.FC<{
                   </div>
                   <svg 
                     className={`w-4 h-4 transition-transform ${
-                      (item.name === 'Results' ? isResultsOpen : isStatisticsOpen) ? 'rotate-180' : 'rotate-0'
+                      (item.name === 'Results' ? isResultsOpen : 
+                       item.name === 'Statistics' ? isStatisticsOpen :
+                       item.name === 'Report Cards' ? isReportCardsOpen :
+                       false) ? 'rotate-180' : 'rotate-0'
                     }`}
                     fill="none" 
                     stroke="currentColor" 
@@ -350,7 +404,10 @@ const SidebarContent: React.FC<{
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                {(item.name === 'Results' ? isResultsOpen : isStatisticsOpen) && (
+                {(item.name === 'Results' ? isResultsOpen : 
+                  item.name === 'Statistics' ? isStatisticsOpen :
+                  item.name === 'Report Cards' ? isReportCardsOpen :
+                  false) && (
                   <div className="ml-4 mt-1 space-y-1">
                     {item.subItems?.map((subItem: any) => (
                       <button

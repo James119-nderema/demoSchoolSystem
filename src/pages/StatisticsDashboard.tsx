@@ -6,6 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { TrendingUp, TrendingDown, Users, BookOpen, Award, AlertTriangle } from 'lucide-react';
+import { MarksAPI } from '../services/baseUrl';
 
 interface DashboardSummaryData {
   total_students: number;
@@ -71,25 +72,14 @@ const StatisticsDashboard: React.FC = () => {
         throw new Error('Authentication token not found');
       }
 
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
       // Fetch dashboard summary
-      const dashboardResponse = await fetch('/api/statistics/dashboard_summary/', { headers });
-      if (!dashboardResponse.ok) throw new Error('Failed to fetch dashboard data');
-      const dashboard = await dashboardResponse.json();
+      const dashboard = await MarksAPI.getDashboardSummary();
       
       // Fetch performance metrics
-      const metricsResponse = await fetch('/api/statistics/performance_metrics/', { headers });
-      if (!metricsResponse.ok) throw new Error('Failed to fetch metrics data');
-      const metrics = await metricsResponse.json();
+      const metrics = await MarksAPI.getPerformanceMetrics();
       
       // Fetch comparative analysis
-      const comparativeResponse = await fetch('/api/statistics/comparative_analysis/', { headers });
-      if (!comparativeResponse.ok) throw new Error('Failed to fetch comparative data');
-      const comparative = await comparativeResponse.json();
+      const comparative = await MarksAPI.getComparativeAnalysis();
 
       setDashboardData(dashboard);
       setMetricsData(metrics);

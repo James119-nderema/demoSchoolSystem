@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import StudentAnalyticsFilters from './StudentAnalyticsFilters';
+import { ParentsAPI } from '../../services/baseUrl';
 
 interface StudentInfo {
   name: string;
@@ -95,43 +96,22 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('parent_access_token');
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
       // Build query parameters from filters
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (filters.academicYear !== 'all') {
-        params.append('academic_year', filters.academicYear);
+        params.academic_year = filters.academicYear;
       }
       if (filters.term !== 'all') {
-        params.append('term', filters.term);
+        params.term = filters.term;
       }
       if (filters.examType !== 'all') {
-        params.append('exam_type', filters.examType);
+        params.exam_type = filters.examType;
       }
       if (filters.subject !== 'all') {
-        params.append('subject', filters.subject);
+        params.subject = filters.subject;
       }
 
-      const queryString = params.toString();
-      const url = `/api/parents/student_analytics/${queryString ? `?${queryString}` : ''}`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await ParentsAPI.getStudentAnalytics(params);
       setAnalyticsData(data);
     } catch (err) {
       console.error('Error fetching analytics:', err);
