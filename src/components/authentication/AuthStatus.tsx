@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAuthStatus } from '../hooks/useAuthStatus';
-import LogoutButton from './LogoutButton';
+import { useAuthStatus } from '../../hooks/useAuthStatus';
+import LogoutButton from '../LogoutButton';
 
 const AuthStatus: React.FC = () => {
   const {

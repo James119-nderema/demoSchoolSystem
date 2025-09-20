@@ -80,7 +80,7 @@ export default function ParentRegistration() {
       if (response.ok) {
         setSuccess(data.message);
         setTimeout(() => {
-          navigate('/parent-login');
+          navigate('/parent/login');
         }, 3000);
       } else {
         if (data.non_field_errors) {
@@ -360,7 +360,7 @@ export default function ParentRegistration() {
             <div className="text-center pt-6 border-t">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link to="/parent-login" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/parent/login" className="font-medium text-blue-600 hover:text-blue-500">
                   Sign in here
                 </Link>
               </p>

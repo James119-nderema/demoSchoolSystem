@@ -1,9 +1,9 @@
 import React from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useStaffAuth } from '../contexts/StaffAuthContext';
-import { useParentAuth } from '../contexts/ParentAuthContext';
+import { useAuth } from './contexts/AuthContext';
+import { useStaffAuth } from './contexts/StaffAuthContext';
+import { useParentAuth } from './contexts/ParentAuthContext';
 
 interface AuthMiddlewareProps {
   children: ReactNode;
@@ -27,15 +27,15 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
     '/staff/reset-password',
     '/parent/register',
     '/parent/login',
-    '/parent-register',
-    '/parent-login',
-    '/parent-forgot-password'
+    '/parent/register',
+    '/parent/login',
+    '/parent/forgot-password'
   ];
 
   // Define protected routes patterns
   const schoolProtectedRoutes = ['/school'];
   const staffProtectedRoutes = ['/staff/dashboard', '/staff/students', '/staff/classes', '/staff/subjects', '/staff/results', '/staff/profile'];
-  const parentProtectedRoutes = ['/parent/dashboard', '/parent-dashboard'];
+  const parentProtectedRoutes = ['/parent/dashboard', '/parent/dashboard'];
 
   const currentPath = location.pathname;
 
@@ -70,7 +70,7 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
       return <Navigate to="/staff/dashboard" replace />;
     }
 
-    if (isParentAuth && (currentPath === '/parent/login' || currentPath === '/parent-login')) {
+    if (isParentAuth && (currentPath === '/parent/login' || currentPath === '/parent/login')) {
       return <Navigate to="/parent/dashboard" replace />;
     }
 

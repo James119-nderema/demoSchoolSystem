@@ -105,7 +105,7 @@ export default function ParentForgotPassword() {
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600">
                 Remember your password?{' '}
-                <Link to="/parent-login" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/parent/login" className="font-medium text-blue-600 hover:text-blue-500">
                   Sign in here
                 </Link>
               </p>
