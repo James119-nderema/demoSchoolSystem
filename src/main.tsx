@@ -45,7 +45,14 @@ import ReportsPage from './components/templates/ReportsPage'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
-import ParentDashboardNew from './components/parents/ParentDashboard'
+import ParentDashboardContent from './components/parents/ParentDashboardContent'
+import StudentAnalytics from './components/parents/StudentAnalytics'
+import AcademicResultsContent from './components/parents/AcademicResultsContent'
+import StudentProfileContent from './components/parents/StudentProfileContent'
+import FeeInformation from './components/parents/FeeInformation'
+import AttendanceContent from './components/parents/AttendanceContent'
+import MessagesContent from './components/parents/MessagesContent'
+import ParentMainLayout from './layout/ParentMainLayout'
 import Dashboard from './pages/Dashboard'
 import Home from './components/Home'
 import DashboardHome from './pages/Home'
@@ -54,6 +61,10 @@ import Subjects from './pages/Subjects'
 import Results from './pages/Results'
 import Classes from './pages/Classes'
 import Staff from './pages/Staff'
+// payment
+import Payment from './pages/Payment'
+import SchoolFinance from './components/finance/School_Finance'
+import SchoolPaymentMethod from './components/finance/School_Payment_Methods'
 
 const router = createBrowserRouter([
   {
@@ -65,17 +76,9 @@ const router = createBrowserRouter([
       { path: 'login', element: <SchoolLogin /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
-      { path: 'parent-register', element: <ParentRegistration /> },
-      { path: 'parent-login', element: <ParentLogin /> },
-      { path: 'parent-forgot-password', element: <ParentForgotPassword /> },
-      { 
-        path: 'parent-dashboard', 
-        element: (
-          <ParentProtectedRoute>
-            <ParentDashboardNew />
-          </ParentProtectedRoute>
-        ) 
-      },
+      { path: 'parent/register', element: <ParentRegistration /> },
+      { path: 'parent/login', element: <ParentLogin /> },
+      { path: 'parent/forgot-password', element: <ParentForgotPassword /> },
     ],
   },
   {
@@ -165,10 +168,81 @@ const router = createBrowserRouter([
         path: 'dashboard', 
         element: (
           <ParentProtectedRoute>
-            <ParentDashboardNew />
+            <ParentMainLayout title="Parent Dashboard">
+              <ParentDashboardContent />
+            </ParentMainLayout>
           </ParentProtectedRoute>
         ) 
       },
+      { 
+        path: 'analytics', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Student Analytics">
+              <StudentAnalytics />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'results', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Academic Results">
+              <AcademicResultsContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'profile', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Student Profile">
+              <StudentProfileContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'fees', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Fee Information">
+              <FeeInformation />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'attendance', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Attendance Records">
+              <AttendanceContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'messages', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Messages">
+              <MessagesContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+
+    { 
+      path: 'payment', 
+      element: (
+        <ParentProtectedRoute>
+          <Payment />
+        </ParentProtectedRoute>
+      ) 
+    },      
       { 
         path: 'report-card', 
         element: (
@@ -185,6 +259,7 @@ const router = createBrowserRouter([
           </ParentProtectedRoute>
         ) 
       },
+
     ],
   },
   {
@@ -202,6 +277,8 @@ const router = createBrowserRouter([
       { path: 'results', element: <Results /> },
       { path: 'classes', element: <Classes /> },
       { path: 'staff', element: <Staff /> },
+      { path: 'finance', element: <SchoolFinance /> },
+      { path: ':schoolId/fee-payment-methods', element: <SchoolPaymentMethod /> },
       { path: '*', element: <div className="p-6">Not Found</div> },
     ],
   },

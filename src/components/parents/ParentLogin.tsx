@@ -124,12 +124,12 @@ export default function ParentLogin() {
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link to="/parent-register" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/parent/register" className="font-medium text-blue-600 hover:text-blue-500">
                   Register here
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                <Link to="/parent-forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/parent/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
                   Forgot your password?
                 </Link>
               </p>

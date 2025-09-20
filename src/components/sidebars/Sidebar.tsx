@@ -51,6 +51,10 @@ export default function Sidebar() {
 					<span>👥</span>
 					<span>Staff</span>
 				</NavLink>
+				<NavLink to="/school/finance" className={navLinkClass}>
+					<span>👥</span>
+					<span>Finance</span>
+				</NavLink>	
 			</nav>
 
 			{/* Quick Filters for Dashboard (use query params) */}

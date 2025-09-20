@@ -217,7 +217,7 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
 
   if (!analyticsData) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <div className="flex items-center">
@@ -432,7 +432,7 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
                 {filteredSubjects?.map((subject, index) => {
                   const comparison = analyticsData?.subject_comparison?.find(c => c.subject === subject.subject);
                   return (
-                    <tr key={index}>
+                    <tr key={`${subject.subject}-${index}`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {subject.subject}
                       </td>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ParentSidebar from '../sidebars/ParentSidebar';
 import StudentAnalytics from './StudentAnalytics';
+import FeeInformation from './FeeInformation';
+
 import { ParentsAPI } from '../../services/baseUrl';
 
 interface Student {
@@ -63,7 +65,7 @@ export default function ParentDashboard() {
     try {
       const token = localStorage.getItem('parent_access_token');
       if (!token) {
-        navigate('/parent-login');
+        navigate('/parent/login');
         return;
       }
 
@@ -74,7 +76,7 @@ export default function ParentDashboard() {
         localStorage.removeItem('parent_access_token');
         localStorage.removeItem('parent_refresh_token');
         localStorage.removeItem('parent_info');
-        navigate('/parent-login');
+        navigate('/parent/login');
       } else {
         setError('Failed to fetch dashboard data');
       }
@@ -96,7 +98,7 @@ export default function ParentDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'analytics':
-        return <StudentAnalytics onBack={() => navigate('/parent-dashboard')} />;
+        return <StudentAnalytics onBack={() => navigate('/parent/dashboard')} />;
       case 'results':
         return (
           <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -125,14 +127,17 @@ export default function ParentDashboard() {
           </div>
         );
       case 'fees':
-        return (
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Information</h3>
-              <p className="text-gray-600">Fee information will be displayed here.</p>
-            </div>
-          </div>
-        );
+         return  <FeeInformation/>
+
+        //(
+        //   // <div className="px-4 sm:px-6 lg:px-8 py-8">
+        //   //   <div className="bg-white rounded-lg shadow-sm p-6">
+        //   //     <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Information</h3>
+        //   //     <p className="text-gray-600">Fee information will be displayed here.</p>
+        //   //   </div>
+        //   // </div>
+        //   <FeeInformation onBack={() => navigate('/parent/dashboard')} />
+        // );
       case 'messages':
         return (
           <div className="px-4 sm:px-6 lg:px-8 py-8">

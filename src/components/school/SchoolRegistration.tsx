@@ -118,13 +118,13 @@ export default function SchoolRegistration() {
           <div className="flex justify-between items-center mb-4">
             <div className="flex space-x-4">
               <button
-                onClick={() => navigate('/parent-register')}
+                onClick={() => navigate('/parent/register')}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200"
               >
                 Parent Register
               </button>
               <button
-                onClick={() => navigate('/parent-login')}
+                onClick={() => navigate('/parent/login')}
                 className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-medium transition duration-200"
               >
                 Parent Login
