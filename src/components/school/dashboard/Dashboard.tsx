@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIService } from '../../services/baseUrl';
+import { APIService, MarksAPI, DataAPI } from '../../../services/baseUrl';
 import { Users, BookOpen, School, UserCheck, Trophy, TrendingUp, Calendar, Award, Target, BarChart3 } from 'lucide-react';
 
-interface StaffInfo {
+interface SchoolInfo {
   id: number;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
-  school?: {
-    name: string;
-  };
 }
 
 interface DashboardStats {
@@ -54,8 +50,8 @@ interface RecentActivity {
   count?: number;
 }
 
-const StaffDashboard: React.FC = () => {
-  const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
+const SchoolDashboard: React.FC = () => {
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
@@ -72,16 +68,16 @@ const StaffDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('staff_access_token');
-    const storedStaffInfo = localStorage.getItem('staff_info');
+    const token = localStorage.getItem('access_token');
+    const storedSchoolInfo = localStorage.getItem('school_info');
 
     if (!token) {
-      navigate('/staff/login');
+      navigate('/login');
       return;
     }
 
-    if (storedStaffInfo) {
-      setStaffInfo(JSON.parse(storedStaffInfo));
+    if (storedSchoolInfo) {
+      setSchoolInfo(JSON.parse(storedSchoolInfo));
     }
 
     fetchDashboardData();
@@ -90,8 +86,8 @@ const StaffDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setRefreshing(true);
-      // Use the comprehensive endpoint with staff authentication
-      const dashboardData = await APIService.get('/api/school-dashboard/comprehensive/', {}, 'staff');
+      // Use the comprehensive endpoint for better performance
+      const dashboardData = await APIService.get('/api/school-dashboard/comprehensive/', {}, 'school');
       
       if (dashboardData) {
         setStats({
@@ -132,8 +128,8 @@ const StaffDashboard: React.FC = () => {
 
   const fetchBasicStats = async () => {
     try {
-      // Use the dedicated stats endpoint with staff authentication
-      const statsData = await APIService.get('/api/school-dashboard/stats/', {}, 'staff');
+      // Use the dedicated stats endpoint
+      const statsData = await APIService.get('/api/school-dashboard/stats/', {}, 'school');
       
       if (statsData) {
         setStats({
@@ -147,13 +143,35 @@ const StaffDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching basic stats:', error);
+      // Fallback to original method
+      try {
+        const [studentsData, staffData, subjectsData, classesData] = await Promise.all([
+          DataAPI.getStudents({ page_size: '1' }), // Just get count
+          APIService.get('/api/staff/', { page_size: '1' }, 'school'),
+          DataAPI.getSubjects({ page_size: '1' }),
+          DataAPI.getClasses({ page_size: '1' })
+        ]);
+
+        const recentResultsData = await MarksAPI.getResults({ page_size: '1' });
+
+        setStats({
+          totalStudents: studentsData.count || 0,
+          totalStaff: staffData.count || 0,
+          totalSubjects: subjectsData.count || 0,
+          totalClasses: classesData.count || 0,
+          activeStudents: studentsData.results?.filter((s: any) => s.status === 'active').length || 0,
+          recentResults: recentResultsData.count || 0
+        });
+      } catch (fallbackError) {
+        console.error('Error with fallback stats fetch:', fallbackError);
+      }
     }
   };
 
   const fetchTopPerformers = async () => {
     try {
-      // Use the dedicated top performers endpoint with staff authentication
-      const topPerformersData = await APIService.get('/api/school-dashboard/top-performers-by-class/', {}, 'staff');
+      // Use the dedicated top performers endpoint
+      const topPerformersData = await APIService.get('/api/school-dashboard/top-performers-by-class/', {}, 'school');
       
       if (topPerformersData) {
         // Data is already in the correct format from the backend
@@ -161,13 +179,29 @@ const StaffDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching top performers:', error);
+      // Fallback to original method
+      try {
+        const classBestPerformers: { [key: string]: TopStudent } = {};
+
+        // Since the fallback analytics endpoint requires class_id and is complex,
+        // we'll skip the fallback for top performers and just show empty state
+        console.log('Fallback top performers data fetch skipped - using new dashboard endpoints instead');
+
+        const topPerformersArray = Object.entries(classBestPerformers)
+          .map(([classNumber, student]) => ({ classNumber, student }))
+          .sort((a, b) => parseInt(a.classNumber) - parseInt(b.classNumber));
+
+        setTopPerformers(topPerformersArray);
+      } catch (fallbackError) {
+        console.error('Error with fallback top performers fetch:', fallbackError);
+      }
     }
   };
 
   const fetchClassAverages = async () => {
     try {
-      // Use the dedicated class averages endpoint with staff authentication
-      const classAveragesData = await APIService.get('/api/school-dashboard/class-averages/', {}, 'staff');
+      // Use the dedicated class averages endpoint
+      const classAveragesData = await APIService.get('/api/school-dashboard/class-averages/', {}, 'school');
       
       if (classAveragesData) {
         // Data is already in the correct format from the backend
@@ -175,13 +209,20 @@ const StaffDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching class averages:', error);
+      // Fallback to original method
+      try {
+        // Fallback class averages skipped - using new dashboard endpoints instead
+        console.log('Fallback class averages data fetch skipped - using new dashboard endpoints instead');
+      } catch (fallbackError) {
+        console.error('Error with fallback class averages fetch:', fallbackError);
+      }
     }
   };
 
   const fetchRecentActivities = async () => {
     try {
-      // Use the dedicated recent activities endpoint with staff authentication
-      const activitiesData = await APIService.get('/api/school-dashboard/recent-activities/', {}, 'staff');
+      // Use the dedicated recent activities endpoint
+      const activitiesData = await APIService.get('/api/school-dashboard/recent-activities/', {}, 'school');
       
       if (activitiesData) {
         // Data is already in the correct format from the backend
@@ -189,6 +230,49 @@ const StaffDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching recent activities:', error);
+      // Fallback to original method
+      try {
+        const recentResults = await MarksAPI.getResults({ 
+          page_size: '10',
+          ordering: '-created_at'
+        });
+
+        const recentStudents = await DataAPI.getStudents({ 
+          page_size: '5',
+          ordering: '-date_added'
+        });
+
+        const activities: RecentActivity[] = [];
+
+        if (recentResults.results) {
+          const resultsCount = recentResults.results.length;
+          if (resultsCount > 0) {
+            activities.push({
+              type: 'results',
+              description: `${resultsCount} new results added`,
+              timestamp: recentResults.results[0].created_at || new Date().toISOString(),
+              count: resultsCount
+            });
+          }
+        }
+
+        if (recentStudents.results) {
+          const studentsCount = recentStudents.results.length;
+          if (studentsCount > 0) {
+            activities.push({
+              type: 'students',
+              description: `${studentsCount} new students registered`,
+              timestamp: recentStudents.results[0].date_added || new Date().toISOString(),
+              count: studentsCount
+            });
+          }
+        }
+
+        activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setRecentActivities(activities);
+      } catch (fallbackError) {
+        console.error('Error with fallback recent activities fetch:', fallbackError);
+      }
     }
   };
 
@@ -204,10 +288,10 @@ const StaffDashboard: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('staff_access_token');
-    localStorage.removeItem('staff_refresh_token');
-    localStorage.removeItem('staff_info');
-    navigate('/staff/login');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('school_info');
+    navigate('/login');
   };
 
   const handleRefresh = () => {
@@ -230,11 +314,9 @@ const StaffDashboard: React.FC = () => {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Staff Dashboard - {staffInfo?.school?.name || 'School'}
+                {schoolInfo?.name} Dashboard
               </h1>
-              <p className="text-gray-600">
-                Welcome, {staffInfo?.first_name} {staffInfo?.last_name} ({staffInfo?.email})
-              </p>
+              <p className="text-gray-600">{schoolInfo?.email}</p>
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -510,22 +592,22 @@ const StaffDashboard: React.FC = () => {
               <div className="space-y-3">
                 <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition duration-200 flex items-center space-x-3">
                   <Users className="w-5 h-5" />
-                  <span>View Students</span>
+                  <span>Manage Students</span>
                 </button>
 
                 <button className="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition duration-200 flex items-center space-x-3">
                   <UserCheck className="w-5 h-5" />
-                  <span>View Staff</span>
+                  <span>Manage Staff</span>
                 </button>
 
                 <button className="w-full bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition duration-200 flex items-center space-x-3">
                   <School className="w-5 h-5" />
-                  <span>View Classes</span>
+                  <span>Manage Classes</span>
                 </button>
 
                 <button className="w-full bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg transition duration-200 flex items-center space-x-3">
                   <BookOpen className="w-5 h-5" />
-                  <span>View Subjects</span>
+                  <span>Manage Subjects</span>
                 </button>
 
                 <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-4 rounded-lg transition duration-200 flex items-center space-x-3">
@@ -541,4 +623,4 @@ const StaffDashboard: React.FC = () => {
   );
 };
 
-export default StaffDashboard;
+export default SchoolDashboard;

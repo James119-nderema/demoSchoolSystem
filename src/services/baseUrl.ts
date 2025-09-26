@@ -86,7 +86,13 @@ export class APIService {
     userType: 'staff' | 'parent' | 'school' = 'staff'
   ): Promise<T> {
     const url = this.getUrl(endpoint);
-    const headers = this.getAuthHeaders(userType);
+    let headers = this.getAuthHeaders(userType);
+    
+    // For FormData uploads, don't set Content-Type (let browser set it with boundary)
+    if (options.body instanceof FormData) {
+      const { 'Content-Type': _, ...headersWithoutContentType } = headers as any;
+      headers = headersWithoutContentType;
+    }
     
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -106,7 +112,14 @@ export class APIService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+        const error = new Error(errorData.error || errorData.detail || errorData.message || `HTTP ${response.status}`);
+        // Attach response data to error for better debugging
+        (error as any).response = { 
+          status: response.status, 
+          data: errorData 
+        };
+        (error as any).status = response.status;
+        throw error;
       }
       
       return response.json();

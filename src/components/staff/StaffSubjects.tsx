@@ -1,6 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { APIService } from '../../services/baseUrl';
+import { BookOpen, Search, Calendar } from 'lucide-react';
+
+interface Subject {
+  id: number;
+  subject_name: string;
+  subject_code: string;
+  description: string;
+  date_created: string | null;
+  is_active: boolean;
+}
 
 const StaffSubjects: React.FC = () => {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+
+  useEffect(() => {
+    fetchSubjects();
+  }, [currentPage, searchTerm]);
+
+  const fetchSubjects = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page: currentPage.toString(),
+        page_size: pageSize.toString(),
+        ...(searchTerm && { search: searchTerm })
+      };
+
+      const response = await APIService.get('/api/staff/subjects/', params, 'staff');
+      
+      if (response.results) {
+        setSubjects(response.results);
+        setTotalCount(response.count || 0);
+      } else {
+        setSubjects(response || []);
+        setTotalCount(response?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      setSubjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   return (
     <div className="h-full bg-gray-50">
       {/* Header */}
@@ -8,7 +68,7 @@ const StaffSubjects: React.FC = () => {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="py-4 sm:py-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Subjects</h1>
-            <p className="mt-1 text-sm sm:text-base text-gray-600">Manage subjects and curriculum</p>
+            <p className="mt-1 text-sm sm:text-base text-gray-600">View all available subjects</p>
           </div>
         </div>
       </div>
@@ -16,54 +76,171 @@ const StaffSubjects: React.FC = () => {
       {/* Main Content */}
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-none">
-          <div className="bg-white overflow-hidden shadow-sm rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Subject Management</h2>
-            <p className="text-sm sm:text-base text-gray-600 mb-4">
-              Manage academic subjects and course materials.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">View Subjects</p>
-                    <p className="text-sm text-gray-500">Browse available subjects</p>
-                  </div>
+          <div className="bg-white overflow-hidden shadow-sm rounded-lg">
+            {/* Search and Info Bar */}
+            <div className="px-4 py-5 sm:p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="h-5 w-5 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    {totalCount} subject{totalCount !== 1 ? 's' : ''} found
+                  </span>
                 </div>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+                
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">Add Subjects</p>
-                    <p className="text-sm text-gray-500">Create new subjects</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">Curriculum</p>
-                    <p className="text-sm text-gray-500">Manage course content</p>
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search subjects..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
                 </div>
               </div>
             </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : subjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No subjects found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm ? 'Try adjusting your search criteria.' : 'No subjects have been added yet.'}
+                  </p>
+                </div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subject Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subject Code
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {subjects.map((subject) => (
+                      <tr key={subject.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <BookOpen className="h-4 w-4 text-indigo-600" />
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">
+                                {subject.subject_name}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{subject.subject_code}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {subject.description || 'No description'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {formatDate(subject.date_created)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            subject.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {subject.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                      {' '}to{' '}
+                      <span className="font-medium">
+                        {Math.min(currentPage * pageSize, totalCount)}
+                      </span>
+                      {' '}of{' '}
+                      <span className="font-medium">{totalCount}</span>
+                      {' '}results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

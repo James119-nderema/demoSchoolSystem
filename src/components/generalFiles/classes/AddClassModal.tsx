@@ -13,7 +13,7 @@ export default function AddClassModal({ isOpen, onClose, onSubmit, isLoading }: 
     class_name: '',
     class_code: '',
     description: '',
-    capacity: 30,
+    capacity: 0,
     is_active: true,
   });
 
