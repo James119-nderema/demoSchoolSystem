@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { APIService } from '../../services/baseUrl';
 
 interface Student {
   id: number;
@@ -25,56 +26,128 @@ const StaffStudents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(20);
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [currentPage, searchTerm, selectedClass, selectedStatus]);
 
   const fetchStudents = async () => {
     try {
-      const token = localStorage.getItem('staff_access_token');
-      if (!token) {
-        setError('No authentication token found');
-        return;
+      setLoading(true);
+      
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        page_size: pageSize.toString(),
+      });
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      if (selectedClass) {
+        params.append('class', selectedClass);
+      }
+      if (selectedStatus) {
+        params.append('status', selectedStatus);
       }
 
-      const response = await fetch('http://localhost:8000/api/students/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data.results || data);
+      const response = await APIService.get(`/api/students/?${params.toString()}`);
+      
+      if (response) {
+        // Handle paginated response
+        if (response.results) {
+          setStudents(response.results);
+          setTotalCount(response.count || 0);
+          setTotalPages(Math.ceil((response.count || 0) / pageSize));
+        } else {
+          // Handle non-paginated response
+          setStudents(response);
+          setTotalCount(response.length || 0);
+          setTotalPages(1);
+        }
+        setError('');
       } else {
-        setError('Failed to fetch students');
+        setError('Failed to fetch students - empty response');
       }
     } catch (err) {
-      setError('Network error occurred');
+      console.error('Error fetching students:', err);
+      
+      // Check if it's an authentication error
+      if (err && typeof err === 'object' && 'status' in err) {
+        if (err.status === 401) {
+          setError('Authentication failed. Please login again.');
+        } else if (err.status === 403) {
+          setError('You do not have permission to view students. Please ensure you have been assigned to classes.');
+        } else {
+          setError(`Server error: ${err.status}`);
+        }
+      } else {
+        setError('Network error occurred while fetching students');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter students based on search and filters
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.admission_number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass === '' || student.current_class === selectedClass || student.admission_class === selectedClass;
-    const matchesStatus = selectedStatus === '' || student.status === selectedStatus;
-    
-    return matchesSearch && matchesClass && matchesStatus;
-  });
+  // Since we're using server-side filtering, we don't need to filter again
+  const filteredStudents = students;
 
-  // Get unique classes for filter
+  // Get unique classes for filter (from current page data)
   const uniqueClasses = [...new Set(students.map(student => student.current_class || student.admission_class))];
 
-  if (loading) {
+  // Handler for search and filter changes
+  const handleSearchFilterChange = () => {
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  // Navigation handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePageSelect = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    
+    return pageNumbers;
+  };
+
+  if (loading && students.length === 0) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading students...</div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="text-lg text-gray-600 mt-4">Loading students...</div>
+        </div>
       </div>
     );
   }
@@ -112,7 +185,7 @@ const StaffStudents: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Students</p>
-                <p className="text-2xl font-semibold text-gray-900">{students.length}</p>
+                <p className="text-2xl font-semibold text-gray-900">{totalCount}</p>
               </div>
             </div>
           </div>
@@ -155,13 +228,9 @@ const StaffStudents: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">New This Month</p>
+                <p className="text-sm font-medium text-gray-500">On Current Page</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {students.filter(s => {
-                    const addedDate = new Date(s.date_added);
-                    const thisMonth = new Date();
-                    return addedDate.getMonth() === thisMonth.getMonth() && addedDate.getFullYear() === thisMonth.getFullYear();
-                  }).length}
+                  {students.length}
                 </p>
               </div>
             </div>
@@ -178,7 +247,10 @@ const StaffStudents: React.FC = () => {
                 placeholder="Search by name or admission number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  handleSearchFilterChange();
+                }}
               />
             </div>
 
@@ -187,7 +259,10 @@ const StaffStudents: React.FC = () => {
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  handleSearchFilterChange();
+                }}
               >
                 <option value="">All Classes</option>
                 {uniqueClasses.map(cls => (
@@ -201,7 +276,10 @@ const StaffStudents: React.FC = () => {
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  handleSearchFilterChange();
+                }}
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
@@ -218,6 +296,8 @@ const StaffStudents: React.FC = () => {
                   setSearchTerm('');
                   setSelectedClass('');
                   setSelectedStatus('');
+                  setCurrentPage(1);
+                  handleSearchFilterChange();
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
@@ -228,7 +308,15 @@ const StaffStudents: React.FC = () => {
         </div>
 
         {/* Students Table */}
-        <div className="bg-white overflow-hidden shadow-sm rounded-lg">
+        <div className="bg-white overflow-hidden shadow-sm rounded-lg relative">
+          {loading && students.length > 0 && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div className="text-sm text-gray-600 mt-2">Loading...</div>
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -254,8 +342,15 @@ const StaffStudents: React.FC = () => {
                 {filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      {students.length === 0 
-                        ? "No students found in your school." 
+                      {totalCount === 0 
+                        ? (
+                          <div>
+                            <p className="mb-2">No students found in your assigned classes.</p>
+                            <p className="text-sm text-gray-400">
+                              Please contact your administrator to assign you to classes and subjects.
+                            </p>
+                          </div>
+                        ) 
                         : "No students match your search criteria."
                       }
                     </td>
@@ -322,12 +417,106 @@ const StaffStudents: React.FC = () => {
           </div>
         </div>
 
-        {/* Results Summary */}
-        {filteredStudents.length !== students.length && (
-          <div className="mt-4 text-sm text-gray-600 text-center">
-            Showing {filteredStudents.length} of {students.length} students
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-6 rounded-lg shadow-sm">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  currentPage === 1
+                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  currentPage === totalPages
+                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing{' '}
+                  <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                  {' '}to{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * pageSize, totalCount)}
+                  </span>
+                  {' '}of{' '}
+                  <span className="font-medium">{totalCount}</span>
+                  {' '}results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${
+                      currentPage === 1
+                        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                        : 'text-gray-500 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {getPageNumbers().map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageSelect(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        pageNum === currentPage
+                          ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${
+                      currentPage === totalPages
+                        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                        : 'text-gray-500 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* Results Summary */}
+        <div className="mt-4 text-sm text-gray-600 text-center">
+          {totalCount > 0 && (
+            <span>
+              Page {currentPage} of {totalPages} • Total: {totalCount} students
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

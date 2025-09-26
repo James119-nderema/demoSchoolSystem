@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { APIService } from '../../services/baseUrl';
 
 interface StaffInfo {
   id: string;
@@ -9,22 +10,172 @@ interface StaffInfo {
   phone_number: string;
 }
 
+interface ClassData {
+  id: number;
+  class_name: string;
+  class_code: string;
+  description: string;
+}
+
+interface SubjectData {
+  id: number;
+  subject_name: string;
+  subject_code: string;
+  description: string;
+}
+
+interface Assignment {
+  id?: number;
+  class_name?: string;
+  subject_name?: string;
+  subject_code?: string;
+  is_class_teacher?: boolean;
+}
+
+interface ClassSubjectAssignment {
+  class_id: number;
+  subject_ids: number[];
+  is_class_teacher: boolean;
+}
+
 const StaffProfile: React.FC = () => {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAssignmentEditing, setIsAssignmentEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Data states
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const [subjects, setSubjects] = useState<SubjectData[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [classSubjectAssignments, setClassSubjectAssignments] = useState<ClassSubjectAssignment[]>([]);
 
   useEffect(() => {
     const info = localStorage.getItem('staff_info');
     if (info) {
       try {
         setStaffInfo(JSON.parse(info));
+        fetchProfileData();
       } catch (error) {
         console.error('Error parsing staff info:', error);
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  if (!staffInfo) {
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
+      // Fetch profile and assignments
+      const profileResponse = await APIService.get('/api/staff/profile/my_profile/');
+      if (profileResponse.assignments) {
+        setAssignments(profileResponse.assignments);
+      }
+
+      // Fetch available classes and subjects
+      const availableResponse = await APIService.get('/api/staff/profile/available_classes_subjects/');
+      if (availableResponse.classes) {
+        setClasses(availableResponse.classes);
+      }
+      if (availableResponse.subjects) {
+        setSubjects(availableResponse.subjects);
+      }
+
+      // Group assignments by class for editing
+      groupAssignmentsByClass(profileResponse.assignments || []);
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const groupAssignmentsByClass = (assignmentsList: Assignment[]) => {
+    const grouped: { [key: number]: ClassSubjectAssignment } = {};
+    
+    assignmentsList.forEach(assignment => {
+      const classId = classes.find(c => c.class_name === assignment.class_name)?.id;
+      if (classId) {
+        if (!grouped[classId]) {
+          grouped[classId] = {
+            class_id: classId,
+            subject_ids: [],
+            is_class_teacher: assignment.is_class_teacher || false
+          };
+        }
+        
+        const subjectId = subjects.find(s => s.subject_name === assignment.subject_name)?.id;
+        if (subjectId && !grouped[classId].subject_ids.includes(subjectId)) {
+          grouped[classId].subject_ids.push(subjectId);
+        }
+      }
+    });
+
+    setClassSubjectAssignments(Object.values(grouped));
+  };
+
+  const handleAddClassAssignment = () => {
+    setClassSubjectAssignments([
+      ...classSubjectAssignments,
+      { class_id: 0, subject_ids: [], is_class_teacher: false }
+    ]);
+  };
+
+  const handleRemoveClassAssignment = (index: number) => {
+    const updated = classSubjectAssignments.filter((_, i) => i !== index);
+    setClassSubjectAssignments(updated);
+  };
+
+  const handleClassChange = (index: number, classId: number) => {
+    const updated = [...classSubjectAssignments];
+    updated[index] = { ...updated[index], class_id: classId };
+    setClassSubjectAssignments(updated);
+  };
+
+  const handleSubjectChange = (index: number, subjectId: number, checked: boolean) => {
+    const updated = [...classSubjectAssignments];
+    if (checked) {
+      if (!updated[index].subject_ids.includes(subjectId)) {
+        updated[index].subject_ids.push(subjectId);
+      }
+    } else {
+      updated[index].subject_ids = updated[index].subject_ids.filter(id => id !== subjectId);
+    }
+    setClassSubjectAssignments(updated);
+  };
+
+  const handleClassTeacherChange = (index: number, isClassTeacher: boolean) => {
+    const updated = [...classSubjectAssignments];
+    updated[index] = { ...updated[index], is_class_teacher: isClassTeacher };
+    setClassSubjectAssignments(updated);
+  };
+
+  const handleSaveAssignments = async () => {
+    try {
+      setSaving(true);
+      const validAssignments = classSubjectAssignments.filter(
+        assignment => assignment.class_id > 0 && assignment.subject_ids.length > 0
+      );
+
+      await APIService.post('/api/staff/profile/update_assignments/', {
+        assignments: validAssignments
+      });
+
+      alert('Assignments updated successfully!');
+      setIsAssignmentEditing(false);
+      fetchProfileData(); // Refresh data
+    } catch (error) {
+      console.error('Error saving assignments:', error);
+      alert('Error saving assignments. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!staffInfo || loading) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-lg text-gray-600">Loading...</div>
@@ -130,6 +281,149 @@ const StaffProfile: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Class and Subject Assignments Section */}
+          <div className="bg-white overflow-hidden shadow-sm rounded-lg p-4 sm:p-6 mt-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Teaching Assignments</h2>
+              <button
+                onClick={() => setIsAssignmentEditing(!isAssignmentEditing)}
+                className="bg-green-600 text-white px-3 py-2 sm:px-4 rounded-md text-sm hover:bg-green-700 transition-colors"
+              >
+                {isAssignmentEditing ? 'Cancel' : 'Edit Assignments'}
+              </button>
+            </div>
+
+            {/* Current Assignments Display */}
+            {!isAssignmentEditing && (
+              <div className="space-y-4">
+                {assignments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {assignments.map((assignment, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">{assignment.class_name}</h4>
+                          {assignment.is_class_teacher && (
+                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                              Class Teacher
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          <strong>Subject:</strong> {assignment.subject_name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Code: {assignment.subject_code}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No teaching assignments found. Click "Edit Assignments" to add some.</p>
+                )}
+              </div>
+            )}
+
+            {/* Assignment Editing Interface */}
+            {isAssignmentEditing && (
+              <div className="space-y-6">
+                {classSubjectAssignments.map((assignment, index) => (
+                  <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium text-gray-900">Assignment {index + 1}</h4>
+                      <button
+                        onClick={() => handleRemoveClassAssignment(index)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    {/* Class Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Class
+                      </label>
+                      <select
+                        value={assignment.class_id}
+                        onChange={(e) => handleClassChange(index, parseInt(e.target.value))}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value={0}>Select a class...</option>
+                        {classes.map((cls) => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.class_name} ({cls.class_code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Subject Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Subjects (Check all that apply)
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
+                        {subjects.map((subject) => (
+                          <label key={subject.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={assignment.subject_ids.includes(subject.id)}
+                              onChange={(e) => handleSubjectChange(index, subject.id, e.target.checked)}
+                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {subject.subject_name} ({subject.subject_code})
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Class Teacher Checkbox */}
+                    <div className="mb-4">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={assignment.is_class_teacher}
+                          onChange={(e) => handleClassTeacherChange(index, e.target.checked)}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          I am the class teacher for this class
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add New Assignment Button */}
+                <button
+                  onClick={handleAddClassAssignment}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  + Add New Class Assignment
+                </button>
+
+                {/* Save/Cancel Buttons */}
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setIsAssignmentEditing(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveAssignments}
+                    disabled={saving}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save Assignments'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
