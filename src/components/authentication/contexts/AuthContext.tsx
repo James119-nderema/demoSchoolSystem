@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('http://localhost:8000/api/schools/login/', {
+      const response = await axios.post('https://techhubai.pythonanywhere.com/api/schools/login/', {
         email,
         password
       });
