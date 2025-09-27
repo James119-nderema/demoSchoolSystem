@@ -79,7 +79,7 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('http://localhost:8000/api/staff/auth/login/', {
+      const response = await axios.post('https://techhubai.pythonanywhere.com/api/staff/auth/login/', {
         email,
         password
       });

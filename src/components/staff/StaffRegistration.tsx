@@ -51,7 +51,7 @@ const StaffRegistration: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/api/staff/auth/register/', formData);
+      const response = await axios.post('https://techhubai.pythonanywhere.com/api/staff/auth/register/', formData);
       
       setMessage({
         type: 'success',
