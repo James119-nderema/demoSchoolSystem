@@ -7,7 +7,7 @@ export const validateToken = async (token: string, userType: 'staff' | 'parent')
       ? '/api/staff/auth/verify_token/' 
       : '/api/parents/verify_token/';
     
-    const response = await axios.post(`http://localhost:8000${endpoint}`, {}, {
+    const response = await axios.post(`https://techhubai.pythonanywhere.com/${endpoint}`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',

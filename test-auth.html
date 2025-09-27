@@ -38,7 +38,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:8000/api/staff/auth/verify_token/', {
+                const response = await fetch('https://techhubai.pythonanywhere.com/api/staff/auth/verify_token/', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

@@ -28,7 +28,7 @@ const ForgotPassword: React.FC = () => {
     setMessage(null);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/schools/forgot_password/', formData);
+      const response = await axios.post('https://techhubai.pythonanywhere.com/api/schools/forgot_password/', formData);
 
       setMessage({
         type: 'success',

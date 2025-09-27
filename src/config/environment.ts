@@ -11,28 +11,28 @@ export const ENV = {
   API: {
     // Development environment (local backend)
     development: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com/',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
       NAME: 'Local Development',
     },
     
     // Staging environment 
     staging: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://schoolmgmt-staging.herokuapp.com',
+      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
       NAME: 'Staging Server',
     },
     
     // Production environment
     production: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://schoolmgmt-api.herokuapp.com',
+      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
       NAME: 'Production Server',
     },
     
     // Testing environment (for running tests)
     test: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
       NAME: 'Test Environment',
     }

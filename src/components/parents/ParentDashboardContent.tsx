@@ -61,7 +61,7 @@ export default function ParentDashboardContent() {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/parents/dashboard/', {
+      const response = await fetch('https://techhubai.pythonanywhere.com/api/parents/dashboard/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

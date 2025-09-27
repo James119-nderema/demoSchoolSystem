@@ -2,15 +2,15 @@ import axios from 'axios';
 
 // Create separate axios instances for different auth types
 export const schoolAPI = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: 'https://techhubai.pythonanywhere.com/api',
 });
 
 export const staffAPI = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: 'https://techhubai.pythonanywhere.com/api',
 });
 
 export const parentAPI = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: 'https://techhubai.pythonanywhere.com/api',
 });
 
 // School API interceptor

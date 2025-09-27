@@ -67,7 +67,7 @@ export default function ParentRegistration() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/parents/register/', {
+      const response = await fetch('https://techhubai.pythonanywhere.com/api/parents/register/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
