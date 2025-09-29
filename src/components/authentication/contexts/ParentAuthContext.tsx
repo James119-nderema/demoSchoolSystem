@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import axios from 'axios';
 import { clearAuthData } from '../../../utils/authUtils';
 import { useAuthValidation } from '../../../hooks/useAuthValidation';
+import { API_BASE_URL } from '../../../config/environment';
 
 interface ParentUser {
   id: number;
@@ -71,7 +72,7 @@ export const ParentAuthProvider: React.FC<ParentAuthProviderProps> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/parents/login/', {
+      const response = await axios.post(`${API_BASE_URL}/api/parents/login/`, {
         email,
         password
       });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import ParentSidebar from '../components/sidebars/ParentSidebar';
+import { API_BASE_URL } from '../config/environment';
 
 interface Student {
   id: number;
@@ -69,7 +70,7 @@ export default function ParentMainLayout({ children, title = "Parent Dashboard" 
       // }
 
       if (token) {
-        const response = await fetch('https://techhubai.pythonanywhere.com/api/parents/dashboard/', {
+        const response = await fetch(`${API_BASE_URL}/api/parents/dashboard/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

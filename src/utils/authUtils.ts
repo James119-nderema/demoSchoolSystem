@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/environment';
 
 // Utility function to check if token is valid
 export const validateToken = async (token: string, userType: 'staff' | 'parent'): Promise<boolean> => {
@@ -7,7 +8,7 @@ export const validateToken = async (token: string, userType: 'staff' | 'parent')
       ? '/api/staff/auth/verify_token/' 
       : '/api/parents/verify_token/';
     
-    const response = await axios.post(`https://techhubai.pythonanywhere.com${endpoint}`, {}, {
+    const response = await axios.post(`${API_BASE_URL}${endpoint}`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/environment';
 
 interface RegistrationFormData {
   full_name: string;
@@ -51,7 +52,7 @@ const StaffRegistration: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/staff/auth/register/', formData);
+      const response = await axios.post(`${API_BASE_URL}/api/staff/auth/register/`, formData);
       
       setMessage({
         type: 'success',

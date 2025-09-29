@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/environment';
 
 interface Staff {
   id: number;
@@ -55,7 +56,7 @@ const StaffManagement: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('https://techhubai.pythonanywhere.com/api/schools/staff/', {
+      const response = await axios.get(`${API_BASE_URL}/api/schools/staff/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -104,7 +105,7 @@ const StaffManagement: React.FC = () => {
         return;
       }
 
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/schools/staff/', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/schools/staff/`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -151,7 +152,7 @@ const StaffManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await axios.delete(`https://techhubai.pythonanywhere.com/api/schools/staff/${staffId}/`, {
+      const response = await axios.delete(`${API_BASE_URL}/api/schools/staff/${staffId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

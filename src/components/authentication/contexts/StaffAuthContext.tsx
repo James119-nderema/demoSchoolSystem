@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
 import { validateToken, clearAuthData } from '../../../utils/authUtils';
+import { API_BASE_URL } from '../../../config/environment';
 
 interface StaffUser {
   id: number;
@@ -79,7 +80,7 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/staff/auth/login/', {
+      const response = await axios.post(`${API_BASE_URL}/api/staff/auth/login/`, {
         email,
         password
       });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../config/environment';
 
 interface RegistrationFormData {
   full_name: string;
@@ -67,7 +68,7 @@ export default function ParentRegistration() {
     }
 
     try {
-      const response = await fetch('https://techhubai.pythonanywhere.com/api/parents/register/', {
+      const response = await fetch(`${API_BASE_URL}/api/parents/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

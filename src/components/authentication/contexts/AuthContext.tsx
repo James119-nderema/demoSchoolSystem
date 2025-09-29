@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../../config/environment';
 
 interface User {
   school_id: number;
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/schools/login/', {
+      const response = await axios.post(`${API_BASE_URL}/api/schools/login/`, {
         email,
         password
       });

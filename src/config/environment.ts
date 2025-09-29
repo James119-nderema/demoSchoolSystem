@@ -11,7 +11,7 @@ export const ENV = {
   API: {
     // Development environment (local backend)
     development: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com/',
+      BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
       NAME: 'Local Development',
     },

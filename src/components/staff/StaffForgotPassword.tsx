@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/environment';
 
 interface ForgotPasswordData {
   email: string;
@@ -28,7 +29,7 @@ const StaffForgotPassword: React.FC = () => {
     setMessage(null);
 
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/staff/auth/forgot_password/', formData);
+      const response = await axios.post(`${API_BASE_URL}/api/staff/auth/forgot_password/`, formData);
       
       setMessage({
         type: 'success',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { API_BASE_URL } from '../config/environment';
 
 interface ResetPasswordFormData {
   token: string;
@@ -65,7 +66,7 @@ const ResetPassword: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('https://techhubai.pythonanywhere.com/api/schools/reset_password/', formData);
+      const response = await axios.post(`${API_BASE_URL}/api/schools/reset_password/`, formData);
 
       setMessage({
         type: 'success',
