@@ -58,6 +58,10 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
   const staffToken = localStorage.getItem('staff_access_token');
   const parentToken = localStorage.getItem('parent_access_token');
   
+  // Build full URL using environment variable for production
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+  
   // Add appropriate token based on URL
   const headers = new Headers(options.headers);
   if (staffToken && url.includes('/api/')) {
@@ -66,7 +70,7 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
     headers.set('Authorization', `Bearer ${parentToken}`);
   }
   
-  const response = await fetch(url, {
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });

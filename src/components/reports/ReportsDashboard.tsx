@@ -92,9 +92,22 @@ const ReportsDashboard: React.FC = () => {
       console.log('Response ok:', response.ok);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`Failed to fetch reports data: ${response.status} - ${errorText}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage;
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.error || `Server error: ${response.status}`;
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON response:', errorText);
+          if (errorText.includes('<!doctype') || errorText.includes('<html')) {
+            errorMessage = `Server returned HTML instead of JSON. This usually means the API endpoint is not available or there's a configuration issue. Status: ${response.status}`;
+          } else {
+            errorMessage = `Failed to fetch reports data: ${response.status} - ${errorText}`;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
