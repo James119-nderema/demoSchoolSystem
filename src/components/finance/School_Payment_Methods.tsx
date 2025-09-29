@@ -93,32 +93,32 @@ export default function SchoolFinance(): React.ReactElement {
     return q === "" || m.type.toLowerCase().includes(q);
   });
 
-  function updateMethod(id: string, changes: Partial<PaymentMethod>) {
-    setMethods((prev) => prev.map((m) => (m.id === id ? { ...m, ...changes } : m)));
-  }
+  // function updateMethod(id: string, changes: Partial<PaymentMethod>) {
+  //   setMethods((prev) => prev.map((m) => (m.id === id ? { ...m, ...changes } : m)));
+  // }
 
-  async function handleActiveToggle(id: string, isActive: boolean) {
-    try {
-      // Update UI immediately
-      setMethods((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, active: isActive } : m))
-      );
+  // async function handleActiveToggle(id: string, isActive: boolean) {
+  //   try {
+  //     // Update UI immediately
+  //     setMethods((prev) =>
+  //       prev.map((m) => (m.id === id ? { ...m, active: isActive } : m))
+  //     );
 
-      // Persist to backend
-      await fetch(`/api/payment-methods/${id}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: isActive }),
-      });
-    } catch (error) {
-      console.error("Failed to update active status:", error);
+  //     // Persist to backend
+  //     await fetch(`/api/payment-methods/${id}/`, {
+  //       method: "PATCH",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ active: isActive }),
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to update active status:", error);
 
-      // Revert on error
-      setMethods((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, active: !isActive } : m))
-      );
-    }
-  }
+  //     // Revert on error
+  //     setMethods((prev) =>
+  //       prev.map((m) => (m.id === id ? { ...m, active: !isActive } : m))
+  //     );
+  //   }
+  // }
 
   function handleEdit(method: PaymentMethod) {
     setForm({ type: method.type, details: method.details, active: method.active });

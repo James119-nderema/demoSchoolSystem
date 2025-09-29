@@ -112,7 +112,7 @@ const SchoolFinance: React.FC = () => {
                 outerRadius={80}
                 label
               >
-                {expenseData.map((entry, index) => (
+                {expenseData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
