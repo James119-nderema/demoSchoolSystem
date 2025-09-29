@@ -251,46 +251,234 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         </button>
       </div>
 
-      {/* Mobile sidebar overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-indigo-700">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              >
-                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      {/* Mobile sidebar - ParentSidebar style */}
+      <div className={`fixed top-0 left-0 h-screen bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      } w-64 md:hidden`}>
+        
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-700 to-indigo-800 p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-white">
+                  {staffInfo.full_name.split(' ').map((n: string) => n[0]).join('')}
+                </span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">Staff Portal</h3>
+                <p className="text-xs text-indigo-200 truncate">{staffInfo.school_name}</p>
+              </div>
             </div>
-            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4">
-                <h1 className="text-lg font-semibold text-white">Staff Portal</h1>
-              </div>
-              <div className="mt-5 flex-1 h-0 overflow-y-auto">
-                <SidebarContent 
-                  staffInfo={staffInfo} 
-                  menuItems={menuItems} 
-                  isActive={isActive} 
-                  isResultsActive={isResultsActive}
-                  isResultsOpen={isResultsOpen}
-                  isStatisticsActive={isStatisticsActive}
-                  isStatisticsOpen={isStatisticsOpen}
-                  isReportCardsActive={isReportCardsActive}
-                  isReportCardsOpen={isReportCardsOpen}
-                  handleNavigation={handleNavigation} 
-                  handleResultsToggle={handleResultsToggle}
-                  handleStatisticsToggle={handleStatisticsToggle}
-                  handleReportCardsToggle={handleReportCardsToggle}
-                  onLogout={onLogout} 
-                />
-              </div>
+            
+            {/* Mobile close button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Staff info */}
+          <div className="mt-4 pt-4 border-t border-white border-opacity-20">
+            <div className="text-sm">
+              <p className="font-medium truncate">{staffInfo.full_name}</p>
+              <p className="text-indigo-200 text-xs mt-1 truncate">{staffInfo.email}</p>
             </div>
           </div>
         </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {/* Main navigation items */}
+          {menuItems.filter(item => !item.hasDropdown).map((item) => (
+            <button
+              key={item.name}
+              onClick={() => handleNavigation(item.path)}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 w-full text-left ${
+                isActive(item.path)
+                  ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <span className={isActive(item.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                {item.icon}
+              </span>
+              <span className="font-medium">{item.name}</span>
+            </button>
+          ))}
+
+          {/* Results Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleResultsToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isResultsActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isResultsActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">Results</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isResultsOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isResultsOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'Results')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Statistics Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleStatisticsToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isStatisticsActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isStatisticsActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">Statistics</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isStatisticsOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isStatisticsOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'Statistics')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Report Cards Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleReportCardsToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isReportCardsActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isReportCardsActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">Report Cards</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isReportCardsOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isReportCardsOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'Report Cards')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={onLogout}
+            className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 w-full text-left"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       )}
 
       {/* Desktop sidebar */}

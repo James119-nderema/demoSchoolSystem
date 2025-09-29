@@ -8,7 +8,12 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 			: 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
 	}`
 
-export default function Sidebar() {
+interface SidebarProps {
+	isOpen?: boolean;
+	onToggle?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 	const navigate = useNavigate()
 	const [classId, setClassId] = useState('')
 	const [term, setTerm] = useState('')
@@ -21,77 +26,232 @@ export default function Sidebar() {
 		navigate(qs ? `/dashboard?${qs}` : '/dashboard')
 	}
 
-	return (
-		<aside className="w-64 shrink-0 border-r border-gray-200 bg-white min-h-screen sticky top-0">
-			<div className="h-14 flex items-center px-4 border-b border-gray-200">
-				<span className="text-base font-semibold">Result Admin</span>
-			</div>
-			<nav className="p-3 space-y-1">
-				<NavLink to="/school/dashboard" className={navLinkClass}>
-					<span>📊</span>
-					<span>Dashboard</span>
-				</NavLink>
-				<NavLink to="/school/students" className={navLinkClass}>
-					<span>👨‍🎓</span>
-					<span>Students</span>
-				</NavLink>
-				<NavLink to="/school/subjects" className={navLinkClass}>
-					<span>📚</span>
-					<span>Subjects</span>
-				</NavLink>
-				<NavLink to="/school/results" className={navLinkClass}>
-					<span>📝</span>
-					<span>Results</span>
-				</NavLink>
-				<NavLink to="/school/classes" className={navLinkClass}>
-					<span>🏫</span>
-					<span>Classes</span>
-				</NavLink>
-				<NavLink to="/school/staff" className={navLinkClass}>
-					<span>👥</span>
-					<span>Staff</span>
-				</NavLink>
-				<NavLink to="/school/finance" className={navLinkClass}>
-					<span>👥</span>
-					<span>Finance</span>
-				</NavLink>	
-			</nav>
+	const handleItemClick = () => {
+		if (window.innerWidth < 1024) {
+			if (onToggle) onToggle();
+		}
+	};
 
-			{/* Quick Filters for Dashboard (use query params) */}
-			<div className="px-3 pb-4">
-				<div className="mt-4 rounded-md border border-gray-200 p-3 bg-gray-50">
-					<div className="text-xs font-semibold text-gray-600 mb-2">Quick Filters</div>
-					<label className="block text-xs text-gray-600 mb-1" htmlFor="classId">Class</label>
-					<select
-						id="classId"
-						className="w-full mb-2 rounded-md border-gray-300 text-sm"
-						value={classId}
-						onChange={(e) => setClassId(e.target.value)}
-					>
-						<option value="">All</option>
-						<option value="SS2A">SS2A</option>
-						<option value="SS2B">SS2B</option>
-						<option value="SS2C">SS2C</option>
-					</select>
+	const menuItems = [
+		{
+			id: 'dashboard',
+			name: 'Dashboard',
+			icon: '📊',
+			href: '/school/dashboard'
+		},
+		{
+			id: 'students',
+			name: 'Students',
+			icon: '👨‍🎓',
+			href: '/school/students'
+		},
+		{
+			id: 'subjects',
+			name: 'Subjects',
+			icon: '📚',
+			href: '/school/subjects'
+		},
+		{
+			id: 'results',
+			name: 'Results',
+			icon: '📝',
+			href: '/school/results'
+		},
+		{
+			id: 'classes',
+			name: 'Classes',
+			icon: '🏫',
+			href: '/school/classes'
+		},
+		{
+			id: 'staff',
+			name: 'Staff',
+			icon: '👥',
+			href: '/school/staff'
+		},
+		{
+			id: 'finance',
+			name: 'Finance',
+			icon: '💰',
+			href: '/school/finance'
+		}
+	];
 
-					<label className="block text-xs text-gray-600 mb-1" htmlFor="term">Term</label>
-					<input
-						id="term"
-						placeholder="e.g. 2024/2025 - Term 3"
-						className="w-full mb-3 rounded-md border-gray-300 text-sm"
-						value={term}
-						onChange={(e) => setTerm(e.target.value)}
-					/>
+		return (
+		<>
+			{/* Mobile sidebar */}
+			<div className={`fixed top-0 left-0 h-screen bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col ${
+				isOpen ? 'translate-x-0' : '-translate-x-full'
+			} w-64 lg:hidden`}>
+				
+				{/* Header */}
+				<div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center space-x-3">
+							<div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+								<span className="text-lg">🎓</span>
+							</div>
+							<div>
+								<h3 className="font-semibold text-sm">Result Admin</h3>
+								<p className="text-xs text-blue-200">School Management</p>
+							</div>
+						</div>
+						
+						{/* Mobile close button */}
+						<button
+							onClick={onToggle}
+							className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+						>
+							<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+				</div>
 
-					<button
-						onClick={applyFilters}
-						className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium h-9 hover:bg-blue-700"
-					>
-						Apply to Dashboard
-					</button>
+				{/* Navigation */}
+				<nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+					{menuItems.map((item) => (
+						<NavLink
+							key={item.id}
+							to={item.href}
+							onClick={handleItemClick}
+							className={({ isActive }) =>
+								`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
+									isActive
+										? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+										: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+								}`
+							}
+						>
+							{({ isActive }) => (
+								<>
+									<span className={`text-lg ${isActive ? 'text-blue-700' : 'text-gray-400'}`}>
+										{item.icon}
+									</span>
+									<span className="font-medium">{item.name}</span>
+								</>
+							)}
+						</NavLink>
+					))}
+				</nav>
+
+				{/* Quick Filters */}
+				<div className="p-4 border-t border-gray-200">
+					<div className="rounded-md border border-gray-200 p-3 bg-gray-50">
+						<div className="text-xs font-semibold text-gray-600 mb-2">Quick Filters</div>
+						<label className="block text-xs text-gray-600 mb-1" htmlFor="mobile-classId">Class</label>
+						<select
+							id="mobile-classId"
+							className="w-full mb-2 rounded-md border-gray-300 text-sm"
+							value={classId}
+							onChange={(e) => setClassId(e.target.value)}
+						>
+							<option value="">All</option>
+							<option value="SS2A">SS2A</option>
+							<option value="SS2B">SS2B</option>
+							<option value="SS2C">SS2C</option>
+						</select>
+
+						<label className="block text-xs text-gray-600 mb-1" htmlFor="mobile-term">Term</label>
+						<input
+							id="mobile-term"
+							placeholder="e.g. 2024/2025 - Term 3"
+							className="w-full mb-3 rounded-md border-gray-300 text-sm"
+							value={term}
+							onChange={(e) => setTerm(e.target.value)}
+						/>
+
+						<button
+							onClick={applyFilters}
+							className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium h-9 hover:bg-blue-700"
+						>
+							Apply to Dashboard
+						</button>
+					</div>
 				</div>
 			</div>
-		</aside>
+
+			{/* Mobile overlay */}
+			{isOpen && (
+				<div 
+					className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+					onClick={onToggle}
+				/>
+			)}
+
+			{/* Desktop sidebar */}
+			<aside className="hidden lg:block w-64 shrink-0 border-r border-gray-200 bg-white min-h-screen sticky top-0">
+				<div className="h-14 flex items-center px-4 border-b border-gray-200">
+					<span className="text-base font-semibold">Result Admin</span>
+				</div>
+				<nav className="p-3 space-y-1">
+					<NavLink to="/school/dashboard" className={navLinkClass}>
+						<span>📊</span>
+						<span>Dashboard</span>
+					</NavLink>
+					<NavLink to="/school/students" className={navLinkClass}>
+						<span>👨‍🎓</span>
+						<span>Students</span>
+					</NavLink>
+					<NavLink to="/school/subjects" className={navLinkClass}>
+						<span>📚</span>
+						<span>Subjects</span>
+					</NavLink>
+					<NavLink to="/school/results" className={navLinkClass}>
+						<span>📝</span>
+						<span>Results</span>
+					</NavLink>
+					<NavLink to="/school/classes" className={navLinkClass}>
+						<span>🏫</span>
+						<span>Classes</span>
+					</NavLink>
+					<NavLink to="/school/staff" className={navLinkClass}>
+						<span>👥</span>
+						<span>Staff</span>
+					</NavLink>
+					<NavLink to="/school/finance" className={navLinkClass}>
+						<span>💰</span>
+						<span>Finance</span>
+					</NavLink>	
+				</nav>
+
+				{/* Quick Filters for Dashboard (use query params) */}
+				<div className="px-3 pb-4">
+					<div className="mt-4 rounded-md border border-gray-200 p-3 bg-gray-50">
+						<div className="text-xs font-semibold text-gray-600 mb-2">Quick Filters</div>
+						<label className="block text-xs text-gray-600 mb-1" htmlFor="classId">Class</label>
+						<select
+							id="classId"
+							className="w-full mb-2 rounded-md border-gray-300 text-sm"
+							value={classId}
+							onChange={(e) => setClassId(e.target.value)}
+						>
+							<option value="">All</option>
+							<option value="SS2A">SS2A</option>
+							<option value="SS2B">SS2B</option>
+							<option value="SS2C">SS2C</option>
+						</select>
+
+						<label className="block text-xs text-gray-600 mb-1" htmlFor="term">Term</label>
+						<input
+							id="term"
+							placeholder="e.g. 2024/2025 - Term 3"
+							className="w-full mb-3 rounded-md border-gray-300 text-sm"
+							value={term}
+							onChange={(e) => setTerm(e.target.value)}
+						/>
+
+						<button
+							onClick={applyFilters}
+							className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium h-9 hover:bg-blue-700"
+						>
+							Apply to Dashboard
+						</button>
+					</div>
+				</div>
+			</aside>
+		</>
 	)
 }
 
