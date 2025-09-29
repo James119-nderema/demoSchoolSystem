@@ -362,10 +362,10 @@ const ReportsPage: React.FC = () => {
                 </div>
                 
                 {loading && (
-                  <p className="text-sm text-gray-500 flex items-center space-x-2">
+                  <div className="text-sm text-gray-500 flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
                     <span>Loading students...</span>
-                  </p>
+                  </div>
                 )}
                 {!loading && students.length === 0 && (
                   <p className="text-sm text-amber-600">No students found. Please add students first.</p>
@@ -489,33 +489,6 @@ const ReportsPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-// Utility functions for navigation to reports with specific parameters
-export const navigateToSingleReport = (
-  navigate: (path: string) => void,
-  options: {
-    studentId?: string;
-    term?: string;
-    academicYear?: string;
-    examType?: string;
-  } = {}
-) => {
-  const params = new URLSearchParams();
-  params.set('type', 'single');
-  
-  if (options.studentId) params.set('studentId', options.studentId);
-  if (options.term) params.set('term', options.term);
-  if (options.academicYear) params.set('academicYear', options.academicYear);
-  if (options.examType) params.set('examType', options.examType);
-  
-  navigate(`/reports?${params.toString()}`);
-};
-
-export const navigateToBulkReport = (navigate: (path: string) => void) => {
-  const params = new URLSearchParams();
-  params.set('type', 'bulk');
-  navigate(`/reports?${params.toString()}`);
 };
 
 export default ReportsPage;
