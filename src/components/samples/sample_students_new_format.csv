@@ -1,0 +1,6 @@
+upi_no,assessment_no,surname,first_name,other_names,gender,date_of_birth,birth_entry_no,disability,admission_number,class,parent_guardian_name,parent_guardian_phone,parent_guardian_email,address,status
+UPI001,ASS001,Smith,John,Michael,male,2010-05-15,BE001,None,ADM001,Grade 1,Jane Smith,+254712345678,jane.smith@email.com,123 Main Street Nairobi,active
+UPI002,ASS002,Johnson,Mary,Grace,female,2009-08-22,,Physical,ADM002,Grade 2,Robert Johnson,+254723456789,robert.johnson@email.com,456 Oak Avenue Mombasa,active
+UPI003,,Mburu,Peter,Kariuki,male,2011-01-10,BE003,None,ADM003,Grade 1,Grace Mburu,+254734567890,grace.mburu@email.com,789 Uhuru Highway Kisumu,active
+UPI004,ASS004,Wanjiku,Faith,Njeri,female,2010-12-03,BE004,Learning,ADM004,Grade 2,Samuel Wanjiku,+254745678901,,321 Kenyatta Road Nakuru,active
+UPI005,ASS005,Ochieng,David,Otieno,male,2009-03-18,BE005,None,ADM005,Grade 3,Lucy Ochieng,+254756789012,lucy.ochieng@email.com,,active
