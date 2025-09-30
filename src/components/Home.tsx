@@ -13,11 +13,30 @@ import {
   CheckCircle,
   ArrowRight,
   Menu,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 const Home: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isLoginDropdownOpen, setIsLoginDropdownOpen] = React.useState(false);
+  const [isRegisterDropdownOpen, setIsRegisterDropdownOpen] = React.useState(false);
+
+  // Close dropdowns when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setIsLoginDropdownOpen(false);
+        setIsRegisterDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const features = [
     {
@@ -90,12 +109,84 @@ const Home: React.FC = () => {
               <a href="#features" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Features</a>
               <a href="#about" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
               <a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
-              <Link
-                to="/create-school"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-300"
-              >
-                Create Your School
-              </Link>
+              
+              {/* Login Dropdown */}
+              <div className="relative dropdown-container">
+                <button
+                  onClick={() => {
+                    setIsLoginDropdownOpen(!isLoginDropdownOpen);
+                    setIsRegisterDropdownOpen(false);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-300 flex items-center"
+                >
+                  Login
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </button>
+                {isLoginDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                    <Link
+                      to="/login"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsLoginDropdownOpen(false)}
+                    >
+                      School Login
+                    </Link>
+                    <Link
+                      to="/staff/login"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsLoginDropdownOpen(false)}
+                    >
+                      Staff Login
+                    </Link>
+                    <Link
+                      to="/parent/login"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsLoginDropdownOpen(false)}
+                    >
+                      Parent Login
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Register Dropdown */}
+              <div className="relative dropdown-container">
+                <button
+                  onClick={() => {
+                    setIsRegisterDropdownOpen(!isRegisterDropdownOpen);
+                    setIsLoginDropdownOpen(false);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-300 flex items-center"
+                >
+                  Register
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </button>
+                {isRegisterDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                    <Link
+                      to="/create-school"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsRegisterDropdownOpen(false)}
+                    >
+                      School Register
+                    </Link>
+                    <Link
+                      to="/staff/register"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsRegisterDropdownOpen(false)}
+                    >
+                      Staff Register
+                    </Link>
+                    <Link
+                      to="/parent/register"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsRegisterDropdownOpen(false)}
+                    >
+                      Parent Register
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile menu button */}
@@ -117,12 +208,22 @@ const Home: React.FC = () => {
                 <a href="#features" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Features</a>
                 <a href="#about" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
                 <a href="#contact" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
-                <Link
-                  to="/create-school"
-                  className="bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  Create Your School
-                </Link>
+                
+                {/* Mobile Login Links */}
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Login</p>
+                  <Link to="/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">School Login</Link>
+                  <Link to="/staff/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Staff Login</Link>
+                  <Link to="/parent/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Parent Login</Link>
+                </div>
+                
+                {/* Mobile Register Links */}
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Register</p>
+                  <Link to="/create-school" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">School Register</Link>
+                  <Link to="/staff/register" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Staff Register</Link>
+                  <Link to="/parent/register" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Parent Register</Link>
+                </div>
               </div>
             </div>
           )}

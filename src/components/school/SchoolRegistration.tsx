@@ -115,36 +115,6 @@ export default function SchoolRegistration() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex space-x-4">
-              <button
-                onClick={() => navigate('/parent/register')}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200"
-              >
-                Parent Register
-              </button>
-              <button
-                onClick={() => navigate('/parent/login')}
-                className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-medium transition duration-200"
-              >
-                Parent Login
-              </button>
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => navigate('/login')}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition duration-200"
-              >
-                School Login
-              </button>
-              <button
-                onClick={() => navigate('/staff/login')}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition duration-200"
-              >
-                Staff Login
-              </button>
-            </div>
-          </div>
           <h1 className="text-5xl font-bold text-gray-800 mb-4">School Management System</h1>
           <p className="text-xl text-gray-600">Create and manage your school with ease</p>
         </div>
