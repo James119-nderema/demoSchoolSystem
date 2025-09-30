@@ -130,7 +130,7 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                       <div className="mt-3 pt-3 border-t border-blue-200">
                         <p className="font-semibold mb-2">Download Sample File:</p>
                         <a
-                          href="/src/components/samples/sample_students_new_format.csv"
+                          href="/sample_students_new_format.csv"
                           download="sample_students_new_format.csv"
                           className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
                         >
