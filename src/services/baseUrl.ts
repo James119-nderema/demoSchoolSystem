@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_TIMEOUT } from '../config/environment';
+import { API_BASE_URL, API_TIMEOUT, API_UPLOAD_TIMEOUT } from '../config/environment';
 
 // Backend API Configuration
 const API_CONFIG = {
@@ -61,6 +61,39 @@ const API_CONFIG = {
 export class APIService {
   private static baseUrl = API_CONFIG.BASE_URL;
   
+  // Auto-logout utility function
+  private static handleAuthenticationFailure(): void {
+    // Clear all authentication tokens
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('staff_access_token');
+    localStorage.removeItem('parent_access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('staff_refresh_token');
+    localStorage.removeItem('parent_refresh_token');
+    
+    // Redirect to appropriate login page based on current route
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/staff')) {
+      window.location.href = '/staff/login';
+    } else if (currentPath.startsWith('/parent')) {
+      window.location.href = '/parent/login';
+    } else {
+      window.location.href = '/login';
+    }
+  }
+  
+  // Check if error is authentication related
+  private static isAuthenticationError(status: number, errorData: any): boolean {
+    return status === 401 || 
+           status === 403 ||
+           errorData.detail === 'Authentication credentials were not provided.' ||
+           errorData.error === 'Authentication credentials were not provided.' ||
+           errorData.message === 'Authentication credentials were not provided.' ||
+           errorData.detail?.includes('Invalid token') ||
+           errorData.error?.includes('Invalid token') ||
+           errorData.message?.includes('Invalid token');
+  }
+  
   // Get full URL for an endpoint
   static getUrl(endpoint: string): string {
     return `${this.baseUrl}${endpoint}`;
@@ -112,6 +145,14 @@ export class APIService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+        
+        // Check for authentication failures and auto-logout
+        if (this.isAuthenticationError(response.status, errorData)) {
+          this.handleAuthenticationFailure();
+          // Throw an error to satisfy the return type
+          throw new Error('Session expired. You have been logged out.');
+        }
+        
         const error = new Error(errorData.error || errorData.detail || errorData.message || `HTTP ${response.status}`);
         // Attach response data to error for better debugging
         (error as any).response = { 
@@ -178,6 +219,90 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, { method: 'DELETE' }, userType);
   }
+
+  // Upload with progress tracking
+  static async uploadWithProgress<T = any>(
+    endpoint: string,
+    formData: FormData,
+    onProgress?: (progress: number) => void,
+    userType: 'staff' | 'parent' | 'school' = 'staff'
+  ): Promise<T> {
+    const url = this.getUrl(endpoint);
+    const tokenKey = userType === 'staff' ? 'staff_access_token' : 
+                     userType === 'parent' ? 'parent_access_token' : 
+                     'access_token';
+    const token = localStorage.getItem(tokenKey);
+
+    return new Promise<T>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Set up timeout (longer timeout for uploads)
+      xhr.timeout = API_UPLOAD_TIMEOUT;
+      
+      // Set up progress tracking
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            onProgress(percentComplete);
+          }
+        });
+      }
+      
+      // Set up response handlers
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (error) {
+            reject(new Error('Invalid JSON response'));
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            
+            // Check for authentication failures and auto-logout
+            if (APIService.isAuthenticationError(xhr.status, errorData)) {
+              APIService.handleAuthenticationFailure();
+              // Reject with clear message
+              reject(new Error('Session expired. You have been logged out.'));
+              return;
+            }
+            
+            const error = new Error(errorData.error || errorData.detail || errorData.message || `HTTP ${xhr.status}`);
+            (error as any).response = { 
+              status: xhr.status, 
+              data: errorData 
+            };
+            (error as any).status = xhr.status;
+            reject(error);
+          } catch (parseError) {
+            reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+          }
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error occurred'));
+      };
+      
+      xhr.ontimeout = () => {
+        reject(new Error('Upload timeout - the file might be too large or the connection is slow'));
+      };
+      
+      // Set up request
+      xhr.open('POST', url);
+      
+      // Add authorization header
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      
+      // Send the request
+      xhr.send(formData);
+    });
+  }
   
   // PATCH request
   static async patch<T = any>(
@@ -241,11 +366,10 @@ export const DataAPI = {
     APIService.put(`${API_ENDPOINTS.STUDENTS}${id}/`, data, 'staff'),
   deleteStudent: (id: string) => 
     APIService.delete(`${API_ENDPOINTS.STUDENTS}${id}/`, 'staff'),
-  bulkUploadStudents: (formData: FormData) => 
-    APIService.fetch('/api/students/bulk_upload/', {
-      method: 'POST',
-      body: formData,
-    }, 'staff'),
+  bulkUploadStudents: (formData: FormData, onProgress?: (progress: number) => void) => 
+    APIService.uploadWithProgress('/api/students/bulk_upload/', formData, onProgress, 'staff'),
+  bulkUploadStudentsSchool: (formData: FormData, onProgress?: (progress: number) => void) => 
+    APIService.uploadWithProgress('/api/students/bulk_upload/', formData, onProgress, 'school'),
     
   // Classes
   getClasses: (params?: Record<string, string>) => 

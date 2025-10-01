@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config/environment';
 export const validateToken = async (token: string, userType: 'staff' | 'parent'): Promise<boolean> => {
   try {
     const endpoint = userType === 'staff' 
-      ? '/api/staff/auth/verify_token/' 
+      ? '/api/staff/verify_token/' 
       : '/api/parents/verify_token/';
     
     const response = await axios.post(`${API_BASE_URL}${endpoint}`, {}, {
