@@ -11,21 +11,21 @@ interface StaffInfo {
 }
 
 interface ClassData {
-  id: number;
+  id: string;
   class_name: string;
   class_code: string;
   description: string;
 }
 
 interface SubjectData {
-  id: number;
+  id: string;
   subject_name: string;
   subject_code: string;
   description: string;
 }
 
 interface Assignment {
-  id?: number;
+  id?: string;
   class_name?: string;
   subject_name?: string;
   subject_code?: string;
@@ -33,8 +33,8 @@ interface Assignment {
 }
 
 interface ClassSubjectAssignment {
-  class_id: number;
-  subject_ids: number[];
+  class_id: string;
+  subject_ids: string[];
   is_class_teacher: boolean;
 }
 
@@ -94,7 +94,7 @@ const StaffProfile: React.FC = () => {
   };
 
   const groupAssignmentsByClass = (assignmentsList: Assignment[]) => {
-    const grouped: { [key: number]: ClassSubjectAssignment } = {};
+    const grouped: { [key: string]: ClassSubjectAssignment } = {};
     
     assignmentsList.forEach(assignment => {
       const classId = classes.find(c => c.class_name === assignment.class_name)?.id;
@@ -120,7 +120,7 @@ const StaffProfile: React.FC = () => {
   const handleAddClassAssignment = () => {
     setClassSubjectAssignments([
       ...classSubjectAssignments,
-      { class_id: 0, subject_ids: [], is_class_teacher: false }
+      { class_id: '', subject_ids: [], is_class_teacher: false }
     ]);
   };
 
@@ -129,13 +129,13 @@ const StaffProfile: React.FC = () => {
     setClassSubjectAssignments(updated);
   };
 
-  const handleClassChange = (index: number, classId: number) => {
+  const handleClassChange = (index: number, classId: string) => {
     const updated = [...classSubjectAssignments];
     updated[index] = { ...updated[index], class_id: classId };
     setClassSubjectAssignments(updated);
   };
 
-  const handleSubjectChange = (index: number, subjectId: number, checked: boolean) => {
+  const handleSubjectChange = (index: number, subjectId: string, checked: boolean) => {
     const updated = [...classSubjectAssignments];
     if (checked) {
       if (!updated[index].subject_ids.includes(subjectId)) {
@@ -157,7 +157,7 @@ const StaffProfile: React.FC = () => {
     try {
       setSaving(true);
       const validAssignments = classSubjectAssignments.filter(
-        assignment => assignment.class_id > 0 && assignment.subject_ids.length > 0
+        assignment => assignment.class_id !== '' && assignment.subject_ids.length > 0
       );
 
       await APIService.post('/api/staff/profile/update_assignments/', {
@@ -347,10 +347,10 @@ const StaffProfile: React.FC = () => {
                       </label>
                       <select
                         value={assignment.class_id}
-                        onChange={(e) => handleClassChange(index, parseInt(e.target.value))}
+                        onChange={(e) => handleClassChange(index, e.target.value)}
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value={0}>Select a class...</option>
+                        <option value="">Select a class...</option>
                         {classes.map((cls) => (
                           <option key={cls.id} value={cls.id}>
                             {cls.class_name} ({cls.class_code})
