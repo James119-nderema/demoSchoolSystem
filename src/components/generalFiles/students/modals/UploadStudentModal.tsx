@@ -117,10 +117,10 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                       <div className="mb-3">
                         <p className="font-semibold">CSV Format Headers (Required):</p>
                         <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
-                          <li>upi_no, assessment_no, surname, first_name, other_names</li>
-                          <li>gender, date_of_birth, birth_entry_no, disability</li>
-                          <li>admission_number, class, parent_guardian_name</li>
-                          <li>parent_guardian_phone, parent_guardian_email, address, status</li>
+                          <li>surname, first_name, gender, date_of_birth</li>
+                          <li>disability, admission_number, class</li>
+                          <li><span className="text-gray-600">(Optional: upi_no, assessment_no, other_names, birth_entry_no,</span></li>
+                          <li><span className="text-gray-600">parent_guardian_name, parent_guardian_phone, parent_guardian_email, address, status)</span></li>
                         </ul>
                       </div>
                       <div className="mb-3">
@@ -156,12 +156,13 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                     <h3 className="text-sm font-medium text-yellow-800">Important Notes</h3>
                     <div className="mt-2 text-sm text-yellow-700">
                       <ul className="list-disc list-inside space-y-1">
-                        <li>Required fields: upi_no, surname, first_name, gender, date_of_birth, disability, admission_number, class</li>
-                        <li>Optional fields: assessment_no, other_names, birth_entry_no, parent_guardian_name, parent_guardian_phone, parent_guardian_email, address, status</li>
+                        <li>Required fields: surname, first_name, gender, date_of_birth, disability, admission_number, class</li>
+                        <li>Optional fields: upi_no, assessment_no, other_names, birth_entry_no, parent_guardian_name, parent_guardian_phone, parent_guardian_email, address, status</li>
                         <li>Date format should be YYYY-MM-DD</li>
                         <li>Gender values: male, female, or other</li>
                         <li>Status values: active, inactive, suspended, graduated, transferred (defaults to active)</li>
                         <li>For disability field: Enter specific disability or "None" if no disability</li>
+                        <li>UPI No and Birth Entry No can be left empty if not available</li>
                       </ul>
                     </div>
                   </div>
