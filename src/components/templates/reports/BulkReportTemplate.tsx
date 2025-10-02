@@ -58,6 +58,18 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
 
   useEffect(() => {
     fetchClasses();
+    
+    // Read URL parameters and set initial state
+    const urlParams = new URLSearchParams(window.location.search);
+    const classId = urlParams.get('class_id');
+    const term = urlParams.get('term');
+    const examType = urlParams.get('exam_type');
+    const academicYear = urlParams.get('academic_year');
+    
+    if (classId) setSelectedClass(classId);
+    if (term) setSelectedTerm(term);
+    if (examType) setSelectedExamType(examType);
+    if (academicYear) setSelectedAcademicYear(academicYear);
   }, []);
 
   const fetchClasses = async () => {
@@ -74,6 +86,14 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
       alert('Please select a class');
       return;
     }
+
+    // Update URL with current parameters
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('class_id', selectedClass);
+    currentUrl.searchParams.set('term', selectedTerm);
+    currentUrl.searchParams.set('exam_type', selectedExamType);
+    currentUrl.searchParams.set('academic_year', selectedAcademicYear);
+    window.history.pushState({}, '', currentUrl.toString());
 
     setLoading(true);
     setError(null);
@@ -104,11 +124,19 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
   const generateBulkPDF = async () => {
     if (!bulkReportData || bulkReportData.reports.length === 0) return;
 
+    // Update URL with current parameters
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('class_id', bulkReportData.class_info.class_id.toString());
+    currentUrl.searchParams.set('term', bulkReportData.exam_info.term);
+    currentUrl.searchParams.set('exam_type', bulkReportData.exam_info.exam_type);
+    currentUrl.searchParams.set('academic_year', bulkReportData.exam_info.academic_year);
+    window.history.pushState({}, '', currentUrl.toString());
+
     // Show confirmation for large classes
     const reportCount = bulkReportData.reports.length;
     if (reportCount > 50) {
       const confirmed = window.confirm(
-        `You are about to generate ${reportCount} reports. This may take a very long time and use significant memory. Consider generating smaller batches. Do you want to continue?`
+        `You are about to generate ${reportCount} reports. This may take a moment. Do you want to continue?`
       );
       if (!confirmed) return;
     }
