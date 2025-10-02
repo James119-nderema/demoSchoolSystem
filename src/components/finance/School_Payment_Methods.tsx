@@ -91,7 +91,7 @@ export default function SchoolFinance(): React.ReactElement {
   const filtered = methods.filter((m) => {
     const q = filter.trim().toLowerCase();
     return q === "" || m.type.toLowerCase().includes(q);
-  });
+  }); 
 
   function handleEdit(method: PaymentMethod) {
     setForm({ type: method.type, details: method.details, active: method.active });
