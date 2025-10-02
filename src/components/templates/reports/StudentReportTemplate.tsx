@@ -118,15 +118,17 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
     setIsDownloading(true);
     
     try {
-      // Capture the element at its natural size first
+      // Capture the element exactly as it appears on desktop with high quality
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Higher scale for better quality
+        scale: 2, // High quality capture
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         removeContainer: true,
-        foreignObjectRendering: false
+        foreignObjectRendering: false,
+        width: reportRef.current.scrollWidth,
+        height: reportRef.current.scrollHeight
       });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -135,31 +137,27 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       const pdfWidth = 210;
       const pdfHeight = 297;
       
-      // Calculate dimensions to maintain aspect ratio while maximizing page usage
-      const canvasAspectRatio = canvas.width / canvas.height;
-      const pageAspectRatio = pdfWidth / pdfHeight;
+      // Calculate scaling to fit the content width to page width with small margins
+      const margin = 10; // 10mm margin on each side
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
       
-      let imgWidth, imgHeight;
+      // Scale based on width to maintain desktop appearance
+      const scaledWidth = availableWidth;
+      const scaledHeight = (canvas.height / canvas.width) * scaledWidth;
       
-      if (canvasAspectRatio > pageAspectRatio) {
-        // Content is wider relative to page - fit to width
-        imgWidth = pdfWidth;
-        imgHeight = pdfWidth / canvasAspectRatio;
+      // Check if content fits on one page
+      if (scaledHeight <= availableHeight) {
+        // Fits on one page - add with margins
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', margin, margin, scaledWidth, scaledHeight);
       } else {
-        // Content is taller relative to page - fit to height
-        imgHeight = pdfHeight;
-        imgWidth = pdfHeight * canvasAspectRatio;
+        // Content is too tall - scale to fit height instead
+        const heightBasedWidth = (canvas.width / canvas.height) * availableHeight;
+        const xOffset = (pdfWidth - heightBasedWidth) / 2;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', xOffset, margin, heightBasedWidth, availableHeight);
       }
-      
-      // Center the content on the page
-      const xOffset = (pdfWidth - imgWidth) / 2;
-      const yOffset = (pdfHeight - imgHeight) / 2;
-
-      // Convert to JPEG with good quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      
-      // Add image to PDF with calculated dimensions
-      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
 
       // Clean up canvas to free memory
       canvas.width = 0;
@@ -253,28 +251,33 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
     <>
       <style>
         {`
+          .report-container {
+            width: fit-content !important;
+            min-width: 700px;
+          }
+          
           @media screen and (max-width: 800px) {
             .report-container {
-              max-width: 100% !important;
+              min-width: 100% !important;
+              width: 100% !important;
               margin: 0 !important;
               padding: 16px !important;
             }
           }
           
-          @media screen and (min-width: 801px) {
-            .report-container {
-              padding: 32px !important;
-            }
-          }
-          
           @media print {
             .report-container {
-              max-width: none !important;
               width: 100% !important;
               margin: 0 !important;
               padding: 20mm !important;
               transform: none !important;
             }
+          }
+          
+          /* Ensure tables don't shrink */
+          .report-container table {
+            width: 100% !important;
+            table-layout: fixed;
           }
         `}
       </style>
@@ -353,7 +356,8 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
           backgroundColor: 'white',
           margin: '0 auto',
           boxSizing: 'border-box',
-          maxWidth: '800px' // Maximum width for desktop viewing
+          width: 'fit-content',
+          minWidth: '700px' // Ensure minimum width for proper table display
         }}>
           {/* Header */}
           <div className="text-center border-b-2 border-black pb-4 mb-6">
