@@ -113,60 +113,226 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
   };
 
   const generatePDF = async () => {
-    if (!reportRef.current || !reportData) return;
+    if (!reportData) return;
 
     setIsDownloading(true);
     
     try {
-      // Capture the element exactly as it appears on desktop with high quality
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // High quality capture
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        removeContainer: true,
-        foreignObjectRendering: false,
-        width: reportRef.current.scrollWidth,
-        height: reportRef.current.scrollHeight
-      });
-
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
       
-      // A4 dimensions in mm
-      const pdfWidth = 210;
-      const pdfHeight = 297;
+      let currentY = margin;
       
-      // Calculate scaling to fit the content width to page width with small margins
-      const margin = 10; // 10mm margin on each side
-      const availableWidth = pdfWidth - (margin * 2);
-      const availableHeight = pdfHeight - (margin * 2);
+      // Helper function to add text with automatic line wrapping
+      const addText = (text: string, x: number, y: number, options: any = {}) => {
+        const { fontSize = 10, fontStyle = 'normal', maxWidth = contentWidth, align = 'left' } = options;
+        pdf.setFontSize(fontSize);
+        pdf.setFont('helvetica', fontStyle);
+        
+        if (maxWidth) {
+          const lines = pdf.splitTextToSize(text, maxWidth);
+          lines.forEach((line: string, index: number) => {
+            if (align === 'center') {
+              pdf.text(line, pageWidth / 2, y + (index * 5), { align: 'center' });
+            } else {
+              pdf.text(line, x, y + (index * 5));
+            }
+          });
+          return lines.length * 5; // Return height used
+        } else {
+          if (align === 'center') {
+            pdf.text(text, pageWidth / 2, y, { align: 'center' });
+          } else {
+            pdf.text(text, x, y);
+          }
+          return 5; // Return single line height
+        }
+      };
       
-      // Scale based on width to maintain desktop appearance
-      const scaledWidth = availableWidth;
-      const scaledHeight = (canvas.height / canvas.width) * scaledWidth;
+      // Header
+      currentY += addText(reportData.school_info.name.toUpperCase(), 0, currentY, { 
+        fontSize: 16, fontStyle: 'bold', align: 'center' 
+      });
+      currentY += addText(reportData.school_info.address, 0, currentY, { 
+        fontSize: 10, align: 'center' 
+      });
+      currentY += addText(`TEL: ${reportData.school_info.phone} | EMAIL: ${reportData.school_info.email}`, 0, currentY, { 
+        fontSize: 10, align: 'center' 
+      });
+      currentY += addText('ACADEMIC PROGRESS REPORT FORM 2 - 2024', 0, currentY, { 
+        fontSize: 14, fontStyle: 'bold', align: 'center' 
+      });
       
-      // Check if content fits on one page
-      if (scaledHeight <= availableHeight) {
-        // Fits on one page - add with margins
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', margin, margin, scaledWidth, scaledHeight);
-      } else {
-        // Content is too tall - scale to fit height instead
-        const heightBasedWidth = (canvas.width / canvas.height) * availableHeight;
-        const xOffset = (pdfWidth - heightBasedWidth) / 2;
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', xOffset, margin, heightBasedWidth, availableHeight);
-      }
-
-      // Clean up canvas to free memory
-      canvas.width = 0;
-      canvas.height = 0;
+      // Add line separator
+      currentY += 5;
+      pdf.line(margin, currentY, pageWidth - margin, currentY);
+      currentY += 10;
+      
+      // Student Information
+      addText(`NAME: ${reportData.student_info.name.toUpperCase()}`, margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      addText(`TERM: ${reportData.exam_info.term}`, pageWidth / 2, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 8;
+      
+      addText(`ADM NO: ${reportData.student_info.admission_number}`, margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      addText(`YEAR: ${reportData.exam_info.academic_year}`, pageWidth / 2, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 8;
+      
+      addText(`CLASS: ${reportData.student_info.class}`, margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      addText(`EXAM: ${reportData.exam_info.exam_type}`, pageWidth / 2, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 15;
+      
+      // Subjects Table
+      const tableStartY = currentY;
+      const rowHeight = 8;
+      const colWidths = [50, 20, 20, 20, 20, 50]; // Column widths
+      let tableX = margin;
+      
+      // Table headers
+      const headers = ['SUBJECT', 'MARKS', 'OUT OF', '%', 'GRADE', 'REMARKS'];
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(tableX, currentY, contentWidth, rowHeight, 'F');
+      
+      let currentX = tableX;
+      headers.forEach((header, index) => {
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(header, currentX + 2, currentY + 5);
+        
+        // Draw vertical lines
+        if (index < headers.length - 1) {
+          pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
+        }
+        currentX += colWidths[index];
+      });
+      
+      // Draw table border
+      pdf.rect(tableX, currentY, contentWidth, rowHeight);
+      currentY += rowHeight;
+      
+      // Table data
+      reportData.subjects.forEach((subject: any) => {
+        currentX = tableX;
+        const rowData = [
+          subject.subject,
+          subject.marks_obtained.toString(),
+          subject.total_marks.toString(),
+          subject.percentage.toFixed(1),
+          subject.grade,
+          subject.percentage >= 80 ? 'EXCELLENT' : 
+          subject.percentage >= 70 ? 'VERY GOOD' :
+          subject.percentage >= 60 ? 'GOOD' :
+          subject.percentage >= 50 ? 'AVERAGE' : 'NEEDS IMPROVEMENT'
+        ];
+        
+        rowData.forEach((data, index) => {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          if (index === 1 || index === 2 || index === 3 || index === 4) {
+            // Center align numbers and grades
+            pdf.text(data, currentX + (colWidths[index] / 2), currentY + 5, { align: 'center' });
+          } else {
+            pdf.text(data, currentX + 2, currentY + 5);
+          }
+          
+          // Draw vertical lines
+          if (index < rowData.length - 1) {
+            pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
+          }
+          currentX += colWidths[index];
+        });
+        
+        // Draw row border
+        pdf.rect(tableX, currentY, contentWidth, rowHeight);
+        currentY += rowHeight;
+      });
+      
+      // Summary row
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(tableX, currentY, contentWidth, rowHeight, 'F');
+      
+      currentX = tableX;
+      const summaryData = [
+        'TOTAL',
+        reportData.summary.total_marks_obtained.toString(),
+        reportData.summary.total_possible_marks.toString(),
+        reportData.summary.overall_percentage.toFixed(1),
+        reportData.summary.overall_grade,
+        '-'
+      ];
+      
+      summaryData.forEach((data, index) => {
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        if (index === 1 || index === 2 || index === 3 || index === 4) {
+          pdf.text(data, currentX + (colWidths[index] / 2), currentY + 5, { align: 'center' });
+        } else {
+          pdf.text(data, currentX + 2, currentY + 5);
+        }
+        
+        if (index < summaryData.length - 1) {
+          pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
+        }
+        currentX += colWidths[index];
+      });
+      
+      pdf.rect(tableX, currentY, contentWidth, rowHeight);
+      currentY += rowHeight + 15;
+      
+      // Class Summary
+      addText(`POSITION IN CLASS: ${reportData.summary.position} out of ${reportData.summary.total_students}`, margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      addText(`OVERALL GRADE: ${reportData.summary.overall_grade}`, pageWidth / 2, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 8;
+      
+      addText(`TOTAL SUBJECTS: ${reportData.summary.total_subjects}`, margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      addText(`PERCENTAGE: ${reportData.summary.overall_percentage.toFixed(1)}%`, pageWidth / 2, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 20;
+      
+      // Comments
+      addText('CLASS TEACHER\'S COMMENTS:', margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 8;
+      
+      const teacherComment = reportData.summary.overall_percentage >= 80 ? 
+        'Excellent performance! Keep up the outstanding work.' :
+        reportData.summary.overall_percentage >= 70 ?
+        'Very good performance. Continue working hard.' :
+        reportData.summary.overall_percentage >= 60 ?
+        'Good performance. There is room for improvement.' :
+        reportData.summary.overall_percentage >= 50 ?
+        'Average performance. More effort is needed.' :
+        'Performance needs significant improvement. Please seek extra help.';
+      
+      pdf.rect(margin, currentY, contentWidth, 20);
+      currentY += addText(teacherComment, margin + 2, currentY + 5, { fontSize: 9, maxWidth: contentWidth - 4 });
+      currentY += 25;
+      
+      // Principal Comments
+      addText('PRINCIPAL\'S COMMENTS:', margin, currentY, { fontSize: 11, fontStyle: 'bold' });
+      currentY += 8;
+      
+      pdf.rect(margin, currentY, contentWidth, 20);
+      addText('Good work overall. Continue striving for excellence.', margin + 2, currentY + 5, { fontSize: 9 });
+      currentY += 30;
+      
+      // Footer
+      addText('NEXT TERM BEGINS: ________________', margin, currentY, { fontSize: 10 });
+      addText('CLASS TEACHER: ________________', pageWidth / 2, currentY, { fontSize: 10 });
+      currentY += 8;
+      
+      addText('SCHOOL FEES: ________________', margin, currentY, { fontSize: 10 });
+      addText('SIGNATURE: ________________', pageWidth / 2, currentY, { fontSize: 10 });
+      currentY += 15;
+      
+      // Generated date
+      addText(`Generated on ${new Date().toLocaleDateString()} | School Management System`, 0, pageHeight - 10, { 
+        fontSize: 8, align: 'center' 
+      });
 
       const filename = `${reportData.student_info.name}_${reportData.exam_info.term}_${reportData.exam_info.academic_year}_Report.pdf`;
       pdf.save(filename);
       
-      // Show success message
       showToast('PDF downloaded successfully!', 'success');
       
     } catch (error) {

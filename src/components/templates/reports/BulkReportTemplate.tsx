@@ -120,98 +120,164 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
-      let isFirstReport = true;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      
       const totalReports = bulkReportData.reports.length;
       
-      // Adjust chunk size based on report count
-      const chunkSize = reportCount > 100 ? 3 : reportCount > 50 ? 4 : 5;
-      
-      for (let chunkStart = 0; chunkStart < totalReports; chunkStart += chunkSize) {
-        if (cancelRequested) {
-          console.log('PDF generation cancelled by user');
-          break;
+      for (let reportIndex = 0; reportIndex < totalReports; reportIndex++) {
+        if (cancelRequested) break;
+        
+        const reportData = bulkReportData.reports[reportIndex];
+        setProgress(Math.round((reportIndex / totalReports) * 100));
+        
+        // Add new page for each report except the first
+        if (reportIndex > 0) {
+          pdf.addPage();
         }
         
-        const chunkEnd = Math.min(chunkStart + chunkSize, totalReports);
+        let currentY = margin;
         
-        for (let i = chunkStart; i < chunkEnd; i++) {
-          if (cancelRequested) break;
+        // Helper function for this report
+        const addText = (text: string, x: number, y: number, options: any = {}) => {
+          const { fontSize = 10, fontStyle = 'normal', maxWidth = contentWidth, align = 'left' } = options;
+          pdf.setFontSize(fontSize);
+          pdf.setFont('helvetica', fontStyle);
           
-          const reportRef = reportRefs.current[i];
-          if (!reportRef) continue;
-
-          // Update progress
-          setProgress(Math.round((i / totalReports) * 100));
-
-          try {
-            // Use different quality settings based on report count
-            const quality = reportCount > 100 ? 0.85 : reportCount > 50 ? 0.9 : 0.95;
-            const scale = reportCount > 100 ? 1.5 : reportCount > 50 ? 1.8 : 2;
-            
-            // Capture the element exactly as it appears on desktop
-            const canvas = await html2canvas(reportRef, {
-              scale: scale,
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#ffffff',
-              logging: false,
-              removeContainer: true,
-              foreignObjectRendering: false,
-              width: reportRef.scrollWidth,
-              height: reportRef.scrollHeight
+          if (maxWidth && align !== 'center') {
+            const lines = pdf.splitTextToSize(text, maxWidth);
+            lines.forEach((line: string, index: number) => {
+              pdf.text(line, x, y + (index * 5));
             });
-
-            if (!isFirstReport) {
-              pdf.addPage();
-            }
-            isFirstReport = false;
-
-            // A4 dimensions in mm
-            const pdfWidth = 210;
-            const pdfHeight = 297;
-            
-            // Calculate scaling to fit the content width to page width with small margins
-            const margin = 10; // 10mm margin on each side
-            const availableWidth = pdfWidth - (margin * 2);
-            const availableHeight = pdfHeight - (margin * 2);
-            
-            // Scale based on width to maintain desktop appearance
-            const scaledWidth = availableWidth;
-            const scaledHeight = (canvas.height / canvas.width) * scaledWidth;
-            
-            // Convert canvas to image data
-            const imgData = canvas.toDataURL('image/jpeg', quality);
-            
-            // Check if content fits on one page
-            if (scaledHeight <= availableHeight) {
-              // Fits on one page - add with margins
-              pdf.addImage(imgData, 'JPEG', margin, margin, scaledWidth, scaledHeight);
+            return lines.length * 5;
+          } else {
+            if (align === 'center') {
+              pdf.text(text, pageWidth / 2, y, { align: 'center' });
             } else {
-              // Content is too tall - fit to available height
-              const fitHeight = availableHeight;
-              const fitWidth = (canvas.width / canvas.height) * fitHeight;
-              const xOffset = (pdfWidth - fitWidth) / 2;
-              pdf.addImage(imgData, 'JPEG', xOffset, margin, fitWidth, fitHeight);
+              pdf.text(text, x, y);
             }
-            
-            // Aggressive cleanup for large batches
-            canvas.width = 0;
-            canvas.height = 0;
-            
-          } catch (reportError) {
-            console.error(`Error processing report ${i + 1}:`, reportError);
+            return 5;
           }
-        }
+        };
         
-        // Longer delay for larger batches to allow garbage collection
-        if (chunkEnd < totalReports && !cancelRequested) {
-          const delay = reportCount > 100 ? 200 : reportCount > 50 ? 150 : 100;
-          await new Promise(resolve => setTimeout(resolve, delay));
+        // Header (compact for bulk)
+        currentY += addText(reportData.school_info.name.toUpperCase(), 0, currentY, { 
+          fontSize: 12, fontStyle: 'bold', align: 'center' 
+        });
+        currentY += addText(reportData.school_info.address, 0, currentY, { 
+          fontSize: 8, align: 'center' 
+        });
+        currentY += addText('ACADEMIC PROGRESS REPORT', 0, currentY, { 
+          fontSize: 10, fontStyle: 'bold', align: 'center' 
+        });
+        
+        currentY += 5;
+        pdf.line(margin, currentY, pageWidth - margin, currentY);
+        currentY += 6;
+        
+        // Student Information (compact)
+        addText(`NAME: ${reportData.student_info.name.toUpperCase()}`, margin, currentY, { fontSize: 8, fontStyle: 'bold' });
+        addText(`TERM: ${reportData.exam_info.term}`, pageWidth / 2, currentY, { fontSize: 8, fontStyle: 'bold' });
+        currentY += 5;
+        
+        addText(`ADM NO: ${reportData.student_info.admission_number}`, margin, currentY, { fontSize: 8, fontStyle: 'bold' });
+        addText(`CLASS: ${reportData.student_info.class}`, pageWidth / 2, currentY, { fontSize: 8, fontStyle: 'bold' });
+        currentY += 8;
+        
+        // Compact Subjects Table
+        const rowHeight = 5;
+        const colWidths = [50, 15, 15, 15, 15, 40];
+        let tableX = margin;
+        
+        // Table headers
+        const headers = ['SUBJECT', 'MKS', 'OUT', '%', 'GRD', 'REMARKS'];
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(tableX, currentY, contentWidth, rowHeight, 'F');
+        
+        let currentX = tableX;
+        headers.forEach((header, index) => {
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(header, currentX + 1, currentY + 3.5);
+          currentX += colWidths[index];
+        });
+        
+        pdf.rect(tableX, currentY, contentWidth, rowHeight);
+        currentY += rowHeight;
+        
+        // Table data
+        reportData.subjects.forEach((subject: any) => {
+          currentX = tableX;
+          const rowData = [
+            subject.subject.substring(0, 20), // Truncate long subject names
+            subject.marks_obtained.toString(),
+            subject.total_marks.toString(),
+            subject.percentage.toFixed(0),
+            subject.grade,
+            subject.percentage >= 70 ? 'GOOD' : subject.percentage >= 50 ? 'AVG' : 'IMP'
+          ];
           
-          // Force garbage collection hint (Chrome DevTools only)
-          if ('gc' in window && typeof (window as any).gc === 'function') {
-            (window as any).gc();
+          rowData.forEach((data, index) => {
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'normal');
+            if (index === 1 || index === 2 || index === 3 || index === 4) {
+              pdf.text(data, currentX + (colWidths[index] / 2), currentY + 3.5, { align: 'center' });
+            } else {
+              pdf.text(data, currentX + 1, currentY + 3.5);
+            }
+            currentX += colWidths[index];
+          });
+          
+          pdf.rect(tableX, currentY, contentWidth, rowHeight);
+          currentY += rowHeight;
+        });
+        
+        // Summary row
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(tableX, currentY, contentWidth, rowHeight, 'F');
+        
+        currentX = tableX;
+        const summaryData = [
+          'TOTAL',
+          reportData.summary.total_marks_obtained.toString(),
+          reportData.summary.total_possible_marks.toString(),
+          reportData.summary.overall_percentage.toFixed(0),
+          reportData.summary.overall_grade,
+          '-'
+        ];
+        
+        summaryData.forEach((data, index) => {
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'bold');
+          if (index === 1 || index === 2 || index === 3 || index === 4) {
+            pdf.text(data, currentX + (colWidths[index] / 2), currentY + 3.5, { align: 'center' });
+          } else {
+            pdf.text(data, currentX + 1, currentY + 3.5);
           }
+          currentX += colWidths[index];
+        });
+        
+        pdf.rect(tableX, currentY, contentWidth, rowHeight);
+        currentY += rowHeight + 6;
+        
+        // Compact summary
+        addText(`POSITION: ${reportData.summary.position}/${reportData.summary.total_students}`, margin, currentY, { fontSize: 8 });
+        addText(`GRADE: ${reportData.summary.overall_grade} (${reportData.summary.overall_percentage.toFixed(1)}%)`, pageWidth / 2, currentY, { fontSize: 8 });
+        currentY += 8;
+        
+        // Teacher comment (very compact)
+        const teacherComment = reportData.summary.overall_percentage >= 80 ? 
+          'Excellent!' : reportData.summary.overall_percentage >= 70 ?
+          'Very good.' : reportData.summary.overall_percentage >= 60 ?
+          'Good work.' : 'Needs improvement.';
+        
+        addText(`COMMENT: ${teacherComment}`, margin, currentY, { fontSize: 7 });
+        
+        // Small delay every 10 reports
+        if (reportIndex % 10 === 0 && reportIndex > 0) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
 
