@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Download, Printer } from 'lucide-react';
 import { ReportsAPI } from '../../../services/baseUrl';
 
@@ -185,7 +184,6 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       currentY += 15;
       
       // Subjects Table
-      const tableStartY = currentY;
       const rowHeight = 8;
       const colWidths = [50, 20, 20, 20, 20, 50]; // Column widths
       let tableX = margin;

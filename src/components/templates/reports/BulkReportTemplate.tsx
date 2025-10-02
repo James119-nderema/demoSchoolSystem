@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Download, FileText, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { DataAPI, ReportsAPI } from '../../../services/baseUrl';
 
@@ -121,7 +120,6 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
-      const pageHeight = 297;
       const margin = 15;
       const contentWidth = pageWidth - (margin * 2);
       
