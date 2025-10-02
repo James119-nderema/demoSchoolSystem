@@ -37,6 +37,7 @@ const API_CONFIG = {
       BULK_INPUT: '/api/input-marks/results/bulk_input/',
       DROPDOWN_DATA: '/api/input-marks/dropdown-data/',
       CLASS_STUDENTS: '/api/input-marks/class-students/',
+      CLASS_SUBJECTS: '/api/input-marks/class-subjects/',
       STUDENT_ANALYTICS: '/api/input-marks/student-analytics/',
       CLASS_ANALYTICS: '/api/input-marks/class-analytics/',
       SUBJECT_ANALYTICS: '/api/input-marks/subject-analytics/',
@@ -414,8 +415,12 @@ export const MarksAPI = {
     APIService.get(API_ENDPOINTS.INPUT_MARKS.DROPDOWN_DATA, undefined, 'staff'),
     
   // Class students
-  getClassStudents: (classId: number) => 
+  getClassStudents: (classId: string) => 
     APIService.get(`${API_ENDPOINTS.INPUT_MARKS.CLASS_STUDENTS}${classId}/`, undefined, 'staff'),
+    
+  // Class subjects
+  getClassSubjects: (classId: string) => 
+    APIService.get(`${API_ENDPOINTS.INPUT_MARKS.CLASS_SUBJECTS}${classId}/`, undefined, 'staff'),
     
   // Input marks
   getResults: (params?: Record<string, string>) => 
@@ -430,6 +435,10 @@ export const MarksAPI = {
   // Bulk input
   bulkInput: (data: any) => 
     APIService.post(API_ENDPOINTS.INPUT_MARKS.BULK_INPUT, data, 'staff'),
+    
+  // Check if results exist
+  checkExistingResults: (params: Record<string, string>) => 
+    APIService.get(API_ENDPOINTS.INPUT_MARKS.RESULTS, params, 'staff'),
     
   // Statistics
   getStatistics: (params?: Record<string, string>) => 

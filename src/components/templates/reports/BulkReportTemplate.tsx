@@ -53,6 +53,8 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [cancelRequested, setCancelRequested] = useState(false);
   const reportRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -103,53 +105,122 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
   const generateBulkPDF = async () => {
     if (!bulkReportData || bulkReportData.reports.length === 0) return;
 
+    // Show confirmation for large classes
+    const reportCount = bulkReportData.reports.length;
+    if (reportCount > 50) {
+      const confirmed = window.confirm(
+        `You are about to generate ${reportCount} reports. This may take a very long time and use significant memory. Consider generating smaller batches. Do you want to continue?`
+      );
+      if (!confirmed) return;
+    }
+
     setIsGenerating(true);
+    setProgress(0);
+    setCancelRequested(false);
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       let isFirstReport = true;
-
-      for (let i = 0; i < bulkReportData.reports.length; i++) {
-        const reportRef = reportRefs.current[i];
-        if (!reportRef) continue;
-
-        const canvas = await html2canvas(reportRef, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        });
-
-        if (!isFirstReport) {
-          pdf.addPage();
+      const totalReports = bulkReportData.reports.length;
+      
+      // Adjust chunk size based on report count
+      const chunkSize = reportCount > 100 ? 3 : reportCount > 50 ? 4 : 5;
+      
+      for (let chunkStart = 0; chunkStart < totalReports; chunkStart += chunkSize) {
+        if (cancelRequested) {
+          console.log('PDF generation cancelled by user');
+          break;
         }
-        isFirstReport = false;
+        
+        const chunkEnd = Math.min(chunkStart + chunkSize, totalReports);
+        
+        for (let i = chunkStart; i < chunkEnd; i++) {
+          if (cancelRequested) break;
+          
+          const reportRef = reportRefs.current[i];
+          if (!reportRef) continue;
 
-        const imgWidth = 210;
-        const pageHeight = 295;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
+          // Update progress
+          setProgress(Math.round((i / totalReports) * 100));
 
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+          try {
+            // Use different scales based on report count to optimize memory
+            const scale = reportCount > 100 ? 1.2 : reportCount > 50 ? 1.3 : 1.5;
+            const quality = reportCount > 100 ? 0.6 : reportCount > 50 ? 0.7 : 0.8;
+            
+            const canvas = await html2canvas(reportRef, {
+              scale: scale,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+              removeContainer: true,
+              foreignObjectRendering: false // Disable for better performance
+            });
 
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+            if (!isFirstReport) {
+              pdf.addPage();
+            }
+            isFirstReport = false;
+
+            const imgWidth = 210;
+            const pageHeight = 295;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            // Convert canvas to image data with dynamic quality
+            const imgData = canvas.toDataURL('image/jpeg', quality);
+            
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+              position = heightLeft - imgHeight;
+              pdf.addPage();
+              pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+              heightLeft -= pageHeight;
+            }
+            
+            // Aggressive cleanup for large batches
+            canvas.width = 0;
+            canvas.height = 0;
+            
+          } catch (reportError) {
+            console.error(`Error processing report ${i + 1}:`, reportError);
+          }
+        }
+        
+        // Longer delay for larger batches to allow garbage collection
+        if (chunkEnd < totalReports && !cancelRequested) {
+          const delay = reportCount > 100 ? 200 : reportCount > 50 ? 150 : 100;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Force garbage collection hint (Chrome DevTools only)
+          if ('gc' in window && typeof (window as any).gc === 'function') {
+            (window as any).gc();
+          }
         }
       }
 
-      const filename = `${bulkReportData.class_info.class_name}_${bulkReportData.exam_info.term}_${bulkReportData.exam_info.academic_year}_Bulk_Reports.pdf`;
-      pdf.save(filename);
+      if (!cancelRequested) {
+        setProgress(100);
+        const filename = `${bulkReportData.class_info.class_name}_${bulkReportData.exam_info.term}_${bulkReportData.exam_info.academic_year}_Bulk_Reports.pdf`;
+        pdf.save(filename);
+      }
+      
     } catch (error) {
       console.error('Error generating bulk PDF:', error);
-      alert('Error generating bulk PDF. Please try again.');
+      alert(`Error generating bulk PDF: ${error instanceof Error ? error.message : 'Unknown error'}. Try reducing the number of reports or refresh the page.`);
     } finally {
       setIsGenerating(false);
+      setProgress(0);
+      setCancelRequested(false);
     }
+  };
+
+  const cancelGeneration = () => {
+    setCancelRequested(true);
   };
 
   if (loading) {
@@ -281,6 +352,20 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
               </div>
             </div>
 
+            {/* Warning for large classes */}
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-800">Performance Notice</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Generating bulk PDFs for large classes (30+ students) may take several minutes and use significant memory. 
+                    Consider generating reports in smaller batches if you experience issues.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Generate Button */}
             <div className="mt-8 flex justify-center">
               <button
@@ -332,8 +417,46 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
               ) : (
                 <Download className="w-4 h-4" />
               )}
-              <span>{isGenerating ? 'Generating...' : 'Download All PDFs'}</span>
+              <span>
+                {isGenerating 
+                  ? `Generating... ${progress}%` 
+                  : 'Download All PDFs'
+                }
+              </span>
             </button>
+            
+            {/* Cancel button - only shown during generation */}
+            {isGenerating && (
+              <button
+                onClick={cancelGeneration}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                <span>Cancel</span>
+              </button>
+            )}
+            
+            {/* Progress bar */}
+            {isGenerating && (
+              <div className="w-full mt-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-600">
+                    Processing {Math.round((progress / 100) * bulkReportData.reports.length)} of {bulkReportData.reports.length} reports
+                  </span>
+                  <span className="text-sm text-gray-600">{progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+                {bulkReportData.reports.length > 50 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ Large class detected. This may take several minutes and use significant memory.
+                  </p>
+                )}
+              </div>
+            )}
             {onClose && (
               <button
                 onClick={onClose}

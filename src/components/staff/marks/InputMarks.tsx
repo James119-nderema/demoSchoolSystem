@@ -3,20 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { MarksAPI } from '../../../services/baseUrl';
 
 interface Student {
-  id: number;
+  id: string;
   full_name: string;
   admission_number: string;
   current_class: string;
 }
 
 interface Class {
-  id: number;
+  id: string;
   class_name: string;
   class_code: string;
 }
 
 interface Subject {
-  id: number;
+  id: string;
   subject_name: string;
   subject_code: string;
 }
@@ -39,12 +39,13 @@ const InputMarks: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [dropdownData, setDropdownData] = useState<DropdownData | null>(null);
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [studentMarks, setStudentMarks] = useState<{ [key: number]: number }>({});
+  const [studentMarks, setStudentMarks] = useState<{ [key: string]: number }>({});
   
   // Form state
-  const [selectedClass, setSelectedClass] = useState<number | ''>('');
-  const [selectedSubject, setSelectedSubject] = useState<number | ''>('');
+  const [selectedClass, setSelectedClass] = useState<string | ''>('');
+  const [selectedSubject, setSelectedSubject] = useState<string | ''>('');
   const [examType, setExamType] = useState<string>('');
   const [term, setTerm] = useState<string>('');
   const [totalMarks, setTotalMarks] = useState<number | ''>('');
@@ -57,10 +58,14 @@ const InputMarks: React.FC = () => {
   useEffect(() => {
     if (selectedClass) {
       fetchClassStudents();
+      fetchClassSubjects();
     } else {
       setStudents([]);
+      setAvailableSubjects([]);
       setStudentMarks({});
     }
+    // Reset selected subject when class changes
+    setSelectedSubject('');
   }, [selectedClass]);
 
   const fetchDropdownData = async () => {
@@ -68,6 +73,7 @@ const InputMarks: React.FC = () => {
       const data = await MarksAPI.getDropdownData();
       setDropdownData(data);
     } catch (err) {
+      console.error('Error fetching dropdown data:', err);
       setError('Failed to fetch dropdown data');
     }
   };
@@ -79,7 +85,7 @@ const InputMarks: React.FC = () => {
       const data = await MarksAPI.getClassStudents(selectedClass);
       setStudents(data.students);
       // Initialize marks for all students
-      const initialMarks: { [key: number]: number } = {};
+      const initialMarks: { [key: string]: number } = {};
       data.students.forEach((student: Student) => {
         initialMarks[student.id] = 0;
       });
@@ -89,7 +95,19 @@ const InputMarks: React.FC = () => {
     }
   };
 
-  const handleMarkChange = (studentId: number, marks: number) => {
+  const fetchClassSubjects = async () => {
+    if (!selectedClass) return;
+    
+    try {
+      const data = await MarksAPI.getClassSubjects(selectedClass);
+      setAvailableSubjects(data.subjects);
+    } catch (err) {
+      console.error('Error fetching subjects for class:', err);
+      setError('Failed to fetch subjects for selected class');
+    }
+  };
+
+  const handleMarkChange = (studentId: string, marks: number) => {
     if (marks < 0) return; // Don't allow negative numbers
     
     if (totalMarks && marks > totalMarks) {
@@ -123,9 +141,34 @@ const InputMarks: React.FC = () => {
         return;
       }
 
+      // Check if results already exist for this combination
+      try {
+        const existingResults = await MarksAPI.checkExistingResults({
+          class_id: selectedClass,
+          subject_id: selectedSubject,
+          exam_type: examType,
+          term: term,
+          academic_year: academicYear
+        });
+        
+        if (existingResults && existingResults.length > 0) {
+          const confirmOverwrite = window.confirm(
+            `Results for this class, subject, exam type, and term combination already exist. Do you want to proceed? This may create duplicate entries for some students.`
+          );
+          
+          if (!confirmOverwrite) {
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // If check fails, continue with submission but log the error
+        console.warn('Could not check for existing results:', err);
+      }
+
       // Prepare results data
       const results = Object.entries(studentMarks).map(([studentId, marks]) => ({
-        student_id: parseInt(studentId),
+        student_id: studentId,
         marks: marks
       }));
 
@@ -153,8 +196,23 @@ const InputMarks: React.FC = () => {
       setTotalMarks('');
       setStudents([]);
       setStudentMarks({});
-    } catch (err) {
-      setError('Network error occurred');
+    } catch (err: any) {
+      console.error('Bulk input error:', err);
+      
+      // Handle specific error types
+      if (err.response?.status === 409) {
+        // Conflict - results already exist
+        setError(err.response.data.error || 'Results for this combination have already been uploaded.');
+      } else if (err.response?.status === 403) {
+        // Forbidden - no permission
+        setError(err.response.data.error || 'You do not have permission to input marks for this class-subject combination.');
+      } else if (err.response?.data?.error) {
+        // Other API errors
+        setError(err.response.data.error);
+      } else {
+        // Network or other errors
+        setError('An error occurred while submitting results. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -210,7 +268,7 @@ const InputMarks: React.FC = () => {
                 </label>
                 <select
                   value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value ? parseInt(e.target.value) : '')}
+                  onChange={(e) => setSelectedClass(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
@@ -230,16 +288,24 @@ const InputMarks: React.FC = () => {
                 </label>
                 <select
                   value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value ? parseInt(e.target.value) : '')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  disabled={!selectedClass}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                 >
-                  <option value="">Select Subject</option>
-                  {dropdownData?.subjects.map((subject) => (
+                  <option value="">
+                    {!selectedClass ? "Select a class first" : "Select Subject"}
+                  </option>
+                  {availableSubjects.map((subject) => (
                     <option key={subject.id} value={subject.id}>
                       {subject.subject_name} ({subject.subject_code})
                     </option>
                   ))}
+                  {selectedClass && availableSubjects.length === 0 && (
+                    <option value="" disabled>
+                      No subjects assigned for this class
+                    </option>
+                  )}
                 </select>
               </div>
 

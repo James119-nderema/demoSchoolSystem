@@ -69,13 +69,8 @@ const StaffProfile: React.FC = () => {
   const fetchProfileData = async () => {
     try {
       setLoading(true);
-      // Fetch profile and assignments
-      const profileResponse = await APIService.get('/api/staff/profile/my_profile/');
-      if (profileResponse.assignments) {
-        setAssignments(profileResponse.assignments);
-      }
-
-      // Fetch available classes and subjects
+      
+      // Fetch available classes and subjects first
       const availableResponse = await APIService.get('/api/staff/profile/available_classes_subjects/');
       if (availableResponse.classes) {
         setClasses(availableResponse.classes);
@@ -84,8 +79,16 @@ const StaffProfile: React.FC = () => {
         setSubjects(availableResponse.subjects);
       }
 
-      // Group assignments by class for editing
-      groupAssignmentsByClass(profileResponse.assignments || []);
+      // Fetch profile and assignments after classes/subjects are loaded
+      const profileResponse = await APIService.get('/api/staff/profile/my_profile/');
+      if (profileResponse.assignments) {
+        setAssignments(profileResponse.assignments);
+        // Group assignments by class for editing after both classes and subjects are loaded
+        setTimeout(() => {
+          groupAssignmentsByClass(profileResponse.assignments, availableResponse.classes, availableResponse.subjects);
+        }, 100);
+      }
+
     } catch (error) {
       console.error('Error fetching profile data:', error);
     } finally {
@@ -93,11 +96,17 @@ const StaffProfile: React.FC = () => {
     }
   };
 
-  const groupAssignmentsByClass = (assignmentsList: Assignment[]) => {
+  const groupAssignmentsByClass = (assignmentsList: Assignment[], classesData?: ClassData[], subjectsData?: SubjectData[]) => {
     const grouped: { [key: string]: ClassSubjectAssignment } = {};
     
+    // Use provided data or fall back to state
+    const availableClasses = classesData || classes;
+    const availableSubjects = subjectsData || subjects;
+    
     assignmentsList.forEach(assignment => {
-      const classId = classes.find(c => c.class_name === assignment.class_name)?.id;
+      const classObj = availableClasses.find(c => c.class_name === assignment.class_name);
+      const classId = classObj?.id;
+      
       if (classId) {
         if (!grouped[classId]) {
           grouped[classId] = {
@@ -107,14 +116,17 @@ const StaffProfile: React.FC = () => {
           };
         }
         
-        const subjectId = subjects.find(s => s.subject_name === assignment.subject_name)?.id;
+        const subjectObj = availableSubjects.find(s => s.subject_name === assignment.subject_name);
+        const subjectId = subjectObj?.id;
+        
         if (subjectId && !grouped[classId].subject_ids.includes(subjectId)) {
           grouped[classId].subject_ids.push(subjectId);
         }
       }
     });
 
-    setClassSubjectAssignments(Object.values(grouped));
+    const groupedAssignments = Object.values(grouped);
+    setClassSubjectAssignments(groupedAssignments);
   };
 
   const handleAddClassAssignment = () => {
@@ -159,6 +171,11 @@ const StaffProfile: React.FC = () => {
       const validAssignments = classSubjectAssignments.filter(
         assignment => assignment.class_id !== '' && assignment.subject_ids.length > 0
       );
+
+      if (validAssignments.length === 0) {
+        alert('Please add at least one valid assignment with a class and subjects selected.');
+        return;
+      }
 
       await APIService.post('/api/staff/profile/update_assignments/', {
         assignments: validAssignments
@@ -288,7 +305,22 @@ const StaffProfile: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Teaching Assignments</h2>
               <button
-                onClick={() => setIsAssignmentEditing(!isAssignmentEditing)}
+                onClick={() => {
+                  if (!isAssignmentEditing) {
+                    // When entering edit mode, populate with current assignments
+                    if (assignments.length > 0) {
+                      groupAssignmentsByClass(assignments, classes, subjects);
+                    } else {
+                      // If no assignments exist, start with one empty assignment
+                      setClassSubjectAssignments([{
+                        class_id: '',
+                        subject_ids: [],
+                        is_class_teacher: false
+                      }]);
+                    }
+                  }
+                  setIsAssignmentEditing(!isAssignmentEditing);
+                }}
                 className="bg-green-600 text-white px-3 py-2 sm:px-4 rounded-md text-sm hover:bg-green-700 transition-colors"
               >
                 {isAssignmentEditing ? 'Cancel' : 'Edit Assignments'}
@@ -409,7 +441,15 @@ const StaffProfile: React.FC = () => {
                 {/* Save/Cancel Buttons */}
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => setIsAssignmentEditing(false)}
+                    onClick={() => {
+                      setIsAssignmentEditing(false);
+                      // Reset to original assignments when canceling
+                      if (assignments.length > 0) {
+                        groupAssignmentsByClass(assignments, classes, subjects);
+                      } else {
+                        setClassSubjectAssignments([]);
+                      }
+                    }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     Cancel
