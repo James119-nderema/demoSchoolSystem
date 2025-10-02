@@ -252,29 +252,65 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       <style>
         {`
           .report-container {
-            width: fit-content !important;
-            min-width: 700px;
+            width: 800px !important; /* Fixed desktop width */
+            min-width: 800px;
+            transform-origin: top left;
+            transition: transform 0.3s ease;
           }
           
-          @media screen and (max-width: 800px) {
+          /* Scale down proportionally on smaller screens */
+          @media screen and (max-width: 850px) {
             .report-container {
-              min-width: 100% !important;
-              width: 100% !important;
-              margin: 0 !important;
-              padding: 16px !important;
+              transform: scale(0.9);
             }
+          }
+          
+          @media screen and (max-width: 750px) {
+            .report-container {
+              transform: scale(0.8);
+            }
+          }
+          
+          @media screen and (max-width: 650px) {
+            .report-container {
+              transform: scale(0.7);
+            }
+          }
+          
+          @media screen and (max-width: 550px) {
+            .report-container {
+              transform: scale(0.6);
+            }
+          }
+          
+          @media screen and (max-width: 450px) {
+            .report-container {
+              transform: scale(0.5);
+            }
+          }
+          
+          @media screen and (max-width: 400px) {
+            .report-container {
+              transform: scale(0.45);
+            }
+          }
+          
+          /* Adjust container to prevent overflow */
+          .report-wrapper {
+            overflow-x: auto;
+            width: 100%;
           }
           
           @media print {
             .report-container {
               width: 100% !important;
+              transform: none !important;
               margin: 0 !important;
               padding: 20mm !important;
-              transform: none !important;
             }
           }
           
-          /* Ensure tables don't shrink */
+          /* Ensure tables maintain their structure */
           .report-container table {
             width: 100% !important;
             table-layout: fixed;
@@ -351,13 +387,12 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       </div>
 
       {/* Report Content */}
-      <div className="max-w-4xl mx-auto bg-white shadow-lg">
+      <div className="report-wrapper max-w-full mx-auto bg-white shadow-lg overflow-x-auto">
         <div ref={reportRef} className="p-8 report-container" style={{
+          width: '800px',
           backgroundColor: 'white',
           margin: '0 auto',
-          boxSizing: 'border-box',
-          width: 'fit-content',
-          minWidth: '700px' // Ensure minimum width for proper table display
+          boxSizing: 'border-box'
         }}>
           {/* Header */}
           <div className="text-center border-b-2 border-black pb-4 mb-6">

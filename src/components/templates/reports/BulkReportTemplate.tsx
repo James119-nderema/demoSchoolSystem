@@ -404,30 +404,66 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
       <style>
         {`
           .report-container {
-            width: fit-content !important;
-            min-width: 700px;
+            width: 800px !important; /* Fixed desktop width */
+            min-width: 800px;
+            transform-origin: top left;
+            transition: transform 0.3s ease;
           }
           
-          @media screen and (max-width: 800px) {
+          /* Scale down proportionally on smaller screens */
+          @media screen and (max-width: 850px) {
             .report-container {
-              min-width: 100% !important;
-              width: 100% !important;
-              margin: 0 0 20px 0 !important;
-              padding: 16px !important;
+              transform: scale(0.9);
             }
+          }
+          
+          @media screen and (max-width: 750px) {
+            .report-container {
+              transform: scale(0.8);
+            }
+          }
+          
+          @media screen and (max-width: 650px) {
+            .report-container {
+              transform: scale(0.7);
+            }
+          }
+          
+          @media screen and (max-width: 550px) {
+            .report-container {
+              transform: scale(0.6);
+            }
+          }
+          
+          @media screen and (max-width: 450px) {
+            .report-container {
+              transform: scale(0.5);
+            }
+          }
+          
+          @media screen and (max-width: 400px) {
+            .report-container {
+              transform: scale(0.45);
+            }
+          }
+          
+          /* Adjust container to prevent overflow */
+          .report-wrapper {
+            overflow-x: auto;
+            width: 100%;
           }
           
           @media print {
             .report-container {
               width: 100% !important;
+              transform: none !important;
               margin: 0 0 10mm 0 !important;
               padding: 20mm !important;
-              transform: none !important;
               page-break-after: always;
             }
           }
           
-          /* Ensure tables don't shrink */
+          /* Ensure tables maintain their structure */
           .report-container table {
             width: 100% !important;
             table-layout: fixed;
@@ -567,13 +603,12 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
       {/* Report Content */}
       <div className="max-w-6xl mx-auto">
         {bulkReportData.reports.map((reportData, index) => (
-          <div key={index} className="bg-white shadow-lg mb-8 page-break">
+          <div key={index} className="report-wrapper bg-white shadow-lg mb-8 page-break overflow-x-auto">
             <div ref={el => { reportRefs.current[index] = el; }} className="p-8 report-container" style={{
+              width: '800px',
               backgroundColor: 'white',
-              margin: '0 auto 20px auto',
-              boxSizing: 'border-box',
-              width: 'fit-content',
-              minWidth: '700px' // Ensure minimum width for proper table display
+              margin: '0 auto',
+              boxSizing: 'border-box'
             }}>
               {/* Individual Report Template - Same as StudentReportTemplate */}
               {/* Header */}
