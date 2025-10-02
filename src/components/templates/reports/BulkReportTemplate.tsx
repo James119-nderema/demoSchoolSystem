@@ -145,16 +145,11 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
 
           try {
             // Use different scales based on report count to optimize memory
-            const quality = reportCount > 100 ? 0.6 : reportCount > 50 ? 0.7 : 0.8;
+            const quality = reportCount > 100 ? 0.7 : reportCount > 50 ? 0.8 : 0.9;
             
-            // Fixed A4 dimensions in pixels (210mm x 297mm at 96 DPI)
-            const a4Width = 794; // 210mm at 96 DPI
-            const a4Height = 1123; // 297mm at 96 DPI
-            
+            // Capture the element at its natural size with higher scale for quality
             const canvas = await html2canvas(reportRef, {
-              width: a4Width,
-              height: a4Height,
-              scale: 1,
+              scale: reportCount > 100 ? 1.5 : reportCount > 50 ? 1.8 : 2,
               useCORS: true,
               allowTaint: true,
               backgroundColor: '#ffffff',
@@ -168,15 +163,35 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
             }
             isFirstReport = false;
 
-            // A4 dimensions in mm for jsPDF
+            // A4 dimensions in mm
             const pdfWidth = 210;
             const pdfHeight = 297;
+            
+            // Calculate dimensions to maintain aspect ratio while maximizing page usage
+            const canvasAspectRatio = canvas.width / canvas.height;
+            const pageAspectRatio = pdfWidth / pdfHeight;
+            
+            let imgWidth, imgHeight;
+            
+            if (canvasAspectRatio > pageAspectRatio) {
+              // Content is wider relative to page - fit to width
+              imgWidth = pdfWidth;
+              imgHeight = pdfWidth / canvasAspectRatio;
+            } else {
+              // Content is taller relative to page - fit to height
+              imgHeight = pdfHeight;
+              imgWidth = pdfHeight * canvasAspectRatio;
+            }
+            
+            // Center the content on the page
+            const xOffset = (pdfWidth - imgWidth) / 2;
+            const yOffset = (pdfHeight - imgHeight) / 2;
             
             // Convert canvas to image data with dynamic quality
             const imgData = canvas.toDataURL('image/jpeg', quality);
             
-            // Scale image to fit exactly one A4 page
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            // Add image to PDF with calculated dimensions
+            pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
             
             // Aggressive cleanup for large batches
             canvas.width = 0;
@@ -387,20 +402,24 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
     <>
       <style>
         {`
-          @media screen and (max-width: 794px) {
+          @media screen and (max-width: 800px) {
             .report-container {
-              width: 100% !important;
+              max-width: 100% !important;
               margin: 0 0 20px 0 !important;
               padding: 16px !important;
-              transform: scale(0.8);
-              transform-origin: top left;
+            }
+          }
+          
+          @media screen and (min-width: 801px) {
+            .report-container {
+              padding: 32px !important;
             }
           }
           
           @media print {
             .report-container {
-              width: 210mm !important;
-              min-height: 297mm !important;
+              max-width: none !important;
+              width: 100% !important;
               margin: 0 0 10mm 0 !important;
               padding: 20mm !important;
               transform: none !important;
@@ -544,11 +563,10 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
         {bulkReportData.reports.map((reportData, index) => (
           <div key={index} className="bg-white shadow-lg mb-8 page-break">
             <div ref={el => { reportRefs.current[index] = el; }} className="p-8 report-container" style={{
-              width: '794px', // A4 width at 96 DPI
-              minHeight: '1123px', // A4 height at 96 DPI
               backgroundColor: 'white',
               margin: '0 auto 20px auto',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              maxWidth: '800px' // Maximum width for desktop viewing
             }}>
               {/* Individual Report Template - Same as StudentReportTemplate */}
               {/* Header */}
