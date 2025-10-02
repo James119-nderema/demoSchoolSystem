@@ -1,5 +1,4 @@
-import SchoolRegistration from './components/school/SchoolRegistration';
-
+// App.tsx is not used - routing is handled in main.tsx
 export default function App() {
-  return <SchoolRegistration />;
+  return <div>App component not used</div>;
 }

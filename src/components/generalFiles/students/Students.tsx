@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { APIService, API_ENDPOINTS } from '../../../services/baseUrl';
 import AddStudentModal from './modals/AddStudentModal';
 import UploadStudentModal from './modals/UploadStudentModal';
+import DownloadStudentModal from './modals/DownloadStudentModal';
 
 interface Student {
   id: number;
@@ -58,6 +59,7 @@ export default function Students() {
   const [error, setError] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -590,6 +592,15 @@ export default function Students() {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
               <button
+                onClick={() => setShowDownloadModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download
+              </button>
+              <button
                 onClick={() => setShowUploadModal(true)}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
@@ -973,6 +984,14 @@ export default function Students() {
         onSubmit={handleFileUpload}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
+      />
+
+      {/* Download Student Modal */}
+      <DownloadStudentModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        students={students}
+        allStudents={allStudents}
       />
     </div>
   );

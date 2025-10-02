@@ -8,11 +8,14 @@ export const setupAxiosInterceptors = () => {
     (config) => {
       const staffToken = localStorage.getItem('staff_access_token');
       const parentToken = localStorage.getItem('parent_access_token');
+      const schoolToken = localStorage.getItem('access_token');
       
-      if (staffToken && config.url?.includes('/api/')) {
-        config.headers.Authorization = `Bearer ${staffToken}`;
-      } else if (parentToken && config.url?.includes('/api/parent')) {
+      if (parentToken && config.url?.includes('/api/parent')) {
         config.headers.Authorization = `Bearer ${parentToken}`;
+      } else if (staffToken && config.url?.includes('/api/')) {
+        config.headers.Authorization = `Bearer ${staffToken}`;
+      } else if (schoolToken && config.url?.includes('/api/')) {
+        config.headers.Authorization = `Bearer ${schoolToken}`;
       }
       
       return config;
@@ -44,6 +47,11 @@ export const setupAxiosInterceptors = () => {
             console.log('Parent authentication failed, redirecting to login...');
             clearAuthData('parent');
             redirectToLogin('parent');
+          } else if (currentPath.startsWith('/school')) {
+            console.log('School admin authentication failed, redirecting to login...');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('school_info');
+            window.location.href = '/login';
           }
         }
       }
@@ -57,17 +65,20 @@ export const setupAxiosInterceptors = () => {
 export const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const staffToken = localStorage.getItem('staff_access_token');
   const parentToken = localStorage.getItem('parent_access_token');
+  const schoolToken = localStorage.getItem('access_token');
   
   // Build full URL using environment variable for production
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
   
-  // Add appropriate token based on URL
+  // Add appropriate token based on URL and available tokens
   const headers = new Headers(options.headers);
-  if (staffToken && url.includes('/api/')) {
-    headers.set('Authorization', `Bearer ${staffToken}`);
-  } else if (parentToken && url.includes('/api/parent')) {
+  if (parentToken && url.includes('/api/parent')) {
     headers.set('Authorization', `Bearer ${parentToken}`);
+  } else if (staffToken && url.includes('/api/')) {
+    headers.set('Authorization', `Bearer ${staffToken}`);
+  } else if (schoolToken && url.includes('/api/')) {
+    headers.set('Authorization', `Bearer ${schoolToken}`);
   }
   
   const response = await fetch(fullUrl, {
@@ -86,6 +97,12 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
     } else if (currentPath.startsWith('/parent')) {
       clearAuthData('parent');
       redirectToLogin('parent');
+      throw new Error('Authentication failed');
+    } else if (currentPath.startsWith('/school')) {
+      // Handle school admin authentication failure
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('school_info');
+      window.location.href = '/login';
       throw new Error('Authentication failed');
     }
   }

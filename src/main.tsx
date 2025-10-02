@@ -275,6 +275,7 @@ const router = createBrowserRouter([
       { path: 'students', element: <Students /> },
       { path: 'subjects', element: <Subjects /> },
       { path: 'results', element: <Results /> },
+      { path: 'reports', element: <ReportsDashboard /> },
       { path: 'classes', element: <Classes /> },
       { path: 'staff', element: <Staff /> },
       { path: 'finance', element: <SchoolFinance /> },
