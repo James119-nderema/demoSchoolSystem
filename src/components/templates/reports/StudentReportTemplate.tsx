@@ -68,7 +68,14 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // Hide after 3 seconds
+  };
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -108,37 +115,52 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
   const generatePDF = async () => {
     if (!reportRef.current || !reportData) return;
 
+    setIsDownloading(true);
+    
     try {
+      // Fixed A4 dimensions in pixels (210mm x 297mm at 96 DPI)
+      const a4Width = 794; // 210mm at 96 DPI
+      const a4Height = 1123; // 297mm at 96 DPI
+      
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
+        width: a4Width,
+        height: a4Height,
+        scale: 1,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false,
+        removeContainer: true,
+        foreignObjectRendering: false
       });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
+      
+      // A4 dimensions in mm for jsPDF
+      const pdfWidth = 210;
+      const pdfHeight = 297;
 
-      let position = 0;
+      // Convert to JPEG with compression to reduce file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Scale image to fit exactly one A4 page
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      // Clean up canvas to free memory
+      canvas.width = 0;
+      canvas.height = 0;
 
       const filename = `${reportData.student_info.name}_${reportData.exam_info.term}_${reportData.exam_info.academic_year}_Report.pdf`;
       pdf.save(filename);
+      
+      // Show success message
+      showToast('PDF downloaded successfully!', 'success');
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      showToast(`Error generating PDF: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 'error');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -213,7 +235,54 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <>
+      <style>
+        {`
+          @media screen and (max-width: 794px) {
+            .report-container {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 16px !important;
+              transform: scale(0.8);
+              transform-origin: top left;
+            }
+          }
+          
+          @media print {
+            .report-container {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              margin: 0 !important;
+              padding: 20mm !important;
+              transform: none !important;
+            }
+          }
+        `}
+      </style>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+          toast.type === 'success' 
+            ? 'bg-green-600 text-white' 
+            : 'bg-red-600 text-white'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {toast.type === 'success' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="min-h-screen bg-gray-50 py-8">
       {/* Action Buttons */}
       <div className="max-w-4xl mx-auto mb-6 px-4 no-print">
         <div className="flex justify-between items-center">
@@ -228,10 +297,24 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
             </button>
             <button
               onClick={generatePDF}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isDownloading}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                isDownloading 
+                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
-              <Download className="w-4 h-4" />
-              <span>Download PDF</span>
+              {isDownloading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Generating PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </>
+              )}
             </button>
             {onClose && (
               <button
@@ -247,7 +330,13 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
 
       {/* Report Content */}
       <div className="max-w-4xl mx-auto bg-white shadow-lg">
-        <div ref={reportRef} className="p-8">
+        <div ref={reportRef} className="p-8 report-container" style={{
+          width: '794px', // A4 width at 96 DPI
+          minHeight: '1123px', // A4 height at 96 DPI
+          backgroundColor: 'white',
+          margin: '0 auto',
+          boxSizing: 'border-box'
+        }}>
           {/* Header */}
           <div className="text-center border-b-2 border-black pb-4 mb-6">
             <h1 className="text-xl font-bold mb-2">{reportData.school_info.name.toUpperCase()}</h1>
@@ -373,7 +462,8 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -145,17 +145,22 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
 
           try {
             // Use different scales based on report count to optimize memory
-            const scale = reportCount > 100 ? 1.2 : reportCount > 50 ? 1.3 : 1.5;
             const quality = reportCount > 100 ? 0.6 : reportCount > 50 ? 0.7 : 0.8;
             
+            // Fixed A4 dimensions in pixels (210mm x 297mm at 96 DPI)
+            const a4Width = 794; // 210mm at 96 DPI
+            const a4Height = 1123; // 297mm at 96 DPI
+            
             const canvas = await html2canvas(reportRef, {
-              scale: scale,
+              width: a4Width,
+              height: a4Height,
+              scale: 1,
               useCORS: true,
               allowTaint: true,
               backgroundColor: '#ffffff',
               logging: false,
               removeContainer: true,
-              foreignObjectRendering: false // Disable for better performance
+              foreignObjectRendering: false
             });
 
             if (!isFirstReport) {
@@ -163,24 +168,15 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
             }
             isFirstReport = false;
 
-            const imgWidth = 210;
-            const pageHeight = 295;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-
+            // A4 dimensions in mm for jsPDF
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+            
             // Convert canvas to image data with dynamic quality
             const imgData = canvas.toDataURL('image/jpeg', quality);
             
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            while (heightLeft >= 0) {
-              position = heightLeft - imgHeight;
-              pdf.addPage();
-              pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-              heightLeft -= pageHeight;
-            }
+            // Scale image to fit exactly one A4 page
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             
             // Aggressive cleanup for large batches
             canvas.width = 0;
@@ -388,7 +384,32 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <>
+      <style>
+        {`
+          @media screen and (max-width: 794px) {
+            .report-container {
+              width: 100% !important;
+              margin: 0 0 20px 0 !important;
+              padding: 16px !important;
+              transform: scale(0.8);
+              transform-origin: top left;
+            }
+          }
+          
+          @media print {
+            .report-container {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              margin: 0 0 10mm 0 !important;
+              padding: 20mm !important;
+              transform: none !important;
+              page-break-after: always;
+            }
+          }
+        `}
+      </style>
+      <div className="min-h-screen bg-gray-50 py-8">
       {/* Action Buttons */}
       <div className="max-w-6xl mx-auto mb-6 px-4 no-print">
         <div className="flex justify-between items-center">
@@ -522,7 +543,13 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
       <div className="max-w-6xl mx-auto">
         {bulkReportData.reports.map((reportData, index) => (
           <div key={index} className="bg-white shadow-lg mb-8 page-break">
-            <div ref={el => { reportRefs.current[index] = el; }} className="p-8">
+            <div ref={el => { reportRefs.current[index] = el; }} className="p-8 report-container" style={{
+              width: '794px', // A4 width at 96 DPI
+              minHeight: '1123px', // A4 height at 96 DPI
+              backgroundColor: 'white',
+              margin: '0 auto 20px auto',
+              boxSizing: 'border-box'
+            }}>
               {/* Individual Report Template - Same as StudentReportTemplate */}
               {/* Header */}
               <div className="text-center border-b-2 border-black pb-4 mb-6">
@@ -629,7 +656,8 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
