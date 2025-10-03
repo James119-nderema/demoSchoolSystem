@@ -1,50 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
+import AddStaffModal from './modals/AddStaffModal';
+import EditStaffModal from './modals/EditStaffModal';
 
 interface Staff {
   id: string;
   email: string;
   role: string;
-  first_name: string;
-  last_name: string;
   full_name: string;
   phone_number?: string;
   is_active: boolean;
   created_at: string;
 }
 
-interface StaffFormData {
-  email: string;
-  role: string;
-  full_name?: string;
-  phone_number?: string;
-}
-
 const StaffManagement: React.FC = () => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState<StaffFormData>({
-    email: '',
-    role: 'Teacher',
-    full_name: '',
-    phone_number: ''
-  });
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [schoolName, setSchoolName] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
   const roleOptions = [
-    { value: 'Teacher', label: 'Teacher' },
-    { value: 'Class Teacher', label: 'Class Teacher' },
-    { value: 'Timetabler', label: 'Timetabler' },
+    { value: 'teacher', label: 'Teacher' },
     { value: 'admin_staff', label: 'Administrative Staff' },
     { value: 'accountant', label: 'Accountant' },
     { value: 'librarian', label: 'Librarian' },
-   
-   
+    { value: 'nurse', label: 'Nurse' },
+    { value: 'security', label: 'Security' },
+    { value: 'other', label: 'Other' },
   ];
 
   useEffect(() => {
@@ -89,16 +77,8 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddStaff = async (data: { email: string; role: string }) => {
+    setIsSubmitting(true);
     setMessage(null);
 
     try {
@@ -108,16 +88,7 @@ const StaffManagement: React.FC = () => {
         return;
       }
 
-      const url = editingStaff 
-        ? `${API_BASE_URL}/api/schools/staff/${editingStaff.id}/`
-        : `${API_BASE_URL}/api/schools/staff/`;
-      
-      const method = editingStaff ? 'PUT' : 'POST';
-
-      const response = await axios({
-        method,
-        url,
-        data: formData,
+      const response = await axios.post(`${API_BASE_URL}/api/schools/staff/`, data, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -129,14 +100,58 @@ const StaffManagement: React.FC = () => {
         text: response.data.message
       });
 
-      // Reset form and refresh list
-      setFormData({
-        email: '',
-        role: 'Teacher',
-        full_name: '',
-        phone_number: ''
+      setShowAddModal(false);
+      fetchStaff();
+
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        setMessage({
+          type: 'error',
+          text: 'Authentication failed. Please login again.'
+        });
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('school_info');
+      } else {
+        setMessage({
+          type: 'error',
+          text: error.response?.data?.error || error.response?.data?.email?.[0] || 'Failed to add staff member'
+        });
+      }
+      throw error; // Re-throw to be handled by modal
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditStaff = async (staffId: string, data: { 
+    role: string; 
+    full_name: string; 
+    phone_number: string; 
+    is_active: boolean 
+  }) => {
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setMessage({ type: 'error', text: 'No authentication token found. Please login again.' });
+        return;
+      }
+
+      const response = await axios.put(`${API_BASE_URL}/api/schools/staff/${staffId}/`, data, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setShowAddForm(false);
+
+      setMessage({
+        type: 'success',
+        text: response.data.message
+      });
+
+      setShowEditModal(false);
       setEditingStaff(null);
       fetchStaff();
 
@@ -146,27 +161,23 @@ const StaffManagement: React.FC = () => {
           type: 'error',
           text: 'Authentication failed. Please login again.'
         });
-        // Clear invalid token
         localStorage.removeItem('access_token');
         localStorage.removeItem('school_info');
       } else {
         setMessage({
           type: 'error',
-          text: error.response?.data?.error || error.response?.data?.email?.[0] || 'Failed to save staff member'
+          text: error.response?.data?.error || 'Failed to update staff member'
         });
       }
+      throw error; // Re-throw to be handled by modal
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (staff: Staff) => {
     setEditingStaff(staff);
-    setFormData({
-      email: staff.email,
-      role: staff.role,
-      full_name: staff.full_name,
-      phone_number: staff.phone_number || ''
-    });
-    setShowAddForm(true);
+    setShowEditModal(true);
   };
 
   const handleDelete = async (staffId: string, email: string) => {
@@ -215,19 +226,10 @@ const StaffManagement: React.FC = () => {
             <p className="text-gray-600">{schoolName} • {totalCount} staff members</p>
           </div>
           <button
-            onClick={() => {
-              setEditingStaff(null);
-              setFormData({
-                email: '',
-                role: 'Teacher',
-                full_name: '',
-                phone_number: ''
-              });
-              setShowAddForm(!showAddForm);
-            }}
+            onClick={() => setShowAddModal(true)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
           >
-            {showAddForm ? 'Cancel' : '+ Add Staff Member'}
+            + Add Staff Member
           </button>
         </div>
       </div>
@@ -240,105 +242,6 @@ const StaffManagement: React.FC = () => {
             : 'bg-red-50 border border-red-200 text-red-800'
         }`}>
           <p className="text-sm">{message.text}</p>
-        </div>
-      )}
-
-      {/* Add Staff Form */}
-      {showAddForm && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-
-            <div>
-              <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="full_name"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Optional: Override auto-generated full name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled={!!editingStaff}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${editingStaff ? 'bg-gray-100' : ''}`}
-                  placeholder="staff@example.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone_number"
-                  name="phone_number"
-                  value={formData.phone_number}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                {roleOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingStaff(null);
-                }}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-              >
-                {editingStaff ? 'Update Staff Member' : 'Add Staff Member'}
-              </button>
-            </div>
-          </form>
         </div>
       )}
 
@@ -386,11 +289,9 @@ const StaffManagement: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900">
                           {staff.full_name}
                         </div>
-                        {staff.first_name && staff.last_name && (
-                          <div className="text-sm text-gray-500">
-                            ID: {staff.id}
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-500">
+                          ID: {staff.id}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -400,8 +301,8 @@ const StaffManagement: React.FC = () => {
                       {staff.phone_number || 'Not provided'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
-                        {staff.role.replace('_', ' ')}
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {staff.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -430,6 +331,28 @@ const StaffManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add Staff Modal */}
+      <AddStaffModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddStaff}
+        roleOptions={roleOptions}
+        isLoading={isSubmitting}
+      />
+
+      {/* Edit Staff Modal */}
+      <EditStaffModal
+        isOpen={showEditModal}
+        staff={editingStaff}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingStaff(null);
+        }}
+        onSubmit={handleEditStaff}
+        roleOptions={roleOptions}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };
