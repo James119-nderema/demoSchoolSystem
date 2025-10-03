@@ -19,6 +19,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isStatisticsOpen, setIsStatisticsOpen] = useState(false);
   const [isReportCardsOpen, setIsReportCardsOpen] = useState(false);
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
 
   const menuItems = [
     {
@@ -55,6 +56,54 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      )
+    },
+    {
+      name: 'Timetable',
+      path: '/staff/timetable',
+      hasDropdown: true,
+      subItems: [
+        {
+          name: 'Time Slots',
+          path: '/staff/timetable/time',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )
+        },
+        {
+          name: 'Schedule',
+          path: '/staff/timetable/schedule',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          )
+        },
+        {
+          name: 'Class Timetable',
+          path: '/staff/timetable/classes',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          )
+        },
+        {
+          name: 'Subject Frequency',
+          path: '/staff/timetable/subject-frequency',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          )
+        }
+      ],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       )
     },
@@ -200,6 +249,14 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     return location.pathname.startsWith('/staff/reports/pdf');
   };
 
+  const isTimetableActive = () => {
+    return location.pathname === '/staff/timetable' ||
+           location.pathname === '/staff/timetable/time' ||
+           location.pathname === '/staff/timetable/schedule' ||
+           location.pathname === '/staff/timetable/classes' ||
+           location.pathname.startsWith('/staff/timetable/');
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
     setIsMobileMenuOpen(false); // Close mobile menu after navigation
@@ -207,14 +264,34 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
 
   const handleResultsToggle = () => {
     setIsResultsOpen(!isResultsOpen);
+    // Close other dropdowns
+    setIsStatisticsOpen(false);
+    setIsReportCardsOpen(false);
+    setIsTimetableOpen(false);
   };
 
   const handleStatisticsToggle = () => {
     setIsStatisticsOpen(!isStatisticsOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsReportCardsOpen(false);
+    setIsTimetableOpen(false);
   };
 
   const handleReportCardsToggle = () => {
     setIsReportCardsOpen(!isReportCardsOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsStatisticsOpen(false);
+    setIsTimetableOpen(false);
+  };
+
+  const handleTimetableToggle = () => {
+    setIsTimetableOpen(!isTimetableOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsStatisticsOpen(false);
+    setIsReportCardsOpen(false);
   };
 
   // Auto-open dropdowns when on related pages
@@ -227,6 +304,9 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
     if (isReportCardsActive()) {
       setIsReportCardsOpen(true);
+    }
+    if (isTimetableActive()) {
+      setIsTimetableOpen(true);
     }
   }, [location.pathname]);
 
@@ -409,6 +489,55 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
             )}
           </div>
 
+          {/* Timetable Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleTimetableToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isTimetableActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isTimetableActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">Timetable</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isTimetableOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isTimetableOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'Timetable')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Report Cards Dropdown */}
           <div className="space-y-1">
             <button
@@ -495,10 +624,13 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               isStatisticsOpen={isStatisticsOpen}
               isReportCardsActive={isReportCardsActive}
               isReportCardsOpen={isReportCardsOpen}
+              isTimetableActive={isTimetableActive}
+              isTimetableOpen={isTimetableOpen}
               handleNavigation={handleNavigation} 
               handleResultsToggle={handleResultsToggle}
               handleStatisticsToggle={handleStatisticsToggle}
               handleReportCardsToggle={handleReportCardsToggle}
+              handleTimetableToggle={handleTimetableToggle}
               onLogout={onLogout} 
             />
           </div>
@@ -519,12 +651,33 @@ const SidebarContent: React.FC<{
   isStatisticsOpen: boolean;
   isReportCardsActive: () => boolean;
   isReportCardsOpen: boolean;
+  isTimetableActive: () => boolean;
+  isTimetableOpen: boolean;
   handleNavigation: (path: string) => void;
   handleResultsToggle: () => void;
   handleStatisticsToggle: () => void;
   handleReportCardsToggle: () => void;
+  handleTimetableToggle: () => void;
   onLogout: () => void;
-}> = ({ staffInfo, menuItems, isActive, isResultsActive, isResultsOpen, isStatisticsActive, isStatisticsOpen, isReportCardsActive, isReportCardsOpen, handleNavigation, handleResultsToggle, handleStatisticsToggle, handleReportCardsToggle, onLogout }) => {
+}> = ({ 
+  staffInfo, 
+  menuItems, 
+  isActive, 
+  isResultsActive, 
+  isResultsOpen, 
+  isStatisticsActive, 
+  isStatisticsOpen, 
+  isReportCardsActive, 
+  isReportCardsOpen, 
+  isTimetableActive,
+  isTimetableOpen,
+  handleNavigation, 
+  handleResultsToggle, 
+  handleStatisticsToggle, 
+  handleReportCardsToggle, 
+  handleTimetableToggle,
+  onLogout 
+}) => {
   return (
     <>
       {/* Logo/School Info */}
@@ -563,12 +716,14 @@ const SidebarContent: React.FC<{
                     item.name === 'Results' ? handleResultsToggle : 
                     item.name === 'Statistics' ? handleStatisticsToggle :
                     item.name === 'Report Cards' ? handleReportCardsToggle :
+                    item.name === 'Timetable' ? handleTimetableToggle :
                     handleStatisticsToggle
                   }
                   className={`${
                     (item.name === 'Results' ? isResultsActive() : 
                      item.name === 'Statistics' ? isStatisticsActive() :
                      item.name === 'Report Cards' ? isReportCardsActive() :
+                     item.name === 'Timetable' ? isTimetableActive() :
                      false)
                       ? 'bg-indigo-800 text-white'
                       : 'text-indigo-100 hover:bg-indigo-600 hover:text-white'
@@ -583,6 +738,7 @@ const SidebarContent: React.FC<{
                       (item.name === 'Results' ? isResultsOpen : 
                        item.name === 'Statistics' ? isStatisticsOpen :
                        item.name === 'Report Cards' ? isReportCardsOpen :
+                       item.name === 'Timetable' ? isTimetableOpen :
                        false) ? 'rotate-180' : 'rotate-0'
                     }`}
                     fill="none" 
@@ -595,6 +751,7 @@ const SidebarContent: React.FC<{
                 {(item.name === 'Results' ? isResultsOpen : 
                   item.name === 'Statistics' ? isStatisticsOpen :
                   item.name === 'Report Cards' ? isReportCardsOpen :
+                  item.name === 'Timetable' ? isTimetableOpen :
                   false) && (
                   <div className="ml-4 mt-1 space-y-1">
                     {item.subItems?.map((subItem: any) => (

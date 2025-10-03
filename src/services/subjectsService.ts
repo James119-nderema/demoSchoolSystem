@@ -1,34 +1,32 @@
-import { schoolAPI, staffAPI } from '../utils/api';
+import { APIService } from './baseUrl';
 import type { Subject, SubjectCreateData, SubjectResponse, SubjectStatsResponse, CSVUploadResponse } from '../types/subjects';
 
 const ENDPOINTS = {
-  SUBJECTS: '/subjects/',
-  SUBJECTS_STATS: '/subjects/stats/',
-  SUBJECTS_UPLOAD_CSV: '/subjects/upload-csv/',
-};
-
-// Helper function to get the appropriate API instance based on user type
-const getAPI = () => {
-  const userType = localStorage.getItem('user_type');
-  return userType === 'staff' ? staffAPI : schoolAPI;
+  SUBJECTS: '/api/subjects/',
+  SUBJECTS_STATS: '/api/subjects/stats/',
+  SUBJECTS_UPLOAD_CSV: '/api/subjects/upload-csv/',
 };
 
 export const subjectsService = {
   // Get all subjects with pagination
-  async getSubjects(page = 1, pageSize = 20): Promise<SubjectResponse> {
+  async getSubjects(page = 1, pageSize = 20, showAll = false): Promise<SubjectResponse> {
     try {
-      const api = getAPI();
-      const response = await api.get(`${ENDPOINTS.SUBJECTS}?page=${page}&page_size=${pageSize}`);
+      let url = `${ENDPOINTS.SUBJECTS}?page=${page}&page_size=${pageSize}`;
+      if (showAll) {
+        url += '&show_all=true';
+      }
+      
+      const response = await APIService.get(url, undefined, 'staff');
       
       // Handle paginated response from Django REST framework
-      if (response.data.results) {
+      if (response.results) {
         return {
           success: true,
           data: {
-            results: response.data.results,
-            count: response.data.count,
-            next: response.data.next || undefined,
-            previous: response.data.previous || undefined
+            results: response.results,
+            count: response.count,
+            next: response.next || undefined,
+            previous: response.previous || undefined
           }
         };
       } else {
@@ -36,8 +34,8 @@ export const subjectsService = {
         return {
           success: true,
           data: {
-            results: Array.isArray(response.data) ? response.data : [response.data],
-            count: Array.isArray(response.data) ? response.data.length : 1,
+            results: Array.isArray(response) ? response : [response],
+            count: Array.isArray(response) ? response.length : 1,
             next: undefined,
             previous: undefined
           }
@@ -47,7 +45,7 @@ export const subjectsService = {
       console.error('Error fetching subjects:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch subjects',
+        message: error.message || 'Failed to fetch subjects',
         data: {
           results: [],
           count: 0,
@@ -60,22 +58,27 @@ export const subjectsService = {
 
   // Get a single subject by ID
   async getSubject(id: string): Promise<{ success: boolean; data?: Subject; message?: string }> {
-    const api = getAPI();
-    const response = await api.get(`${ENDPOINTS.SUBJECTS}${id}/`);
-    return { success: true, data: response.data };
+    try {
+      const response = await APIService.get(`${ENDPOINTS.SUBJECTS}${id}/`, undefined, 'staff');
+      return { success: true, data: response };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch subject'
+      };
+    }
   },
 
   // Create a new subject
   async createSubject(data: SubjectCreateData): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const api = getAPI();
-      const response = await api.post(ENDPOINTS.SUBJECTS, data);
-      return { success: true, data: response.data };
+      const response = await APIService.post(ENDPOINTS.SUBJECTS, data, 'staff');
+      return { success: true, data: response };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to create subject',
-        errors: error.response?.data?.errors || error.response?.data
+        message: error.message || 'Failed to create subject',
+        errors: error.response?.data
       };
     }
   },
@@ -83,14 +86,13 @@ export const subjectsService = {
   // Update a subject
   async updateSubject(id: string, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const api = getAPI();
-      const response = await api.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data);
-      return { success: true, data: response.data };
+      const response = await APIService.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data, 'staff');
+      return { success: true, data: response };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to update subject',
-        errors: error.response?.data?.errors || error.response?.data
+        message: error.message || 'Failed to update subject',
+        errors: error.response?.data
       };
     }
   },
@@ -98,13 +100,12 @@ export const subjectsService = {
   // Delete a subject
   async deleteSubject(id: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const api = getAPI();
-      await api.delete(`${ENDPOINTS.SUBJECTS}${id}/`);
+      await APIService.delete(`${ENDPOINTS.SUBJECTS}${id}/`, 'staff');
       return { success: true, message: 'Subject deleted successfully' };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to delete subject'
+        message: error.message || 'Failed to delete subject'
       };
     }
   },
@@ -112,22 +113,17 @@ export const subjectsService = {
   // Upload CSV file
   async uploadCSV(file: File): Promise<CSVUploadResponse> {
     try {
-      const api = getAPI();
       const formData = new FormData();
       formData.append('csv_file', file);
       
-      const response = await api.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await APIService.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, 'staff');
       
-      return response.data;
+      return response;
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to upload CSV',
-        errors: error.response?.data?.errors
+        message: error.message || 'Failed to upload CSV',
+        errors: error.response?.data
       };
     }
   },
@@ -135,13 +131,12 @@ export const subjectsService = {
   // Get subject statistics
   async getStats(): Promise<SubjectStatsResponse> {
     try {
-      const api = getAPI();
-      const response = await api.get(ENDPOINTS.SUBJECTS_STATS);
-      return response.data;
+      const response = await APIService.get(ENDPOINTS.SUBJECTS_STATS, undefined, 'staff');
+      return response;
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch statistics'
+        message: error.message || 'Failed to fetch statistics'
       };
     }
   }

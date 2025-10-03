@@ -42,6 +42,8 @@ import StudentStatistics from './components/generalFiles/analytics/StudentStatis
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import ReportsPage from './components/templates/ReportsPage'
+import TimetableDashboard from './components/timetable/TimetableDashboard'
+import SubjectFrequency from './components/timetable/SubjectFrequency/SubjectFrequency'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -151,6 +153,46 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <ReportsPage />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/time', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/schedule', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/classes', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/subject-frequency', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectFrequency />
               </AuthenticatedRoute>
             ) 
           },
