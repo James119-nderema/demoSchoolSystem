@@ -6,6 +6,7 @@ import UploadStudentModal from './modals/UploadStudentModal';
 import DownloadStudentModal from './modals/DownloadStudentModal';
 
 interface Student {
+  current_class: string;
   id: number;
   upi_no?: string;
   assessment_no?: string;
@@ -19,6 +20,7 @@ interface Student {
   disability?: string;
   admission_number: string;
   class: string;
+  class_field?: string;  // The actual field from backend
   parent_guardian_name: string;
   parent_guardian_phone: string;
   parent_guardian_email?: string;
@@ -60,8 +62,12 @@ export default function Students() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -93,6 +99,7 @@ export default function Students() {
   });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   
   // Debounce refs for search
   const searchTimeoutRef = useRef<number | null>(null);
@@ -210,10 +217,20 @@ export default function Students() {
       // Update URL parameters
       updateUrlParams(page, search, classFilter, admission);
       
-      // If no filters are applied, use the total count from pagination response
-      // Otherwise, fetch filtered statistics
+      // If no filters are applied, fetch all students for class dropdown and use basic stats
       if (!search && !classFilter && !admission) {
-        // No filters - use basic stats from the main response
+        // Fetch all students for class dropdown (without pagination)
+        try {
+          const allStudentsData = await APIService.get(API_ENDPOINTS.STUDENTS, { page_size: '1000' }, userType);
+          const allStudentsList = allStudentsData.results || allStudentsData || [];
+          setAllStudents(allStudentsList);
+        } catch (error) {
+          console.error('Error fetching all students for class dropdown:', error);
+          // Fallback to current students
+          setAllStudents(studentsData);
+        }
+        
+        // Use basic stats from the main response
         setStats({
           total: count,
           active: studentsData.filter(s => s.status === 'active').length,
@@ -447,8 +464,11 @@ export default function Students() {
 
   // Get unique classes for filter dropdown from all students
   const uniqueClasses = Array.from(new Set([
-    ...allStudents.map(s => s.class).filter(Boolean)
+    ...allStudents.map(s => s.class_field || s.class || s.current_class).filter(Boolean)
   ])).sort();
+
+  console.log('Debug - allStudents:', allStudents.length);
+  console.log('Debug - uniqueClasses:', uniqueClasses);
 
   // Calculate stats from filtered results (get all pages with current filters)
   const [stats, setStats] = useState({
@@ -482,6 +502,8 @@ export default function Students() {
       const userType = isSchoolRoute ? 'school' : 'staff';
       
       await APIService.post(API_ENDPOINTS.STUDENTS, studentData, userType);
+      
+      // Close modal immediately for better UX
       setShowAddModal(false);
       setFormData({
         upi_no: '',
@@ -501,7 +523,14 @@ export default function Students() {
         address: '',
         status: 'active'
       });
-      fetchStudents();
+      
+      // Refresh the list immediately to show the new student
+      await fetchStudents(currentPage);
+      
+      // Show success message
+      setSuccessMessage('Student added successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
     } catch (err: any) {
       setError(err.message || 'Failed to add student');
     } finally {
@@ -567,6 +596,147 @@ export default function Students() {
     }
   };
 
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setFormData({
+      upi_no: student.upi_no || '',
+      assessment_no: student.assessment_no || '',
+      surname: student.surname || '',
+      first_name: student.first_name || '',
+      other_names: student.other_names || '',
+      gender: student.gender || '',
+      date_of_birth: student.date_of_birth || '',
+      birth_entry_no: student.birth_entry_no || '',
+      disability: student.disability || '',
+      admission_number: student.admission_number || '',
+      class: student.class_field || student.class || student.current_class || '',
+      parent_guardian_name: student.parent_guardian_name || '',
+      parent_guardian_phone: student.parent_guardian_phone || '',
+      parent_guardian_email: student.parent_guardian_email || '',
+      address: student.address || '',
+      status: student.status || 'active'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      // Prepare the data, converting empty strings to null for optional fields
+      const studentData = {
+        ...formData,
+        upi_no: formData.upi_no || null,
+        assessment_no: formData.assessment_no || null,
+        other_names: formData.other_names || null,
+        birth_entry_no: formData.birth_entry_no || null,
+        disability: formData.disability || null,
+        parent_guardian_email: formData.parent_guardian_email || null,
+        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
+      };
+      
+      // Optimistic update - update the local state immediately
+      const updatedStudent: Student = { 
+        ...selectedStudent, 
+        ...formData,
+        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
+      };
+      setStudents(prev => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
+      
+      // Use appropriate user type based on route
+      const isSchoolRoute = window.location.pathname.startsWith('/school');
+      const userType = isSchoolRoute ? 'school' : 'staff';
+      
+      await APIService.put(`${API_ENDPOINTS.STUDENTS}${selectedStudent.id}/`, studentData, userType);
+      
+      // Close modal and reset form
+      setShowEditModal(false);
+      setSelectedStudent(null);
+      setFormData({
+        upi_no: '',
+        assessment_no: '',
+        surname: '',
+        first_name: '',
+        other_names: '',
+        gender: '',
+        date_of_birth: '',
+        birth_entry_no: '',
+        disability: '',
+        admission_number: '',
+        class: '',
+        parent_guardian_name: '',
+        parent_guardian_phone: '',
+        parent_guardian_email: '',
+        address: '',
+        status: 'active'
+      });
+      
+      // Refresh the list to ensure consistency with server
+      await fetchStudents(currentPage);
+      
+      // Show success message
+      setSuccessMessage('Student updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+    } catch (err: any) {
+      // Revert optimistic update on error
+      await fetchStudents(currentPage);
+      setError(err.message || 'Failed to update student');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (student: Student) => {
+    setSelectedStudent(student);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!selectedStudent) return;
+    
+    setIsDeleting(true);
+    setError('');
+    
+    // Store the original list for potential rollback
+    const originalStudents = students;
+    
+    try {
+      // Optimistic update - remove the student from local state immediately
+      setStudents(prev => prev.filter(s => s.id !== selectedStudent.id));
+      
+      // Close modal immediately for better UX
+      setShowDeleteModal(false);
+      setSelectedStudent(null);
+      
+      // Use appropriate user type based on route
+      const isSchoolRoute = window.location.pathname.startsWith('/school');
+      const userType = isSchoolRoute ? 'school' : 'staff';
+      
+      await APIService.delete(`${API_ENDPOINTS.STUDENTS}${selectedStudent.id}/`, userType);
+      
+      // Refresh the list to ensure consistency with server and update stats
+      await fetchStudents(currentPage);
+      
+      // Show success message
+      setSuccessMessage('Student deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+    } catch (err: any) {
+      // Revert optimistic update on error
+      setStudents(originalStudents);
+      setError(err.message || 'Failed to delete student');
+      // Reopen modal on error
+      setShowDeleteModal(true);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
@@ -622,6 +792,12 @@ export default function Students() {
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="text-sm text-red-700">{error}</div>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="text-sm text-green-700">{successMessage}</div>
           </div>
         )}
 
@@ -790,12 +966,15 @@ export default function Students() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date Added
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {tableLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
                         Loading students...
@@ -804,7 +983,7 @@ export default function Students() {
                   </tr>
                 ) : students.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       {loading 
                         ? "Loading students..."
                         : totalCount === 0 
@@ -822,7 +1001,7 @@ export default function Students() {
                             {student.full_name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {student.surname}, {student.first_name} {student.other_names}
+                            {student.surname}, {student.first_name}, {student.other_names}
                           </div>
                           <div className="text-xs text-gray-400">
                             Gender: {student.gender} | DOB: {new Date(student.date_of_birth).toLocaleDateString()}
@@ -836,7 +1015,7 @@ export default function Students() {
                         {student.birth_entry_no && <div className="text-xs text-gray-400">Birth Entry: {student.birth_entry_no}</div>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">Class: {student.class}</div>
+                        <div className="text-sm text-gray-900">Class: {student.class_field || student.class || student.current_class}</div>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           student.status === 'active' 
                             ? 'bg-green-100 text-green-800'
@@ -865,6 +1044,28 @@ export default function Students() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(student.date_added).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditStudent(student)}
+                            className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                            title="Edit student"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(student)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                            title="Delete student"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -974,6 +1175,91 @@ export default function Students() {
         onSubmit={handleAddStudent}
         isSubmitting={isSubmitting}
       />
+
+      {/* Edit Student Modal */}
+      <AddStudentModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedStudent(null);
+          setFormData({
+            upi_no: '',
+            assessment_no: '',
+            surname: '',
+            first_name: '',
+            other_names: '',
+            gender: '',
+            date_of_birth: '',
+            birth_entry_no: '',
+            disability: '',
+            admission_number: '',
+            class: '',
+            parent_guardian_name: '',
+            parent_guardian_phone: '',
+            parent_guardian_email: '',
+            address: '',
+            status: 'active'
+          });
+        }}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleUpdateStudent}
+        isSubmitting={isSubmitting}
+        isEditMode={true}
+        title="Edit Student"
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedStudent && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 6.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Delete Student</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete{' '}
+                  <span className="font-semibold text-gray-900">{selectedStudent.full_name}</span>?
+                  This action cannot be undone.
+                </p>
+                <div className="text-xs text-gray-400 mt-2">
+                  Admission Number: {selectedStudent.admission_number}
+                </div>
+              </div>
+              <div className="flex justify-center space-x-4 px-4 py-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedStudent(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteStudent}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upload Student Modal */}
       <UploadStudentModal

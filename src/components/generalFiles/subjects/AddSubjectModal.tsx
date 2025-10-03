@@ -28,7 +28,7 @@ export default function AddSubjectModal({
     if (editingSubject) {
       setFormData({
         subject_name: editingSubject.subject_name,
-        subject_code: editingSubject.subject_code,
+        subject_code: editingSubject.subject_code || '',
         description: editingSubject.description || '',
         is_active: editingSubject.is_active
       });
@@ -63,9 +63,8 @@ export default function AddSubjectModal({
       newErrors.subject_name = 'Subject name is required';
     }
 
-    if (!formData.subject_code.trim()) {
-      newErrors.subject_code = 'Subject code is required';
-    } else if (formData.subject_code.length > 20) {
+    // Subject code is now optional but validate if provided
+    if (formData.subject_code && formData.subject_code.trim() && formData.subject_code.length > 20) {
       newErrors.subject_code = 'Subject code must be 20 characters or less';
     }
 
@@ -137,13 +136,13 @@ export default function AddSubjectModal({
 
             <div>
               <label htmlFor="subject_code" className="block text-sm font-medium text-gray-700 mb-1">
-                Subject Code <span className="text-red-500">*</span>
+                Subject Code <span className="text-gray-500">(Optional)</span>
               </label>
               <input
                 type="text"
                 id="subject_code"
                 name="subject_code"
-                value={formData.subject_code}
+                value={formData.subject_code || ''}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.subject_code ? 'border-red-500' : 'border-gray-300'

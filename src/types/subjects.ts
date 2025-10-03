@@ -1,9 +1,9 @@
 export interface Subject {
-  id: number;
-  school_id: number;
+  id: string;  // Changed to string for UUID
+  school_id: string;  // Changed to string for UUID
   school_name: string;
   subject_name: string;
-  subject_code: string;
+  subject_code?: string;  // Made optional
   description?: string;
   is_active: boolean;
   created_at: string;
@@ -12,7 +12,7 @@ export interface Subject {
 
 export interface SubjectCreateData {
   subject_name: string;
-  subject_code: string;
+  subject_code?: string;  // Made optional
   description?: string;
   is_active: boolean;
 }

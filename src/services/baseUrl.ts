@@ -164,6 +164,15 @@ export class APIService {
         throw error;
       }
       
+      // Check if response has content to parse
+      const contentType = response.headers.get('content-type');
+      const hasJsonContent = contentType && contentType.includes('application/json');
+      
+      // For 204 No Content or responses without JSON content, return empty object
+      if (response.status === 204 || !hasJsonContent) {
+        return {} as T;
+      }
+      
       return response.json();
     } catch (error) {
       clearTimeout(timeoutId);

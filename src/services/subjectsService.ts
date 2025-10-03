@@ -59,7 +59,7 @@ export const subjectsService = {
   },
 
   // Get a single subject by ID
-  async getSubject(id: number): Promise<{ success: boolean; data?: Subject; message?: string }> {
+  async getSubject(id: string): Promise<{ success: boolean; data?: Subject; message?: string }> {
     const api = getAPI();
     const response = await api.get(`${ENDPOINTS.SUBJECTS}${id}/`);
     return { success: true, data: response.data };
@@ -81,7 +81,7 @@ export const subjectsService = {
   },
 
   // Update a subject
-  async updateSubject(id: number, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
+  async updateSubject(id: string, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
       const api = getAPI();
       const response = await api.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data);
@@ -96,7 +96,7 @@ export const subjectsService = {
   },
 
   // Delete a subject
-  async deleteSubject(id: number): Promise<{ success: boolean; message?: string }> {
+  async deleteSubject(id: string): Promise<{ success: boolean; message?: string }> {
     try {
       const api = getAPI();
       await api.delete(`${ENDPOINTS.SUBJECTS}${id}/`);

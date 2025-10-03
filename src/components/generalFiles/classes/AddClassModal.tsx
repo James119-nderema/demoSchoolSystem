@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CreateClassData } from '../../../types/class';
 
 interface AddClassModalProps {
@@ -6,9 +6,18 @@ interface AddClassModalProps {
   onClose: () => void;
   onSubmit: (data: CreateClassData) => void;
   isLoading: boolean;
+  initialData?: CreateClassData;
+  title?: string;
 }
 
-export default function AddClassModal({ isOpen, onClose, onSubmit, isLoading }: AddClassModalProps) {
+export default function AddClassModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  isLoading, 
+  initialData,
+  title = "Add New Class"
+}: AddClassModalProps) {
   const [formData, setFormData] = useState<CreateClassData>({
     class_name: '',
     class_code: '',
@@ -18,6 +27,24 @@ export default function AddClassModal({ isOpen, onClose, onSubmit, isLoading }: 
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Reset form when modal opens/closes or when initialData changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData(initialData);
+      } else {
+        setFormData({
+          class_name: '',
+          class_code: '',
+          description: '',
+          capacity: 0,
+          is_active: true,
+        });
+      }
+      setErrors({});
+    }
+  }, [isOpen, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -97,7 +124,7 @@ export default function AddClassModal({ isOpen, onClose, onSubmit, isLoading }: 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Add New Class</h2>
+          <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700"
@@ -219,7 +246,7 @@ export default function AddClassModal({ isOpen, onClose, onSubmit, isLoading }: 
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? 'Adding...' : 'Add Class'}
+              {isLoading ? (initialData ? 'Updating...' : 'Adding...') : (initialData ? 'Update Class' : 'Add Class')}
             </button>
           </div>
         </form>
