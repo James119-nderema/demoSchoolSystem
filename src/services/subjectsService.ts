@@ -16,7 +16,9 @@ export const subjectsService = {
         url += '&show_all=true';
       }
       
-      const response = await APIService.get(url, undefined, 'staff');
+      // Try school auth first, fall back to staff auth if needed
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(url, undefined, authType);
       
       // Handle paginated response from Django REST framework
       if (response.results) {
@@ -59,7 +61,8 @@ export const subjectsService = {
   // Get a single subject by ID
   async getSubject(id: string): Promise<{ success: boolean; data?: Subject; message?: string }> {
     try {
-      const response = await APIService.get(`${ENDPOINTS.SUBJECTS}${id}/`, undefined, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(`${ENDPOINTS.SUBJECTS}${id}/`, undefined, authType);
       return { success: true, data: response };
     } catch (error: any) {
       return {
@@ -72,7 +75,8 @@ export const subjectsService = {
   // Create a new subject
   async createSubject(data: SubjectCreateData): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const response = await APIService.post(ENDPOINTS.SUBJECTS, data, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.post(ENDPOINTS.SUBJECTS, data, authType);
       return { success: true, data: response };
     } catch (error: any) {
       return {
@@ -86,7 +90,8 @@ export const subjectsService = {
   // Update a subject
   async updateSubject(id: string, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const response = await APIService.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data, authType);
       return { success: true, data: response };
     } catch (error: any) {
       return {
@@ -100,7 +105,8 @@ export const subjectsService = {
   // Delete a subject
   async deleteSubject(id: string): Promise<{ success: boolean; message?: string }> {
     try {
-      await APIService.delete(`${ENDPOINTS.SUBJECTS}${id}/`, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      await APIService.delete(`${ENDPOINTS.SUBJECTS}${id}/`, authType);
       return { success: true, message: 'Subject deleted successfully' };
     } catch (error: any) {
       return {
@@ -116,7 +122,8 @@ export const subjectsService = {
       const formData = new FormData();
       formData.append('csv_file', file);
       
-      const response = await APIService.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, authType);
       
       return response;
     } catch (error: any) {
@@ -131,7 +138,8 @@ export const subjectsService = {
   // Get subject statistics
   async getStats(): Promise<SubjectStatsResponse> {
     try {
-      const response = await APIService.get(ENDPOINTS.SUBJECTS_STATS, undefined, 'staff');
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(ENDPOINTS.SUBJECTS_STATS, undefined, authType);
       return response;
     } catch (error: any) {
       return {
