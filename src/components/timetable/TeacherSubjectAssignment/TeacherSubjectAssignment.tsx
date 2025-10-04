@@ -286,7 +286,7 @@ export default function TeacherSubjectAssignment() {
                             <Edit2 className="w-5 h-5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(assignment.id)}
+                            onClick={() => handleDelete(String(assignment.id))}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >

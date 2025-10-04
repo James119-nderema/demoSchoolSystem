@@ -114,19 +114,6 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-blue-800">File Format Requirements</h3>
                     <div className="mt-2 text-sm text-blue-700">
-                      <div className="mb-3">
-                        <p className="font-semibold">CSV Format Headers (Required):</p>
-                        <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
-                          <li>surname, first_name, gender, date_of_birth</li>
-                          <li>disability, admission_number, class</li>
-                          <li><span className="text-gray-600">(Optional: upi_no, assessment_no, other_names, birth_entry_no,</span></li>
-                          <li><span className="text-gray-600">parent_guardian_name, parent_guardian_phone, parent_guardian_email, address, status)</span></li>
-                        </ul>
-                      </div>
-                      <div className="mb-3">
-                        <p className="font-semibold">XML Format:</p>
-                        <p className="text-xs mt-1">Use &lt;students&gt;&lt;student&gt;...&lt;/student&gt;&lt;/students&gt; structure with the same field names.</p>
-                      </div>
                       <div className="mt-3 pt-3 border-t border-blue-200">
                         <p className="font-semibold mb-2">Download Sample File:</p>
                         <a
@@ -152,20 +139,7 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800">Important Notes</h3>
-                    <div className="mt-2 text-sm text-yellow-700">
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Required fields: surname, first_name, gender, date_of_birth, disability, admission_number, class</li>
-                        <li>Optional fields: upi_no, assessment_no, other_names, birth_entry_no, parent_guardian_name, parent_guardian_phone, parent_guardian_email, address, status</li>
-                        <li>Date format should be YYYY-MM-DD</li>
-                        <li>Gender values: male, female, or other</li>
-                        <li>Status values: active, inactive, suspended, graduated, transferred (defaults to active)</li>
-                        <li>For disability field: Enter specific disability or "None" if no disability</li>
-                        <li>UPI No and Birth Entry No can be left empty if not available</li>
-                      </ul>
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
 
