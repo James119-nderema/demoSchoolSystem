@@ -44,6 +44,7 @@ import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard
 import ReportsPage from './components/templates/ReportsPage'
 import TimetableDashboard from './components/timetable/TimetableDashboard'
 import SubjectFrequency from './components/timetable/SubjectFrequency/SubjectFrequency'
+import TeacherSubjectAssignment from './components/timetable/TeacherSubjectAssignment/TeacherSubjectAssignment'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -193,6 +194,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <SubjectFrequency />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/teacher-subject', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TeacherSubjectAssignment />
               </AuthenticatedRoute>
             ) 
           },
