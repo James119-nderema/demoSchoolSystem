@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { APIService } from '../services/baseUrl';
 import type { 
   TimeSlot, 
   TimeSlotCreate, 
@@ -16,26 +16,10 @@ export type {
   PaginatedResponse 
 };
 
-const API_BASE_URL = 'http://localhost:8000/api/timetable';
-
-// Get auth token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('staff_access_token') || localStorage.getItem('access_token');
+// Determine auth type based on available tokens
+const getAuthType = (): 'school' | 'staff' => {
+  return localStorage.getItem('access_token') ? 'school' : 'staff';
 };
-
-// Create axios instance with auth headers
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Add auth interceptor
-apiClient.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 // API functions
 export const timeSlotApi = {
@@ -46,37 +30,53 @@ export const timeSlotApi = {
     page?: number;
     page_size?: number;
   }): Promise<PaginatedResponse<TimeSlot>> => {
-    const response = await apiClient.get('/time-slots/', { params });
-    return response.data;
+    const authType = getAuthType();
+    
+    // Convert params to string format for APIService
+    const stringParams: Record<string, string> = {};
+    if (params) {
+      if (params.class_level) stringParams.class_level = params.class_level;
+      if (params.is_active !== undefined) stringParams.is_active = String(params.is_active);
+      if (params.page) stringParams.page = String(params.page);
+      if (params.page_size) stringParams.page_size = String(params.page_size);
+    }
+    
+    const response = await APIService.get('/api/timetable/time-slots/', stringParams, authType);
+    return response;
   },
 
   // Get a specific time slot
   getTimeSlot: async (id: string): Promise<TimeSlot> => {
-    const response = await apiClient.get(`/time-slots/${id}/`);
-    return response.data;
+    const authType = getAuthType();
+    const response = await APIService.get(`/api/timetable/time-slots/${id}/`, {}, authType);
+    return response;
   },
 
   // Create a new time slot
   createTimeSlot: async (data: TimeSlotCreate): Promise<TimeSlot> => {
-    const response = await apiClient.post('/time-slots/', data);
-    return response.data;
+    const authType = getAuthType();
+    const response = await APIService.post('/api/timetable/time-slots/', data, authType);
+    return response;
   },
 
   // Update a time slot
   updateTimeSlot: async (id: string, data: TimeSlotUpdate): Promise<TimeSlot> => {
-    const response = await apiClient.patch(`/time-slots/${id}/`, data);
-    return response.data;
+    const authType = getAuthType();
+    const response = await APIService.patch(`/api/timetable/time-slots/${id}/`, data, authType);
+    return response;
   },
 
   // Delete a time slot
   deleteTimeSlot: async (id: string): Promise<void> => {
-    await apiClient.delete(`/time-slots/${id}/`);
+    const authType = getAuthType();
+    await APIService.delete(`/api/timetable/time-slots/${id}/`, authType);
   },
 
   // Get time slot statistics
   getStatistics: async (): Promise<TimeSlotStatistics> => {
-    const response = await apiClient.get('/time-slots/statistics/');
-    return response.data;
+    const authType = getAuthType();
+    const response = await APIService.get('/api/timetable/time-slots/statistics/', {}, authType);
+    return response;
   },
 
   // Bulk create time slots
@@ -85,9 +85,10 @@ export const timeSlotApi = {
     created: TimeSlot[];
     errors?: any[];
   }> => {
-    const response = await apiClient.post('/time-slots/bulk-create/', {
+    const authType = getAuthType();
+    const response = await APIService.post('/api/timetable/time-slots/bulk-create/', {
       time_slots: timeSlots
-    });
-    return response.data;
+    }, authType);
+    return response;
   },
 };

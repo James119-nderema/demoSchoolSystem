@@ -45,6 +45,7 @@ import ReportsPage from './components/templates/ReportsPage'
 import TimetableDashboard from './components/timetable/TimetableDashboard'
 import SubjectFrequency from './components/timetable/SubjectFrequency/SubjectFrequency'
 import TeacherSubjectAssignment from './components/timetable/TeacherSubjectAssignment/TeacherSubjectAssignment'
+import Priorities from './components/timetable/priorities/Priorities'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -202,6 +203,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <TeacherSubjectAssignment />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/priorities', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Priorities />
               </AuthenticatedRoute>
             ) 
           },
