@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BookOpen, User, Clock, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import timetableGenerationService from '../../../services/timetableGenerationService';
 import type { TimetableByClass, TimetableStats } from '../../../types/generatedTimetable';
 
@@ -76,10 +76,6 @@ const TimetableView: React.FC = () => {
     });
     
     return Array.from(timeslots).sort();
-  };
-
-  const formatTime = (timeStr: string) => {
-    return timeStr;
   };
 
   return (
