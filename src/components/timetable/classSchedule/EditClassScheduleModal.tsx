@@ -1,19 +1,41 @@
 import { useState, useEffect } from 'react';
 import { APIService } from '../../../services/baseUrl';
-import type { Subject } from '../../../types/subjects';
-import type { TimeSlot } from '../../../types/timetable';
+import type { ClassSchedule } from '../../../types/classSchedule';
 
-interface AddPriorityModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: { subject: string; time_slot: string }) => Promise<void>;
+interface Class {
+  id: string;
+  class_name: string;
 }
 
-export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPriorityModalProps) {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+interface TimeSlot {
+  id: string;
+  start_time: string;
+  end_time: string;
+}
+
+interface EditClassScheduleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { day_of_week?: string; class_name?: string; time_slot?: string }) => Promise<void>;
+  schedule: ClassSchedule;
+}
+
+const WEEKDAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+export default function EditClassScheduleModal({ isOpen, onClose, onSubmit, schedule }: EditClassScheduleModalProps) {
+  const [classes, setClasses] = useState<Class[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [selectedDay, setSelectedDay] = useState(schedule.day_of_week);
+  const [selectedClass, setSelectedClass] = useState(schedule.class_name);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(schedule.time_slot);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -21,11 +43,13 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
   useEffect(() => {
     if (isOpen) {
       loadDropdownData();
+      setSelectedDay(schedule.day_of_week);
+      setSelectedClass(schedule.class_name);
+      setSelectedTimeSlot(schedule.time_slot);
     }
-  }, [isOpen]);
+  }, [isOpen, schedule]);
 
   const formatTime = (time: string) => {
-    // Remove seconds from time (HH:MM:SS -> HH:MM)
     return time.substring(0, 5);
   };
 
@@ -34,23 +58,21 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
     try {
       const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
       
-      // Load subjects - use staff endpoint for staff, regular endpoint for school
-      const subjectsEndpoint = authType === 'staff' ? '/api/staff/subjects/' : '/api/subjects/';
-      const subjectsResponse = await APIService.get(subjectsEndpoint, { page: '1', page_size: '10000' }, authType);
+      // Load classes
+      const classesEndpoint = authType === 'staff' ? '/api/staff/classes/' : '/api/classes/';
+      const classesResponse = await APIService.get(classesEndpoint, { page: '1', page_size: '10000' }, authType);
       
-      // Handle different response structures
-      if (subjectsResponse.results) {
-        setSubjects(subjectsResponse.results);
-      } else if (Array.isArray(subjectsResponse)) {
-        setSubjects(subjectsResponse);
+      if (classesResponse.results) {
+        setClasses(classesResponse.results);
+      } else if (Array.isArray(classesResponse)) {
+        setClasses(classesResponse);
       } else {
-        setSubjects([]);
+        setClasses([]);
       }
       
       // Load time slots
       const timeSlotsResponse = await APIService.get('/api/timetable/time-slots/', { page: '1', page_size: '10000' }, authType);
       
-      // Handle different response structures
       if (timeSlotsResponse.results) {
         setTimeSlots(timeSlotsResponse.results);
       } else if (Array.isArray(timeSlotsResponse)) {
@@ -58,11 +80,9 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
       } else {
         setTimeSlots([]);
       }
-      
-      
     } catch (error) {
       console.error('Failed to load dropdown data:', error);
-      alert('Failed to load subjects and time slots. Please try again.');
+      alert('Failed to load classes and time slots. Please try again.');
     } finally {
       setLoadingData(false);
     }
@@ -75,21 +95,17 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
 
     try {
       await onSubmit({
-        subject: selectedSubject,
+        day_of_week: selectedDay,
+        class_name: selectedClass,
         time_slot: selectedTimeSlot,
       });
-      
-      // Reset form
-      setSelectedSubject('');
-      setSelectedTimeSlot('');
     } catch (error: any) {
-      console.error('Error submitting priority:', error);
+      console.error('Error updating schedule:', error);
       
-      // Handle validation errors
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
-        alert(error.message || 'Failed to add priority. Please try again.');
+        alert(error.message || 'Failed to update class schedule. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -97,8 +113,6 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
   };
 
   const handleClose = () => {
-    setSelectedSubject('');
-    setSelectedTimeSlot('');
     setErrors({});
     onClose();
   };
@@ -109,7 +123,7 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Add Subject Priority</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Edit Class Schedule</h3>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
@@ -128,36 +142,62 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
             </div>
           ) : (
             <>
-              {/* Subject */}
+              {/* Day Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subject <span className="text-red-500">*</span>
+                  Day <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
                   className={`block w-full px-3 py-2 border ${
-                    errors.subject ? 'border-red-300' : 'border-gray-300'
+                    errors.day_of_week ? 'border-red-300' : 'border-gray-300'
                   } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                   required
                   disabled={loading}
                 >
-                  <option value="">Select Subject</option>
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.subject_name} {subject.subject_code && `(${subject.subject_code})`}
+                  <option value="">Select Day</option>
+                  {WEEKDAYS.map((day) => (
+                    <option key={day} value={day}>
+                      {day}
                     </option>
                   ))}
                 </select>
-                {errors.subject && (
-                  <p className="mt-1 text-sm text-red-600">{errors.subject[0]}</p>
+                {errors.day_of_week && (
+                  <p className="mt-1 text-sm text-red-600">{errors.day_of_week[0]}</p>
                 )}
               </div>
 
-              {/* Time Slot */}
+              {/* Class Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Preferred Time Slot <span className="text-red-500">*</span>
+                  Class <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className={`block w-full px-3 py-2 border ${
+                    errors.class_name ? 'border-red-300' : 'border-gray-300'
+                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  required
+                  disabled={loading}
+                >
+                  <option value="">Select Class</option>
+                  {classes.map((classItem) => (
+                    <option key={classItem.id} value={classItem.id}>
+                      {classItem.class_name}
+                    </option>
+                  ))}
+                </select>
+                {errors.class_name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.class_name[0]}</p>
+                )}
+              </div>
+
+              {/* Time Slot Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Time Slot <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedTimeSlot}
@@ -203,7 +243,7 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading || loadingData}
             >
-              {loading ? 'Adding...' : 'Add Priority'}
+              {loading ? 'Updating...' : 'Update Schedule'}
             </button>
           </div>
         </form>

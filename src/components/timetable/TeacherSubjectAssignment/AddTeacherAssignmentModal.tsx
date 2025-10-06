@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { teacherSubjectClassService } from '../../../services/teacherSubjectClassService';
 import type { TeacherListItem } from '../../../services/teacherSubjectClassService';
-import { DataAPI } from '../../../services/baseUrl';
+import { APIService } from '../../../services/baseUrl';
 
 interface Class {
   id: string;
@@ -63,15 +63,23 @@ export default function AddTeacherAssignmentModal({
   const loadClasses = async () => {
     try {
       setIsLoadingClasses(true);
-      // Fetch all classes with a very large page_size to get all at once
-      const response = await DataAPI.getClasses({ 
+      const params = {
         page: '1',
-        page_size: '10000' // Very large number to get all classes
-      });
-      console.log('Classes response:', response);
-      setClasses(response.results || response || []);
+        page_size: '10000'
+      };
+      
+      const response = await APIService.get('/api/staff/classes/', params, 'staff');
+      
+      if (response.results) {
+        setClasses(response.results);
+      } else if (Array.isArray(response)) {
+        setClasses(response);
+      } else {
+        setClasses([]);
+      }
     } catch (error) {
       console.error('Failed to load classes:', error);
+      setClasses([]);
     } finally {
       setIsLoadingClasses(false);
     }
@@ -80,10 +88,23 @@ export default function AddTeacherAssignmentModal({
   const loadSubjects = async () => {
     try {
       setIsLoadingSubjects(true);
-      const response = await DataAPI.getSubjects({ page_size: '100' });
-      setSubjects(response.results || response || []);
+      const params = {
+        page: '1',
+        page_size: '10000'
+      };
+      
+      const response = await APIService.get('/api/staff/subjects/', params, 'staff');
+      
+      if (response.results) {
+        setSubjects(response.results);
+      } else if (Array.isArray(response)) {
+        setSubjects(response);
+      } else {
+        setSubjects([]);
+      }
     } catch (error) {
       console.error('Failed to load subjects:', error);
+      setSubjects([]);
     } finally {
       setIsLoadingSubjects(false);
     }
