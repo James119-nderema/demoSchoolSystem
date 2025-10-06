@@ -49,6 +49,8 @@ import Priorities from './components/timetable/priorities/Priorities'
 import ClassSchedules from './components/timetable/classSchedule/ClassSchedules'
 import Teachers from './components/timetable/teachers/Teachers'
 import BlockSubjects from './components/timetable/blockSubjects/BlockSubjects'
+import TimetableView from './components/timetable/generation/TimetableView'
+import FailedSchedules from './components/timetable/generation/FailedSchedules'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -238,6 +240,22 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <BlockSubjects />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/view', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableView />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/failed', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <FailedSchedules />
               </AuthenticatedRoute>
             ) 
           },
