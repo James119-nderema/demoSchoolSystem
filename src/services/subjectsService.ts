@@ -123,14 +123,20 @@ export const subjectsService = {
       formData.append('csv_file', file);
       
       const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
-      const response = await APIService.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, authType);
+      const response = await APIService.uploadWithProgress(
+        ENDPOINTS.SUBJECTS_UPLOAD_CSV, 
+        formData, 
+        undefined, 
+        authType
+      );
       
       return response;
     } catch (error: any) {
+      const errorData = error.response?.data || {};
       return {
         success: false,
-        message: error.message || 'Failed to upload CSV',
-        errors: error.response?.data
+        message: errorData.message || error.message || 'Failed to upload CSV',
+        errors: errorData.errors || (typeof errorData === 'object' && !errorData.message ? errorData : undefined)
       };
     }
   },
