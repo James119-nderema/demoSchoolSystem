@@ -26,13 +26,12 @@ const StaffManagement: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   const roleOptions = [
-    { value: 'teacher', label: 'Teacher' },
-    { value: 'admin_staff', label: 'Administrative Staff' },
-    { value: 'accountant', label: 'Accountant' },
-    { value: 'librarian', label: 'Librarian' },
-    { value: 'nurse', label: 'Nurse' },
-    { value: 'security', label: 'Security' },
-    { value: 'other', label: 'Other' },
+    { value: 'TEACHER', label: 'Teacher' },
+    { value: 'CLASS_TEACHER', label: 'Class Teacher' },
+    { value: 'HOD', label: 'Head of Department' },
+    { value: 'DIRECTOR_OF_STUDIES', label: 'Director of Studies' },
+    { value: 'BURSAR', label: 'Bursar/Accountant' },
+    { value: 'ADMINISTRATIVE_STAFF', label: 'Administrative Staff' },
   ];
 
   useEffect(() => {
