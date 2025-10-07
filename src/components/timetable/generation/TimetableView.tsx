@@ -206,25 +206,28 @@ const TimetableView: React.FC = () => {
                     <thead className="bg-gray-100 border-b-2 border-gray-300">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 sticky left-0 bg-gray-100 z-10">
-                          Time
+                          Day
                         </th>
-                        {DAYS.map(day => (
-                          <th key={day} className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
-                            {day}
+                        {timeslots.map(timeslot => (
+                          <th key={timeslot} className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 min-w-[180px]">
+                            <div className="flex items-center justify-center gap-2">
+                              <Clock size={16} className="text-gray-400" />
+                              {timeslot}
+                            </div>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {timeslots.map(timeslot => (
-                        <tr key={timeslot} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 border-r border-gray-300 sticky left-0 bg-white">
+                      {DAYS.map(day => (
+                        <tr key={day} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-300 sticky left-0 bg-white">
                             <div className="flex items-center gap-2">
-                              <Clock size={16} className="text-gray-400" />
-                              {timeslot}
+                              <Calendar size={16} className="text-blue-600" />
+                              {day}
                             </div>
                           </td>
-                          {DAYS.map(day => {
+                          {timeslots.map(timeslot => {
                             const entry = classData.timetable[day]?.[timeslot];
                             
                             return (
