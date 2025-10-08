@@ -29,8 +29,9 @@ const TeacherTimetableView: React.FC = () => {
     setError(null);
     try {
       const response = await teacherTimetableService.getMyTimetable();
+      
       setTimetable(response.timetable);
-      setTimeSlots(response.time_slots);
+      setTimeSlots(response.timeslots);
       setTeacherName(response.teacher_name);
     } catch (err: any) {
       console.error('Error fetching timetable:', err);
@@ -53,23 +54,6 @@ const TeacherTimetableView: React.FC = () => {
     return timetable[day]?.[timeSlot] || [];
   };
 
-  const getSubjectColor = (subject: string): string => {
-    // Generate consistent colors based on subject name
-    const colors = [
-      'bg-blue-50 border-blue-200 text-blue-900',
-      'bg-green-50 border-green-200 text-green-900',
-      'bg-purple-50 border-purple-200 text-purple-900',
-      'bg-orange-50 border-orange-200 text-orange-900',
-      'bg-pink-50 border-pink-200 text-pink-900',
-      'bg-indigo-50 border-indigo-200 text-indigo-900',
-      'bg-teal-50 border-teal-200 text-teal-900',
-      'bg-yellow-50 border-yellow-200 text-yellow-900',
-    ];
-    
-    const hash = subject.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-  };
-
   const downloadTimetablePDF = () => {
     const doc = new jsPDF('landscape');
     
@@ -85,19 +69,19 @@ const TeacherTimetableView: React.FC = () => {
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 34);
     
     // Prepare table data with days as rows and time slots as columns
-    const headers = ['Day', ...timeSlots.map(slot => slot.slot)];
+    const headers = ['Day', ...timeSlots.map(slot => slot.time_slot)];  // Changed from slot.slot to slot.time_slot
     
     const rows = DAYS.map(day => {
       const row = [day];
       timeSlots.forEach(slot => {
-        const entries = getCellContent(day, slot.slot);
+        const entries = getCellContent(day, slot.time_slot);  // Changed from slot.slot to slot.time_slot
         if (entries.length > 0) {
           const cellContent = entries
             .map(entry => `${entry.subject}\n(${entry.class})`)
             .join('\n\n');
           row.push(cellContent);
         } else {
-          row.push('Free');
+          row.push('-');
         }
       });
       return row;
@@ -267,13 +251,13 @@ const TeacherTimetableView: React.FC = () => {
                 <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider border-r border-blue-500 sticky left-0 bg-blue-600 z-10 min-w-[120px]">
                   Day
                 </th>
-                {timeSlots.map((slot) => (
+                {timeSlots.map((slot, idx) => (
                   <th
-                    key={slot.id}
+                    key={idx}
                     className="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider min-w-[180px]"
                   >
-                    <div>{slot.slot}</div>
-                    <div className="text-[10px] font-normal mt-1">
+                    <div className="text-sm font-bold">{slot.time_slot}</div>
+                    <div className="text-xs font-normal opacity-90">
                       {slot.start_time} - {slot.end_time}
                     </div>
                   </th>
@@ -291,40 +275,44 @@ const TeacherTimetableView: React.FC = () => {
                   </td>
 
                   {/* Time Slot Columns */}
-                  {timeSlots.map((slot) => {
-                    const entries = getCellContent(day, slot.slot);
+                  {timeSlots.map((slot, slotIdx) => {
+                    const entries = getCellContent(day, slot.time_slot);
+                    
                     return (
                       <td
-                        key={`${day}-${slot.slot}`}
-                        className="px-2 py-2 border-r border-gray-200 align-top"
+                        key={`${day}-${slotIdx}`}
+                        className={`px-2 py-2 border border-gray-300 text-center align-middle ${
+                          entries.length > 0 ? 'bg-green-50' : 'bg-white'
+                        }`}
                       >
-                        {entries.length > 0 ? (
+                        {entries.length === 0 ? (
+                          <span className="text-gray-400 text-sm">-</span>
+                        ) : entries.length === 1 ? (
+                          <div className="space-y-1">
+                            <div className="font-semibold text-gray-900 text-sm">
+                              {entries[0].subject}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {entries[0].class}
+                            </div>
+                          </div>
+                        ) : (
                           <div className="space-y-2">
+                            {entries[0].is_block && (
+                              <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded mb-1">
+                                Block Subject
+                              </div>
+                            )}
                             {entries.map((entry, idx) => (
-                              <div
-                                key={entry.id || idx}
-                                className={`p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${getSubjectColor(
-                                  entry.subject
-                                )}`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  <BookOpen className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm truncate">
-                                      {entry.subject}
-                                    </div>
-                                    <div className="text-xs font-medium mt-1 flex items-center gap-1">
-                                      <User className="w-3 h-3" />
-                                      {entry.class}
-                                    </div>
-                                  </div>
+                              <div key={idx} className="border-b border-gray-200 pb-1 last:border-0">
+                                <div className="font-semibold text-gray-900 text-sm">
+                                  {entry.subject}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {entry.class}
                                 </div>
                               </div>
                             ))}
-                          </div>
-                        ) : (
-                          <div className="h-16 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">Free</span>
                           </div>
                         )}
                       </td>

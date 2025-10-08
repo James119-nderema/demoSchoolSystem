@@ -15,10 +15,8 @@ interface EditStaffModalProps {
   staff: Staff | null;
   onClose: () => void;
   onSubmit: (staffId: string, data: { 
-    role: string; 
-    full_name: string; 
-    phone_number: string; 
-    is_active: boolean 
+    email: string;
+    role: string;
   }) => Promise<void>;
   roleOptions: { value: string; label: string }[];
   isLoading?: boolean;
@@ -33,30 +31,26 @@ export default function EditStaffModal({
   isLoading = false
 }: EditStaffModalProps) {
   const [formData, setFormData] = useState({
-    role: 'teacher',
-    full_name: '',
-    phone_number: '',
-    is_active: true
+    email: '',
+    role: 'TEACHER'
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (staff) {
       setFormData({
-        role: staff.role,
-        full_name: staff.full_name || '',
-        phone_number: staff.phone_number || '',
-        is_active: staff.is_active
+        email: staff.email,
+        role: staff.role
       });
     }
     setErrors({});
   }, [staff, isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: value
     }));
     
     // Clear error when user starts typing
@@ -68,11 +62,15 @@ export default function EditStaffModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
     if (!formData.role.trim()) {
       newErrors.role = 'Role is required';
     }
-
-    // Full name is optional since staff might not have created an account yet
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -118,55 +116,25 @@ export default function EditStaffModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address *
             </label>
             <input
               type="email"
-              value={staff.email}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
-              disabled
-              readOnly
-            />
-            <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
-          </div>
-
-          <div>
-            <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              id="full_name"
-              name="full_name"
-              value={formData.full_name}
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.full_name ? 'border-red-500' : 'border-gray-300'
+                errors.email ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Enter full name"
+              placeholder="Enter email address"
               disabled={isLoading}
               required
             />
-            {errors.full_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
             )}
-          </div>
-
-          <div>
-            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phone_number"
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter phone number"
-              disabled={isLoading}
-            />
           </div>
 
           <div>
@@ -195,35 +163,21 @@ export default function EditStaffModal({
             )}
           </div>
 
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="is_active"
-                checked={formData.is_active}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                disabled={isLoading}
-              />
-              <span className="ml-2 text-sm text-gray-700">Active Staff Member</span>
-            </label>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
-              {isLoading ? 'Updating...' : 'Update Staff Member'}
+              {isLoading ? 'Updating...' : 'Update Staff'}
             </button>
           </div>
         </form>

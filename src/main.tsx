@@ -51,6 +51,7 @@ import Teachers from './components/timetable/teachers/Teachers'
 import BlockSubjects from './components/timetable/blockSubjects/BlockSubjects'
 import TimetableView from './components/timetable/generation/TimetableView'
 import TeacherTimetableView from './components/timetable/TeacherTimetableView'
+import AllTeachersSchedules from './components/timetable/AllTeachersSchedules'
 import FailedSchedules from './components/timetable/generation/FailedSchedules'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
@@ -249,6 +250,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <TeacherTimetableView />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/all-teachers', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <AllTeachersSchedules />
               </AuthenticatedRoute>
             ) 
           },

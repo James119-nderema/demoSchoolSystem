@@ -80,10 +80,12 @@ const StaffManagement: React.FC = () => {
     setIsSubmitting(true);
     setMessage(null);
 
+    const token = localStorage.getItem('access_token');
+    
     try {
-      const token = localStorage.getItem('access_token');
       if (!token) {
         setMessage({ type: 'error', text: 'No authentication token found. Please login again.' });
+        setIsSubmitting(false);
         return;
       }
 
@@ -103,6 +105,15 @@ const StaffManagement: React.FC = () => {
       fetchStaff();
 
     } catch (error: any) {
+      // Detailed error logging
+      console.group('🔴 Staff Addition Error Details');
+      console.log('Status:', error.response?.status);
+      console.log('Response Data:', error.response?.data);
+      console.log('Full Error:', error);
+      console.log('Request Data:', data);
+      console.log('Has Token:', !!token);
+      console.groupEnd();
+
       if (error.response?.status === 401) {
         setMessage({
           type: 'error',
@@ -111,9 +122,39 @@ const StaffManagement: React.FC = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('school_info');
       } else {
+        // Better error message extraction
+        let errorMessage = 'Failed to add staff member';
+        
+        if (error.response?.data) {
+          if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.response.data.email) {
+            errorMessage = Array.isArray(error.response.data.email) 
+              ? `Email: ${error.response.data.email[0]}` 
+              : `Email: ${error.response.data.email}`;
+          } else if (error.response.data.role) {
+            errorMessage = Array.isArray(error.response.data.role)
+              ? `Role: ${error.response.data.role[0]}`
+              : `Role: ${error.response.data.role}`;
+          } else if (error.response.data.detail) {
+            errorMessage = error.response.data.detail;
+          } else if (typeof error.response.data === 'string') {
+            errorMessage = error.response.data;
+          } else {
+            // Show all errors if multiple fields have issues
+            const errors = Object.entries(error.response.data)
+              .map(([key, value]: [string, any]) => {
+                const msg = Array.isArray(value) ? value[0] : value;
+                return `${key}: ${msg}`;
+              })
+              .join(', ');
+            if (errors) errorMessage = errors;
+          }
+        }
+        
         setMessage({
           type: 'error',
-          text: error.response?.data?.error || error.response?.data?.email?.[0] || 'Failed to add staff member'
+          text: errorMessage
         });
       }
       throw error; // Re-throw to be handled by modal
@@ -123,10 +164,8 @@ const StaffManagement: React.FC = () => {
   };
 
   const handleEditStaff = async (staffId: string, data: { 
-    role: string; 
-    full_name: string; 
-    phone_number: string; 
-    is_active: boolean 
+    email: string;
+    role: string;
   }) => {
     setIsSubmitting(true);
     setMessage(null);
@@ -138,7 +177,7 @@ const StaffManagement: React.FC = () => {
         return;
       }
 
-      const response = await axios.put(`${API_BASE_URL}/api/schools/staff/${staffId}/`, data, {
+      const response = await axios.patch(`${API_BASE_URL}/api/schools/staff/${staffId}/`, data, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

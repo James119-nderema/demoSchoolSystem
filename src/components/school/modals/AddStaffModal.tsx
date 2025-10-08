@@ -17,7 +17,7 @@ export default function AddStaffModal({
 }: AddStaffModalProps) {
   const [formData, setFormData] = useState({
     email: '',
-    role: 'teacher'
+    role: 'TEACHER'  // Changed to uppercase to match backend
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -63,7 +63,7 @@ export default function AddStaffModal({
       // Reset form on successful submission
       setFormData({
         email: '',
-        role: 'teacher'
+        role: 'TEACHER'  // Changed to uppercase to match backend
       });
       setErrors({});
     } catch (error) {
@@ -74,7 +74,7 @@ export default function AddStaffModal({
   const handleClose = () => {
     setFormData({
       email: '',
-      role: 'teacher'
+      role: 'TEACHER'  // Changed to uppercase to match backend
     });
     setErrors({});
     onClose();

@@ -1,20 +1,24 @@
-import { staffAPI } from '../utils/api';
+import { APIService } from './baseUrl';
 
+// Use the same structure as AllTeachersSchedule
 interface TimetableEntry {
-  id: string;
   subject: string;
-  subject_id: string;
+  subject_id: number;
   class: string;
-  class_id: string;
+  class_id: number;
   start_time: string;
   end_time: string;
+  time_slot: string;
+  block_identifier: string | null;
+  is_block: boolean;
 }
 
+// Match AllTeachersSchedule TimeSlot structure
 interface TimeSlot {
-  id: string;
-  slot: string;
+  time_slot: string;  // Changed from 'slot' to 'time_slot'
   start_time: string;
   end_time: string;
+  label: string;
 }
 
 interface TeacherTimetableResponse {
@@ -24,7 +28,7 @@ interface TeacherTimetableResponse {
       [timeSlot: string]: TimetableEntry[];
     };
   };
-  time_slots: TimeSlot[];
+  timeslots: TimeSlot[];  // Changed from time_slots to timeslots
   days: string[];
   teacher_name: string;
   total_classes: number;
@@ -50,16 +54,24 @@ const teacherTimetableService = {
    * Get the authenticated teacher's timetable
    */
   getMyTimetable: async (): Promise<TeacherTimetableResponse> => {
-    const response = await staffAPI.get('/timetable/teacher/my-timetable/');
-    return response.data;
+    const response = await APIService.get<TeacherTimetableResponse>(
+      '/api/timetable/teacher/my-timetable/',
+      undefined,
+      'staff'
+    );
+    return response;
   },
 
   /**
    * Get statistics about the teacher's timetable
    */
   getMyStats: async (): Promise<TeacherStatsResponse> => {
-    const response = await staffAPI.get('/timetable/teacher/my-stats/');
-    return response.data;
+    const response = await APIService.get<TeacherStatsResponse>(
+      '/api/timetable/teacher/my-stats/',
+      undefined,
+      'staff'
+    );
+    return response;
   },
 };
 
