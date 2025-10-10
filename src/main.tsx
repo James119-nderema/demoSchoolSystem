@@ -21,6 +21,7 @@ import MainLayout from './layout/MainLayout'
 import StaffMainLayout from './layout/StaffMainLayout'
 import SchoolRegistration from './components/school/SchoolRegistration'
 import SchoolLogin from './components/school/SchoolLogin'
+import SchoolProfile from './components/school/profile'
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import StaffRegistration from './components/staff/StaffRegistration'
@@ -395,6 +396,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardHome /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'profile', element: <SchoolProfile /> },
       { path: 'students', element: <Students /> },
       { path: 'subjects', element: <Subjects /> },
       { path: 'results', element: <Results /> },

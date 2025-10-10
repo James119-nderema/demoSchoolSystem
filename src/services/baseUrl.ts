@@ -206,7 +206,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
   
@@ -218,7 +218,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
   
@@ -322,7 +322,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
 }
@@ -410,6 +410,10 @@ export const DataAPI = {
     APIService.post('/api/schools/', data, 'school'),
   getSchoolsList: () => 
     APIService.get('/api/schools/list/', undefined, 'school'),
+  getSchool: (id: string) =>
+    APIService.get(`/api/schools/${id}/`, undefined, 'school'),
+  updateSchool: (id: string, data: any) =>
+    APIService.put(`/api/schools/${id}/`, data, 'school'),
   getSchoolStaff: () => 
     APIService.get('/api/schools/staff/', undefined, 'school'),
   createSchoolStaff: (data: any) => 

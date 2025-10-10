@@ -188,9 +188,7 @@ export default function Students() {
       if (classFilter) params.class = classFilter;
       if (admission) params.admission_number = admission;
       
-      console.log('Fetching students with params:', params);
       const data = await APIService.get(API_ENDPOINTS.STUDENTS, params, userType);
-      console.log('Students API response:', data);
       
       // Handle different response formats
       let studentsData: Student[] = [];
@@ -212,7 +210,7 @@ export default function Students() {
       setTotalCount(count);
       setTotalPages(Math.ceil(count / pageSize));
       
-      console.log('Students set:', studentsData.length, 'Total count:', count);
+     
       
       // Update URL parameters
       updateUrlParams(page, search, classFilter, admission);
@@ -467,8 +465,6 @@ export default function Students() {
     ...allStudents.map(s => s.class_field || s.class || s.current_class).filter(Boolean)
   ])).sort();
 
-  console.log('Debug - allStudents:', allStudents.length);
-  console.log('Debug - uniqueClasses:', uniqueClasses);
 
   // Calculate stats from filtered results (get all pages with current filters)
   const [stats, setStats] = useState({

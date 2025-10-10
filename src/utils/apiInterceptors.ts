@@ -9,12 +9,22 @@ export const setupAxiosInterceptors = () => {
       const staffToken = localStorage.getItem('staff_access_token');
       const parentToken = localStorage.getItem('parent_access_token');
       const schoolToken = localStorage.getItem('access_token');
+      const currentPath = window.location.pathname;
       
-      if (parentToken && config.url?.includes('/api/parent')) {
+      // Priority: Determine token based on current user context (path) first, then URL pattern
+      if (parentToken && (currentPath.startsWith('/parent') || config.url?.includes('/api/parent'))) {
         config.headers.Authorization = `Bearer ${parentToken}`;
-      } else if (staffToken && config.url?.includes('/api/')) {
+      } else if (staffToken && currentPath.startsWith('/staff')) {
+        // Staff user - use staff token for all API calls
+        config.headers.Authorization = `Bearer ${staffToken}`;
+      } else if (schoolToken && (currentPath.startsWith('/school') || config.url?.includes('/api/schools'))) {
+        // School admin user - use school token for all API calls
+        config.headers.Authorization = `Bearer ${schoolToken}`;
+      } else if (staffToken && (config.url?.includes('/api/staff') || config.url?.includes('/api/input-marks') || config.url?.includes('/api/students') || config.url?.includes('/api/classes') || config.url?.includes('/api/subjects'))) {
+        // Fallback: if no specific context but endpoint matches staff endpoints
         config.headers.Authorization = `Bearer ${staffToken}`;
       } else if (schoolToken && config.url?.includes('/api/')) {
+        // Final fallback: use school token for any other API call
         config.headers.Authorization = `Bearer ${schoolToken}`;
       }
       
@@ -66,18 +76,27 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
   const staffToken = localStorage.getItem('staff_access_token');
   const parentToken = localStorage.getItem('parent_access_token');
   const schoolToken = localStorage.getItem('access_token');
+  const currentPath = window.location.pathname;
   
   // Build full URL using environment variable for production
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
   
-  // Add appropriate token based on URL and available tokens
+  // Add appropriate token based on current user context (path) first, then URL pattern
   const headers = new Headers(options.headers);
-  if (parentToken && url.includes('/api/parent')) {
+  if (parentToken && (currentPath.startsWith('/parent') || url.includes('/api/parent'))) {
     headers.set('Authorization', `Bearer ${parentToken}`);
-  } else if (staffToken && url.includes('/api/')) {
+  } else if (staffToken && currentPath.startsWith('/staff')) {
+    // Staff user - use staff token for all API calls
+    headers.set('Authorization', `Bearer ${staffToken}`);
+  } else if (schoolToken && (currentPath.startsWith('/school') || url.includes('/api/schools'))) {
+    // School admin user - use school token for all API calls
+    headers.set('Authorization', `Bearer ${schoolToken}`);
+  } else if (staffToken && (url.includes('/api/staff') || url.includes('/api/input-marks') || url.includes('/api/students') || url.includes('/api/classes') || url.includes('/api/subjects'))) {
+    // Fallback: if no specific context but endpoint matches staff endpoints
     headers.set('Authorization', `Bearer ${staffToken}`);
   } else if (schoolToken && url.includes('/api/')) {
+    // Final fallback: use school token for any other API call
     headers.set('Authorization', `Bearer ${schoolToken}`);
   }
   
