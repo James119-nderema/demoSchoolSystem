@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { 
   BarChart, Bar, PieChart, Pie, Cell,
@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { MarksAPI } from '../../../services/baseUrl';
 import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users } from 'lucide-react';
-import { API_ENDPOINTS } from '../../../services/baseUrl';
+
 
 interface SubjectAnalyticsData {
   subject_info: {
@@ -47,7 +47,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({ 
   subjectId, 
-  onBack, 
+
   onClassClick 
 }) => {
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);

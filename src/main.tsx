@@ -41,7 +41,6 @@ import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper
 import SchoolDashboard from './pages/SchoolDashboard'
 import StudentStatistics from './components/generalFiles/analytics/StudentStatistics'
 import SubjectList from './components/generalFiles/analytics/SubjectList'
-import SubjectAnalytics from './components/generalFiles/analytics/SubjectAnalytics'
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import ReportsPage from './components/templates/ReportsPage'
