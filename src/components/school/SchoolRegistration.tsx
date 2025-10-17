@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DataAPI } from '../../services/baseUrl'
 
@@ -36,12 +36,6 @@ export default function SchoolRegistration() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
-  const [schools, setSchools] = useState<any[]>([])
-  const [loadingSchools, setLoadingSchools] = useState(false)
-  
-  // Suppress TypeScript warnings - these variables are used for future functionality
-  void schools;
-  void loadingSchools;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -120,18 +114,7 @@ export default function SchoolRegistration() {
     }, 5000)
   }
 
-  const loadSchools = async () => {
-    setLoadingSchools(true)
 
-    try {
-      const data = await DataAPI.getSchoolsList();
-      setSchools(data.schools)
-    } catch (error: any) {
-      console.error('Network error:', error)
-    }
-
-    setLoadingSchools(false)
-  }
 
   // const viewSchoolDetails = (school: any) => {
   //   const details = `
@@ -145,10 +128,7 @@ export default function SchoolRegistration() {
   //   alert(details)
   // }
 
-  // Load schools on component mount
-  useEffect(() => {
-    loadSchools()
-  }, [])
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
