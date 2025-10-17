@@ -40,6 +40,7 @@ import StatisticsDashboard from './pages/StatisticsDashboard'
 import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper } from './components/staff/AnalyticsWrappers'
 import SchoolDashboard from './pages/SchoolDashboard'
 import StudentStatistics from './components/generalFiles/analytics/StudentStatistics'
+import SubjectList from './components/generalFiles/analytics/SubjectList'
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import ReportsPage from './components/templates/ReportsPage'
@@ -147,9 +148,24 @@ const router = createBrowserRouter([
               </AuthenticatedRoute>
             ) 
           },
+          { 
+            path: 'statistics/subjects', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectList />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'statistics/subject/:subjectId', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectAnalyticsWrapper />
+              </AuthenticatedRoute>
+            ) 
+          },
           { path: 'statistics/student/:studentId', element: <StudentAnalyticsWrapper /> },
           { path: 'statistics/class/:classId', element: <ClassAnalyticsWrapper /> },
-          { path: 'statistics/subject/:subjectId', element: <SubjectAnalyticsWrapper /> },
           { 
             path: 'reports', 
             element: (
