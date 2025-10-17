@@ -408,8 +408,6 @@ export const DataAPI = {
   // Schools
   createSchool: (data: any) => 
     APIService.post('/api/schools/', data, 'school'),
-  getSchoolsList: () => 
-    APIService.get('/api/schools/list/', undefined, 'school'),
   getSchool: (id: string) =>
     APIService.get(`/api/schools/${id}/`, undefined, 'school'),
   updateSchool: (id: string, data: any) =>
