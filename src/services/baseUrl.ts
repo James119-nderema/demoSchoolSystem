@@ -41,6 +41,7 @@ const API_CONFIG = {
       STUDENT_ANALYTICS: '/api/input-marks/student-analytics/',
       CLASS_ANALYTICS: '/api/input-marks/class-analytics/',
       SUBJECT_ANALYTICS: '/api/input-marks/subject-analytics/',
+      UPDATE_RESULT: (id: string) => `/api/input-marks/results/${id}/`,
     },
     
     // Parent endpoints
@@ -421,6 +422,28 @@ export const DataAPI = {
 };
 
 export const MarksAPI = {
+  // Generic GET method
+  get: async (endpoint: string, config?: any) => {
+    try {
+      const response = await APIService.get(endpoint, config?.params, 'staff');
+      return response;
+    } catch (err) {
+      console.error('Error in MarksAPI GET:', err);
+      throw err;
+    }
+  },
+
+  // Update marks
+  updateResult: async (resultId: string, data: { marks_obtained: number }) => {
+    try {
+      const response = await APIService.put(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${resultId}/`, data, 'staff');
+      return response;
+    } catch (err) {
+      console.error('Error updating result:', err);
+      throw err;
+    }
+  },
+
   // Dropdown data
   getDropdownData: () => 
     APIService.get(API_ENDPOINTS.INPUT_MARKS.DROPDOWN_DATA, undefined, 'staff'),
@@ -438,8 +461,6 @@ export const MarksAPI = {
     APIService.get(API_ENDPOINTS.INPUT_MARKS.RESULTS, params, 'staff'),
   createResult: (data: any) => 
     APIService.post(API_ENDPOINTS.INPUT_MARKS.RESULTS, data, 'staff'),
-  updateResult: (id: string, data: any) => 
-    APIService.put(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${id}/`, data, 'staff'),
   deleteResult: (id: string) => 
     APIService.delete(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${id}/`, 'staff'),
     

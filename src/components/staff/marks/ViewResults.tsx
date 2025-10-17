@@ -21,6 +21,79 @@ interface Result {
   date_updated: string;
 }
 
+interface EditModalProps {
+  result: Result | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (id: number, newMarks: number) => void;
+}
+
+const EditModal: React.FC<EditModalProps> = ({ result, isOpen, onClose, onSave }) => {
+  const [marks, setMarks] = useState<number>(result?.marks_obtained || 0);
+
+  useEffect(() => {
+    if (result) {
+      setMarks(result.marks_obtained);
+    }
+  }, [result]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (result) {
+      onSave(result.id, marks);
+    }
+    onClose();
+  };
+
+  if (!isOpen || !result) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Edit Student Marks</h2>
+        
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">Student: {result.student_name}</p>
+          <p className="text-sm text-gray-600">Subject: {result.subject_name}</p>
+          <p className="text-sm text-gray-600">Total Marks: {result.total_marks}</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Marks Obtained
+            </label>
+            <input
+              type="number"
+              max={result.total_marks}
+              min={0}
+              value={marks}
+              onChange={(e) => setMarks(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 interface Class {
   id: number;
   class_name: string;
@@ -48,6 +121,8 @@ const ViewResults: React.FC = () => {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [selectedResult, setSelectedResult] = useState<Result | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   // Dropdown data
   const [classes, setClasses] = useState<Class[]>([]);
@@ -94,6 +169,17 @@ const ViewResults: React.FC = () => {
       setError('Failed to fetch results');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditResult = async (id: number, newMarks: number) => {
+    try {
+      await MarksAPI.updateResult(id.toString(), { marks_obtained: newMarks });
+      // Refresh results after update
+      fetchResults();
+      setError('');
+    } catch (err) {
+      setError('Failed to update marks');
     }
   };
 
@@ -408,6 +494,9 @@ const ViewResults: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -459,11 +548,33 @@ const ViewResults: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(result.date_created).toLocaleDateString()}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedResult(result);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+            
+            {/* Edit Modal */}
+            <EditModal
+              result={selectedResult}
+              isOpen={isEditModalOpen}
+              onClose={() => {
+                setIsEditModalOpen(false);
+                setSelectedResult(null);
+              }}
+              onSave={handleEditResult}
+            />
           </div>
 
           {/* Pagination */}

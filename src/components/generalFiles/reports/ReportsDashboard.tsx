@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { authFetch } from '../../../utils/apiInterceptors';
+import { generateReportsPDF } from '../../../utils/pdfGenerator';
 
-interface Student {
+export interface Student {
   student_name: string;
   average: number;
   total: number;
@@ -11,26 +12,26 @@ interface Student {
   position: number;
 }
 
-interface TopStudentsPerClass {
+export interface TopStudentsPerClass {
   class_name: string;
   stream: string;
   students: Student[];
 }
 
-interface Champion {
+export interface Champion {
   student_name: string;
   stream: string;
   marks: number;
   subject: string;
 }
 
-interface SubjectChampionsPerClass {
+export interface SubjectChampionsPerClass {
   class_name: string;
   stream: string;
   champions: Champion[];
 }
 
-interface StreamWithinClass {
+export interface StreamWithinClass {
   stream: string;
   class_name: string;
   average: number;
@@ -38,21 +39,21 @@ interface StreamWithinClass {
   total_students: number;
 }
 
-interface StreamRanking {
+export interface StreamRanking {
   class_level: string;
   class_average: number;
   class_position: number;
   streams: StreamWithinClass[];
 }
 
-interface PieChartData {
+export interface PieChartData {
   stream: string;
   top_students: number;
   subject_champions: number;
   total_classes: number;
 }
 
-interface ReportsData {
+export interface ReportsData {
   top_students_per_class: TopStudentsPerClass[];
   subject_champions: SubjectChampionsPerClass[];
   stream_rankings: StreamRanking[];
@@ -176,7 +177,27 @@ const ReportsDashboard: React.FC = () => {
   if (noDataResponse) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Reports Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Reports Dashboard</h1>
+          <button
+            onClick={() => {
+              if (reportsData) {
+                generateReportsPDF(reportsData, {
+                  term,
+                  academicYear,
+                  examType
+                });
+              }
+            }}
+            disabled={!reportsData || loading}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586L7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+            </svg>
+            {loading ? 'Loading...' : 'Download PDF Report'}
+          </button>
+        </div>
         
         {/* Filter Controls */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -269,7 +290,27 @@ const ReportsDashboard: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Reports Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Reports Dashboard</h1>
+        <button
+          onClick={() => {
+            if (reportsData) {
+              generateReportsPDF(reportsData, {
+                term,
+                academicYear,
+                examType
+              });
+            }
+          }}
+          disabled={!reportsData || loading}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586L7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+          </svg>
+          {loading ? 'Loading...' : 'Download PDF Report'}
+        </button>
+      </div>
       
       {/* Filter Controls - Always visible */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
