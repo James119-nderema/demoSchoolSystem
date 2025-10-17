@@ -1,9 +1,9 @@
 export interface Class {
-  id: number;
+  id: string; // Changed from number to string for UUID
   school_id: number;
   school_name: string;
   class_name: string;
-  class_code: string;
+  class_code: string; // Represents type/category of class
   description?: string;
   capacity: number;
   is_active: boolean;

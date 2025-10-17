@@ -13,10 +13,26 @@ export default function UploadClassCSVModal({ isOpen, onClose, onUpload, isLoadi
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+    // Debug logging for browser compatibility
+    console.log('File selected:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified
+    });
+    
+    // More robust CSV file validation for cross-browser compatibility
+    const isCSVFile = file.type === 'text/csv' || 
+                     file.type === 'application/csv' || 
+                     file.type === 'text/plain' ||
+                     file.type === '' || // Some browsers don't set MIME type for CSV
+                     file.name.toLowerCase().endsWith('.csv');
+    
+    if (isCSVFile) {
       setSelectedFile(file);
     } else {
-      alert('Please select a CSV file');
+      console.error('Invalid file type:', file.type, 'for file:', file.name);
+      alert('Please select a valid CSV file (.csv extension)');
     }
   };
 
@@ -186,7 +202,7 @@ export default function UploadClassCSVModal({ isOpen, onClose, onUpload, isLoadi
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,text/csv,application/csv,text/plain"
             onChange={handleFileInput}
             className="hidden"
           />

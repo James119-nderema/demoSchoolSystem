@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Link} from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { 
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
+import { MarksAPI } from '../../../services/baseUrl';
 import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users } from 'lucide-react';
+
 
 interface SubjectAnalyticsData {
   subject_info: {
@@ -44,7 +47,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({ 
   subjectId, 
-  onBack, 
+
   onClassClick 
 }) => {
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);
@@ -54,38 +57,108 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   const fetchSubjectData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('staff_access_token');
+      console.log('Fetching data for subject ID:', subjectId);
+      const response = await MarksAPI.get('/api/input-marks/subject-analytics/', {
+        params: {
+          subject_id: subjectId
+        }
+      });
       
-      if (!token) {
-        throw new Error('Authentication token not found');
+      if (!response) {
+        throw new Error('No response from API');
       }
 
-      const queryParams = new URLSearchParams({
-        subject_id: subjectId,
-        term: '1',
-        academic_year: '2024-2025',
-        exam_type: 'exam_1'
+      // Check if data is in response or response.data
+      // Use response.data if it exists, otherwise use response itself
+      const data = response.data || response;
+      
+      console.log('API Response structure:', {
+        hasResponseData: !!response.data,
+        responseKeys: Object.keys(response),
+        dataKeys: Object.keys(data),
+        hasSubjectInfo: !!data.subject_info,
+        hasStatistics: !!data.statistics,
+        allKeys: {
+          subject_info: data.subject_info ? Object.keys(data.subject_info) : [],
+          statistics: data.statistics ? Object.keys(data.statistics) : [],
+          other: Object.keys(data).filter(k => !['subject_info', 'statistics'].includes(k))
+        }
+      });
+      if (!data) {
+        throw new Error('No data available in response');
+      }
+
+      console.log('Raw subject_info:', data.subject_info);
+      console.log('Raw statistics:', data.statistics);
+      console.log('Statistics values:', {
+        average: data.statistics?.average_marks,
+        totalAssessments: data.statistics?.total_assessments || data.statistics?.assessments,
+        totalStudents: data.statistics?.total_students,
+        highest: data.statistics?.highest_marks || data.statistics?.highest_score,
+        lowest: data.statistics?.lowest_marks || data.statistics?.lowest_score,
+        passRate: data.statistics?.pass_rate,
+        excellenceRate: data.statistics?.excellence_rate
       });
 
-      const response = await fetch(
-        `/api/input-marks/subject-analytics/?${queryParams}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
+      // Transform the backend response to match our frontend data structure
+      const transformedData: SubjectAnalyticsData = {
+        subject_info: {
+          name: data.subject_info?.subject_name || data.subject_info?.name || 'Unknown Subject',
+          code: data.subject_info?.subject_code || data.subject_info?.code || 'N/A',
+          academic_year: data.academic_year || '2024-2025'
+        },
+        overall_average: Number(data.statistics?.average_marks) || 0,
+        total_assessments: Number(data.statistics?.total_assessments || data.statistics?.assessments) || 0,
+        total_students_assessed: Number(data.statistics?.total_students) || 0,
+        highest_score: Number(data.statistics?.highest_marks || data.statistics?.highest_score) || 0,
+        lowest_score: Number(data.statistics?.lowest_marks || data.statistics?.lowest_score) || 0,
+        pass_rate: Number(data.statistics?.pass_rate) || 0,
+        excellence_rate: Number(data.statistics?.excellence_rate) || 0,
+        class_performance: Object.entries(data.class_performance || {}).reduce((acc, [key, value]) => {
+          const classData = value as any;
+          acc[key] = {
+            average: classData?.average || 0,
+            assessments: classData?.assessments || 0,
+            pass_rate: classData?.pass_rate || 0
+          };
+          return acc;
+        }, {} as Record<string, { average: number; assessments: number; pass_rate: number }>),
+        performance_trends: Object.entries(data.performance_trends || {}).reduce((acc, [key, value]) => {
+          const trendData = value as any;
+          acc[key] = {
+            average: trendData?.average || 0,
+            count: trendData?.count || 0
+          };
+          return acc;
+        }, {} as Record<string, { average: number; count: number }>),
+        challenging_topics: Array.isArray(data.challenging_topics) ? data.challenging_topics : [],
+        success_areas: Array.isArray(data.success_areas) ? data.success_areas : [],
+        grade_distribution: data.grade_distribution || {}
+      };
+
+      console.log('Transformed data:', {
+        subjectInfo: transformedData.subject_info,
+        performance: {
+          overall: transformedData.overall_average,
+          total: transformedData.total_assessments,
+          students: transformedData.total_students_assessed
+        },
+        distributions: {
+          grades: Object.keys(transformedData.grade_distribution).length,
+          classes: Object.keys(transformedData.class_performance).length,
+          trends: Object.keys(transformedData.performance_trends).length
         }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch subject analytics');
-      }
-
-      const data = await response.json();
-      setSubjectData(data);
+      });
+      setSubjectData(transformedData);
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching subject analytics:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status
+      });
+      setError(err.response?.data?.detail || err.message || 'Failed to fetch subject analytics');
     } finally {
       setLoading(false);
     }
@@ -98,36 +171,51 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   }, [subjectId]);
 
   const formatClassPerformanceData = () => {
-    if (!subjectData) return [];
+    if (!subjectData?.class_performance) return [];
     
-    return Object.entries(subjectData.class_performance).map(([className, data]) => ({
-      class: className,
-      average: Math.round(data.average * 100) / 100,
-      assessments: data.assessments,
-      passRate: Math.round(data.pass_rate * 100) / 100
-    }));
+    try {
+      return Object.entries(subjectData.class_performance).map(([className, data]) => ({
+        class: className,
+        average: Math.round((data.average || 0) * 100) / 100,
+        assessments: data.assessments || 0,
+        passRate: Math.round((data.pass_rate || 0) * 100) / 100
+      }));
+    } catch (err) {
+      console.error('Error formatting class performance data:', err);
+      return [];
+    }
   };
 
   const formatTrendsData = () => {
-    if (!subjectData) return [];
+    if (!subjectData?.performance_trends) return [];
     
-    return Object.entries(subjectData.performance_trends)
-      .map(([month, data]) => ({
-        month,
-        average: Math.round(data.average * 100) / 100,
-        assessments: data.count
-      }))
-      .sort((a, b) => a.month.localeCompare(b.month));
+    try {
+      return Object.entries(subjectData.performance_trends)
+        .map(([month, data]) => ({
+          month,
+          average: Math.round((data.average || 0) * 100) / 100,
+          assessments: data.count || 0
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+    } catch (err) {
+      console.error('Error formatting trends data:', err);
+      return [];
+    }
   };
 
   const formatGradeDistribution = () => {
-    if (!subjectData) return [];
+    if (!subjectData?.grade_distribution) return [];
     
-    return Object.entries(subjectData.grade_distribution).map(([grade, count]) => ({
-      grade,
-      count,
-      percentage: Math.round((count / subjectData.total_assessments) * 100)
-    }));
+    try {
+      return Object.entries(subjectData.grade_distribution).map(([grade, count]) => ({
+        grade,
+        count: count || 0,
+        percentage: Math.round(((count || 0) / (subjectData?.total_assessments || 1)) * 100)
+      }));
+    } catch (err) {
+      console.error('Error formatting grade distribution data:', err);
+      return [];
+    }
   };
 
   const getPerformanceLevel = (score: number) => {
@@ -139,8 +227,9 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <span className="ml-2">Loading subject analytics...</span>
       </div>
     );
   }
@@ -166,7 +255,14 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   }
 
   if (!subjectData) {
-    return <div>No data available</div>;
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">No data available. </strong>
+          <span className="block sm:inline">There is no analytics data available for this subject.</span>
+        </div>
+      </div>
+    );
   }
 
   const performanceLevel = getPerformanceLevel(subjectData.overall_average);
@@ -176,20 +272,18 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          {onBack && (
-            <button 
-              onClick={onBack}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              ← Back
-            </button>
-          )}
+          <Link 
+            to="/staff/statistics/subjects"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            ← Back to Subjects
+          </Link>
           <div className="flex items-center space-x-3">
             <BookOpen className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{subjectData.subject_info.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{subjectData?.subject_info?.name || 'Subject'}</h1>
               <p className="text-gray-600">
-                Code: {subjectData.subject_info.code} | {subjectData.subject_info.academic_year}
+                Code: {subjectData?.subject_info?.code || 'N/A'} | {subjectData?.subject_info?.academic_year || 'N/A'}
               </p>
             </div>
           </div>
@@ -208,7 +302,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Overall Average</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.overall_average}%</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.overall_average?.toFixed(1) || '0'}%</p>
               </div>
               <Award className="h-6 w-6 text-blue-500" />
             </div>
@@ -220,7 +314,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pass Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.pass_rate}%</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.pass_rate?.toFixed(1) || '0'}%</p>
               </div>
               <Target className="h-6 w-6 text-green-500" />
             </div>
@@ -232,7 +326,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Excellence Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.excellence_rate}%</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.excellence_rate?.toFixed(1) || '0'}%</p>
               </div>
               <Award className="h-6 w-6 text-yellow-500" />
             </div>
@@ -244,7 +338,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Students Assessed</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.total_students_assessed}</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.total_students_assessed || 0}</p>
               </div>
               <Users className="h-6 w-6 text-purple-500" />
             </div>
@@ -256,7 +350,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Highest Score</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.highest_score}%</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.highest_score?.toFixed(1) || '0'}%</p>
               </div>
               <TrendingUp className="h-6 w-6 text-green-500" />
             </div>
@@ -268,7 +362,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Assessments</p>
-                <p className="text-2xl font-bold text-gray-900">{subjectData.total_assessments}</p>
+                <p className="text-2xl font-bold text-gray-900">{subjectData?.total_assessments || 0}</p>
               </div>
               <BookOpen className="h-6 w-6 text-orange-500" />
             </div>

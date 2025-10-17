@@ -27,6 +27,12 @@ export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 			href: '/school/dashboard'
 		},
 		{
+			id: 'profile',
+			name: 'Profile',
+			icon: '🏢',
+			href: '/school/profile'
+		},
+		{
 			id: 'students',
 			name: 'Students',
 			icon: '👨‍🎓',
@@ -148,6 +154,10 @@ export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 					<NavLink to="/school/dashboard" className={navLinkClass}>
 						<span>📊</span>
 						<span>Dashboard</span>
+					</NavLink>
+					<NavLink to="/school/profile" className={navLinkClass}>
+						<span>🏢</span>
+						<span>Profile</span>
 					</NavLink>
 					<NavLink to="/school/students" className={navLinkClass}>
 						<span>👨‍🎓</span>

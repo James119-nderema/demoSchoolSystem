@@ -21,6 +21,7 @@ import MainLayout from './layout/MainLayout'
 import StaffMainLayout from './layout/StaffMainLayout'
 import SchoolRegistration from './components/school/SchoolRegistration'
 import SchoolLogin from './components/school/SchoolLogin'
+import SchoolProfile from './components/school/profile'
 import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import StaffRegistration from './components/staff/StaffRegistration'
@@ -39,9 +40,21 @@ import StatisticsDashboard from './pages/StatisticsDashboard'
 import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper } from './components/staff/AnalyticsWrappers'
 import SchoolDashboard from './pages/SchoolDashboard'
 import StudentStatistics from './components/generalFiles/analytics/StudentStatistics'
+import SubjectList from './components/generalFiles/analytics/SubjectList'
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import ReportsPage from './components/templates/ReportsPage'
+import TimetableDashboard from './components/timetable/TimetableDashboard'
+import SubjectFrequency from './components/timetable/SubjectFrequency/SubjectFrequency'
+import TeacherSubjectAssignment from './components/timetable/TeacherSubjectAssignment/TeacherSubjectAssignment'
+import Priorities from './components/timetable/priorities/Priorities'
+import ClassSchedules from './components/timetable/classSchedule/ClassSchedules'
+import Teachers from './components/timetable/teachers/Teachers'
+import BlockSubjects from './components/timetable/blockSubjects/BlockSubjects'
+import TimetableView from './components/timetable/generation/TimetableView'
+import TeacherTimetableView from './components/timetable/TeacherTimetableView'
+import AllTeachersSchedules from './components/timetable/AllTeachersSchedules'
+import FailedSchedules from './components/timetable/generation/FailedSchedules'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -135,9 +148,24 @@ const router = createBrowserRouter([
               </AuthenticatedRoute>
             ) 
           },
+          { 
+            path: 'statistics/subjects', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectList />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'statistics/subject/:subjectId', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectAnalyticsWrapper />
+              </AuthenticatedRoute>
+            ) 
+          },
           { path: 'statistics/student/:studentId', element: <StudentAnalyticsWrapper /> },
           { path: 'statistics/class/:classId', element: <ClassAnalyticsWrapper /> },
-          { path: 'statistics/subject/:subjectId', element: <SubjectAnalyticsWrapper /> },
           { 
             path: 'reports', 
             element: (
@@ -151,6 +179,118 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <ReportsPage />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/time', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/schedule', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/classes', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/subject-frequency', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <SubjectFrequency />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/teacher-subject', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TeacherSubjectAssignment />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/priorities', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Priorities />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/class-schedules', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <ClassSchedules />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/teachers', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Teachers />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/block-subjects', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <BlockSubjects />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/view', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TeacherTimetableView />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/all-teachers', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <AllTeachersSchedules />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/manage', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TimetableView />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'timetable/failed', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <FailedSchedules />
               </AuthenticatedRoute>
             ) 
           },
@@ -272,6 +412,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardHome /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'profile', element: <SchoolProfile /> },
       { path: 'students', element: <Students /> },
       { path: 'subjects', element: <Subjects /> },
       { path: 'results', element: <Results /> },

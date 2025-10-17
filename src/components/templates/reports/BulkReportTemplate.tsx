@@ -3,6 +3,25 @@ import jsPDF from 'jspdf';
 import { Download, FileText, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { DataAPI, ReportsAPI } from '../../../services/baseUrl';
 
+// Diagnostic: listen for unhandled promise rejections so we can surface extension errors
+if (typeof window !== 'undefined') {
+  const _unhandledRejectionHandler = (e: PromiseRejectionEvent) => {
+    try {
+      console.warn('Unhandled promise rejection captured:', e.reason);
+      // If the error message matches the extension connection error, include hint
+      if (e.reason && typeof e.reason === 'string' && e.reason.includes('Could not establish connection')) {
+        console.warn('This error often comes from a browser extension content script (content-all.js). Try disabling extensions or run in an incognito window to isolate it.');
+      }
+    } catch (err) {
+      console.warn('Error inside unhandledRejection handler', err);
+    }
+  };
+  window.addEventListener('unhandledrejection', _unhandledRejectionHandler);
+  // remove listener when page unloads to avoid duplicates during HMR
+  window.addEventListener('beforeunload', () => {
+    window.removeEventListener('unhandledrejection', _unhandledRejectionHandler);
+  });
+}
 interface Class {
   id: number;
   class_name: string;
@@ -148,10 +167,11 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
-      const margin = 15;
-      const contentWidth = pageWidth - (margin * 2);
+  const pageHeight = 297; // A4 height in mm
+  const margin = 15;
+  const contentWidth = pageWidth - (margin * 2);
       
-      const totalReports = bulkReportData.reports.length;
+  const totalReports = bulkReportData.reports.length;
       
       for (let reportIndex = 0; reportIndex < totalReports; reportIndex++) {
         if (cancelRequested) break;
@@ -188,13 +208,77 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
           }
         };
         
-        // Header (compact for bulk)
+        // Header (compact for bulk) with logo
+        let logoHeight = 0;
+        if (reportData.school_info.logo_url) {
+          try {
+            // Fetch logo as base64 data URL
+            const toDataURL = (url: string) => new Promise<string>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.onload = function() {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                  resolve(reader.result as string);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(xhr.response);
+              };
+              xhr.onerror = reject;
+              xhr.open('GET', url);
+              xhr.responseType = 'blob';
+              xhr.send();
+            });
+            const logoDataUrl = await toDataURL(reportData.school_info.logo_url);
+            const logoSize = 15; // Smaller logo for bulk reports
+            const logoX = (pageWidth - logoSize) / 2;
+            // Detect mime type and choose format for jsPDF
+            let imgFormat: any = 'PNG';
+            try {
+              const mimeMatch = logoDataUrl.match(/^data:(image\/(png|jpeg|jpg));base64,/i);
+              if (mimeMatch && mimeMatch[1]) {
+                const mime = mimeMatch[1].toLowerCase();
+                if (mime.includes('jpeg') || mime.includes('jpg')) imgFormat = 'JPEG';
+                else imgFormat = 'PNG';
+              }
+            } catch (err) {
+              imgFormat = 'PNG';
+            }
+            // Try to add image at top; if it fails, try with a smaller size
+            try {
+              pdf.addImage(logoDataUrl, imgFormat, logoX, currentY, logoSize, logoSize);
+              logoHeight = logoSize + 3;
+              currentY += logoHeight;
+            } catch (embedErr) {
+              console.warn('First attempt to embed logo failed, retrying with smaller size', embedErr);
+              const smallSize = Math.max(10, logoSize - 5);
+              try {
+                pdf.addImage(logoDataUrl, imgFormat, logoX, currentY, smallSize, smallSize);
+                logoHeight = smallSize + 3;
+                currentY += logoHeight;
+              } catch (secondErr) {
+                console.warn('Failed to embed logo on retry:', secondErr);
+                // leave logoHeight as 0 and continue
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to load logo:', error);
+          }
+        }
+        
         currentY += addText(reportData.school_info.name.toUpperCase(), 0, currentY, { 
           fontSize: 12, fontStyle: 'bold', align: 'center' 
         });
-        currentY += addText(reportData.school_info.address, 0, currentY, { 
+        currentY += addText(reportData.school_info.address || '', 0, currentY, { 
           fontSize: 8, align: 'center' 
         });
+        // Add phone and email
+        const contactLine = `TEL: ${reportData.school_info.phone || ''} | EMAIL: ${reportData.school_info.email || ''}`;
+        currentY += addText(contactLine, 0, currentY, { fontSize: 8, align: 'center' });
+        if (reportData.school_info.motto) {
+          currentY += addText(reportData.school_info.motto, 0, currentY, { 
+            fontSize: 7, fontStyle: 'italic', align: 'center' 
+          });
+        }
         currentY += addText('ACADEMIC PROGRESS REPORT', 0, currentY, { 
           fontSize: 10, fontStyle: 'bold', align: 'center' 
         });
@@ -204,54 +288,73 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
         currentY += 6;
         
         // Student Information (compact)
-        addText(`NAME: ${reportData.student_info.name.toUpperCase()}`, margin, currentY, { fontSize: 8, fontStyle: 'bold' });
-        addText(`TERM: ${reportData.exam_info.term}`, pageWidth / 2, currentY, { fontSize: 8, fontStyle: 'bold' });
-        currentY += 5;
+        addText(`NAME: ${reportData.student_info.name.toUpperCase()}`, margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        addText(`TERM: ${reportData.exam_info.term}`, pageWidth / 2, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 6;
         
-        addText(`ADM NO: ${reportData.student_info.admission_number}`, margin, currentY, { fontSize: 8, fontStyle: 'bold' });
-        addText(`CLASS: ${reportData.student_info.class}`, pageWidth / 2, currentY, { fontSize: 8, fontStyle: 'bold' });
-        currentY += 8;
+        addText(`ADM NO: ${reportData.student_info.admission_number}`, margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        addText(`YEAR: ${reportData.exam_info.academic_year}`, pageWidth / 2, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 6;
         
-        // Compact Subjects Table
-        const rowHeight = 5;
-        const colWidths = [50, 15, 15, 15, 15, 40];
+        addText(`CLASS: ${reportData.student_info.class}`, margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        addText(`EXAM: ${reportData.exam_info.exam_type}`, pageWidth / 2, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 10;
+        
+        // Subjects Table
+        const rowHeight = 7;
+        const colWidths = [45, 18, 18, 18, 18, 43];
         let tableX = margin;
         
         // Table headers
-        const headers = ['SUBJECT', 'MKS', 'OUT', '%', 'GRD', 'REMARKS'];
+        const headers = ['SUBJECT', 'MARKS', 'OUT OF', '%', 'GRADE', 'REMARKS'];
         pdf.setFillColor(240, 240, 240);
         pdf.rect(tableX, currentY, contentWidth, rowHeight, 'F');
         
         let currentX = tableX;
         headers.forEach((header, index) => {
-          pdf.setFontSize(7);
+          pdf.setFontSize(8);
           pdf.setFont('helvetica', 'bold');
-          pdf.text(header, currentX + 1, currentY + 3.5);
+          pdf.text(header, currentX + 2, currentY + 4.5);
+          
+          // Draw vertical lines
+          if (index < headers.length - 1) {
+            pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
+          }
           currentX += colWidths[index];
         });
         
         pdf.rect(tableX, currentY, contentWidth, rowHeight);
         currentY += rowHeight;
         
-        // Table data
+        // Table data - Show ALL subjects
         reportData.subjects.forEach((subject: any) => {
           currentX = tableX;
           const rowData = [
-            subject.subject.substring(0, 20), // Truncate long subject names
-            subject.marks_obtained.toString(),
-            subject.total_marks.toString(),
-            subject.percentage.toFixed(0),
-            subject.grade,
-            subject.percentage >= 70 ? 'GOOD' : subject.percentage >= 50 ? 'AVG' : 'IMP'
+            subject.subject,
+            (subject.marks_obtained === null || subject.marks_obtained === undefined || subject.marks_obtained === 0) ? '-' : subject.marks_obtained.toString(),
+            (subject.total_marks === null || subject.total_marks === undefined || subject.total_marks === 0) ? '-' : subject.total_marks.toString(),
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0) ? '-' : subject.percentage.toFixed(1),
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0 || !subject.grade || subject.grade === '' || subject.grade === null || subject.grade === undefined) ? '-' : subject.grade,
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0)
+              ? '-' 
+              : subject.percentage >= 80 ? 'EXCELLENT' : 
+                subject.percentage >= 70 ? 'VERY GOOD' :
+                subject.percentage >= 60 ? 'GOOD' :
+                subject.percentage >= 50 ? 'AVERAGE' : 'NEEDS IMPROVEMENT'
           ];
           
           rowData.forEach((data, index) => {
-            pdf.setFontSize(6);
+            pdf.setFontSize(7);
             pdf.setFont('helvetica', 'normal');
             if (index === 1 || index === 2 || index === 3 || index === 4) {
-              pdf.text(data, currentX + (colWidths[index] / 2), currentY + 3.5, { align: 'center' });
+              pdf.text(data, currentX + (colWidths[index] / 2), currentY + 4.5, { align: 'center' });
             } else {
-              pdf.text(data, currentX + 1, currentY + 3.5);
+              pdf.text(data, currentX + 1, currentY + 4.5);
+            }
+            
+            // Draw vertical lines
+            if (index < rowData.length - 1) {
+              pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
             }
             currentX += colWidths[index];
           });
@@ -269,37 +372,77 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
           'TOTAL',
           reportData.summary.total_marks_obtained.toString(),
           reportData.summary.total_possible_marks.toString(),
-          reportData.summary.overall_percentage.toFixed(0),
+          reportData.summary.overall_percentage.toFixed(1),
           reportData.summary.overall_grade,
           '-'
         ];
         
         summaryData.forEach((data, index) => {
-          pdf.setFontSize(7);
+          pdf.setFontSize(8);
           pdf.setFont('helvetica', 'bold');
           if (index === 1 || index === 2 || index === 3 || index === 4) {
-            pdf.text(data, currentX + (colWidths[index] / 2), currentY + 3.5, { align: 'center' });
+            pdf.text(data, currentX + (colWidths[index] / 2), currentY + 4.5, { align: 'center' });
           } else {
-            pdf.text(data, currentX + 1, currentY + 3.5);
+            pdf.text(data, currentX + 2, currentY + 4.5);
+          }
+          
+          if (index < summaryData.length - 1) {
+            pdf.line(currentX + colWidths[index], currentY, currentX + colWidths[index], currentY + rowHeight);
           }
           currentX += colWidths[index];
         });
         
         pdf.rect(tableX, currentY, contentWidth, rowHeight);
-        currentY += rowHeight + 6;
+        currentY += rowHeight + 10;
         
-        // Compact summary
-        addText(`POSITION: ${reportData.summary.position}/${reportData.summary.total_students}`, margin, currentY, { fontSize: 8 });
-        addText(`GRADE: ${reportData.summary.overall_grade} (${reportData.summary.overall_percentage.toFixed(1)}%)`, pageWidth / 2, currentY, { fontSize: 8 });
-        currentY += 8;
+        // Class Summary
+        addText(`POSITION IN CLASS: ${reportData.summary.position} out of ${reportData.summary.total_students}`, margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        addText(`OVERALL GRADE: ${reportData.summary.overall_grade}`, pageWidth / 2, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 6;
         
-        // Teacher comment (very compact)
+        addText(`TOTAL SUBJECTS: ${reportData.summary.total_subjects}`, margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        addText(`PERCENTAGE: ${reportData.summary.overall_percentage.toFixed(1)}%`, pageWidth / 2, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 12;
+        
+        // Class Teacher's Comments
+        addText('CLASS TEACHER\'S COMMENTS:', margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 6;
+        
         const teacherComment = reportData.summary.overall_percentage >= 80 ? 
-          'Excellent!' : reportData.summary.overall_percentage >= 70 ?
-          'Very good.' : reportData.summary.overall_percentage >= 60 ?
-          'Good work.' : 'Needs improvement.';
+          'Excellent performance! Keep up the outstanding work.' :
+          reportData.summary.overall_percentage >= 70 ?
+          'Very good performance. Continue working hard.' :
+          reportData.summary.overall_percentage >= 60 ?
+          'Good performance. There is room for improvement.' :
+          reportData.summary.overall_percentage >= 50 ?
+          'Average performance. More effort is needed.' :
+          'Performance needs significant improvement. Please seek extra help.';
         
-        addText(`COMMENT: ${teacherComment}`, margin, currentY, { fontSize: 7 });
+        pdf.rect(margin, currentY, contentWidth, 15);
+        currentY += addText(teacherComment, margin + 2, currentY + 4, { fontSize: 8, maxWidth: contentWidth - 4 });
+        currentY += 18;
+        
+        // Principal's Comments
+        addText('PRINCIPAL\'S COMMENTS:', margin, currentY, { fontSize: 10, fontStyle: 'bold' });
+        currentY += 6;
+        
+        pdf.rect(margin, currentY, contentWidth, 15);
+        addText('Good work overall. Continue striving for excellence.', margin + 2, currentY + 4, { fontSize: 8 });
+        currentY += 20;
+        
+        // Footer
+        addText(`CLOSING DATE: ${reportData.exam_info.closing_date || '________________'}`, margin, currentY, { fontSize: 9 });
+        addText('CLASS TEACHER: ________________', pageWidth / 2, currentY, { fontSize: 9 });
+        currentY += 6;
+        
+        addText(`OPENING DATE: ${reportData.exam_info.opening_date || '________________'}`, margin, currentY, { fontSize: 9 });
+        addText('SIGNATURE: ________________', pageWidth / 2, currentY, { fontSize: 9 });
+        currentY += 12;
+        
+        // Generated date
+        addText(`Generated on ${new Date().toLocaleDateString()} | School Management System`, 0, pageHeight - 10, { 
+          fontSize: 7, align: 'center' 
+        });
         
         // Small delay every 10 reports
         if (reportIndex % 10 === 0 && reportIndex > 0) {
@@ -705,10 +848,23 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
               {/* Individual Report Template - Same as StudentReportTemplate */}
               {/* Header */}
               <div className="text-center border-b-2 border-black pb-4 mb-6">
+                {reportData.school_info.logo_url && (
+                  <div className="flex justify-center mb-3">
+                    <img 
+                      src={reportData.school_info.logo_url} 
+                      alt="School Logo" 
+                      className="w-20 h-20 object-contain"
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                )}
                 <h1 className="text-xl font-bold mb-2">{reportData.school_info.name.toUpperCase()}</h1>
                 <p className="text-sm mb-1">{reportData.school_info.address}</p>
                 <p className="text-sm">TEL: {reportData.school_info.phone} | EMAIL: {reportData.school_info.email}</p>
-                <h2 className="text-lg font-bold mt-4 mb-2">ACADEMIC PROGRESS REPORT FORM 2 - 2024</h2>
+                {reportData.school_info.motto && (
+                  <p className="text-sm italic mt-1">MOTTO: {reportData.school_info.motto}</p>
+                )}
+                <h2 className="text-lg font-bold mt-4 mb-2">ACADEMIC PROGRESS REPORT</h2>
               </div>
 
               {/* Student Information */}
@@ -783,7 +939,7 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
               {/* Comments sections - simplified for bulk generation */}
               <div className="mb-6">
                 <h3 className="font-bold mb-2">CLASS TEACHER'S COMMENTS:</h3>
-                <div className="border border-black h-16 p-2">
+                <div className="border border-black h-20 p-2">
                   <p className="text-sm italic">
                     {reportData.summary.overall_percentage >= 80 ? 
                       'Excellent performance! Keep up the outstanding work.' :
@@ -795,6 +951,28 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
                       'Average performance. More effort is needed.' :
                       'Performance needs significant improvement. Please seek extra help.'}
                   </p>
+                </div>
+              </div>
+
+              {/* Principal's Comments */}
+              <div className="mb-6">
+                <h3 className="font-bold mb-2">PRINCIPAL'S COMMENTS:</h3>
+                <div className="border border-black h-20 p-2">
+                  <p className="text-sm italic">
+                    Good work overall. Continue striving for excellence.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer Information */}
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <div>
+                  <p className="mb-2"><strong>CLOSING DATE:</strong> {reportData.exam_info.closing_date || '________________'}</p>
+                  <p className="mb-2"><strong>OPENING DATE:</strong> {reportData.exam_info.opening_date || '________________'}</p>
+                </div>
+                <div>
+                  <p className="mb-2"><strong>CLASS TEACHER:</strong> ________________</p>
+                  <p className="mb-2"><strong>SIGNATURE:</strong> ________________</p>
                 </div>
               </div>
 

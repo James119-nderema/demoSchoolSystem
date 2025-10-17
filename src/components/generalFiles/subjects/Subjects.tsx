@@ -117,13 +117,13 @@ export default function Subjects() {
     }
   };
 
-  const handleDeleteSubject = async (id: number) => {
+  const handleDeleteSubject = async (id: string | number) => {
     if (!confirm('Are you sure you want to delete this subject?')) {
       return;
     }
 
     try {
-      const result = await subjectsService.deleteSubject(id);
+      const result = await subjectsService.deleteSubject(id.toString());
       if (result.success) {
         await loadSubjects();
         await loadStats();
@@ -157,7 +157,7 @@ export default function Subjects() {
 
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase());
+                         (subject.subject_code && subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && subject.is_active) ||
                          (statusFilter === 'inactive' && !subject.is_active);
@@ -338,7 +338,7 @@ export default function Subjects() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                        {subject.subject_code}
+                        {subject.subject_code || <span className="text-gray-400 italic">No code</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {subject.school_name}

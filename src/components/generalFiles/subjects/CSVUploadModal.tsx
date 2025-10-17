@@ -21,11 +21,27 @@ export default function CSVUploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
-    if (file && file.type === 'text/csv') {
+    // Debug logging for browser compatibility
+    console.log('File selected:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified
+    });
+    
+    // More robust CSV file validation for cross-browser compatibility
+    const isCSVFile = file.type === 'text/csv' || 
+                     file.type === 'application/csv' || 
+                     file.type === 'text/plain' ||
+                     file.type === '' || // Some browsers don't set MIME type for CSV
+                     file.name.toLowerCase().endsWith('.csv');
+    
+    if (file && isCSVFile) {
       setSelectedFile(file);
       setUploadResult(null);
     } else {
-      alert('Please select a valid CSV file');
+      console.error('Invalid file type:', file.type, 'for file:', file.name);
+      alert('Please select a valid CSV file (.csv extension)');
     }
   };
 
@@ -164,7 +180,7 @@ Biology,BIO101,Introduction to biology`;
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,text/csv,application/csv,text/plain"
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
@@ -240,16 +256,21 @@ Biology,BIO101,Introduction to biology`;
                     {uploadResult.errors && (
                       <div className="mt-2">
                         <p className="font-medium">Errors:</p>
-                        {typeof uploadResult.errors === 'object' ? (
+                        {typeof uploadResult.errors === 'object' && uploadResult.errors !== null ? (
                           Object.entries(uploadResult.errors).map(([key, messages]) => (
-                            <div key={key}>
-                              {Array.isArray(messages) ? messages.map((msg, idx) => (
-                                <p key={idx}>• {msg}</p>
-                              )) : <p>• {messages}</p>}
+                            <div key={key} className="mt-1">
+                              <p className="font-medium text-xs capitalize">{key.replace('_', ' ')}:</p>
+                              {Array.isArray(messages) ? (
+                                messages.map((msg, idx) => (
+                                  <p key={idx} className="ml-2">• {typeof msg === 'string' ? msg : JSON.stringify(msg)}</p>
+                                ))
+                              ) : (
+                                <p className="ml-2">• {typeof messages === 'string' ? messages : JSON.stringify(messages)}</p>
+                              )}
                             </div>
                           ))
                         ) : (
-                          <p>• {uploadResult.errors}</p>
+                          <p>• {typeof uploadResult.errors === 'string' ? uploadResult.errors : JSON.stringify(uploadResult.errors)}</p>
                         )}
                       </div>
                     )}

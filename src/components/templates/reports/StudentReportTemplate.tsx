@@ -8,6 +8,10 @@ interface SchoolInfo {
   address: string;
   phone: string;
   email: string;
+  logo_url?: string | null;
+  motto?: string;
+  vision?: string;
+  mission?: string;
 }
 
 interface StudentInfo {
@@ -21,6 +25,8 @@ interface ExamInfo {
   term: string;
   academic_year: string;
   exam_type: string;
+  closing_date?: string;
+  opening_date?: string;
 }
 
 interface Subject {
@@ -151,17 +157,43 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
         }
       };
       
-      // Header
+      // Header with logo
+      let logoHeight = 0;
+      if (reportData.school_info.logo_url) {
+        try {
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
+          await new Promise((resolve, reject) => {
+            logoImg.onload = () => resolve(logoImg);
+            logoImg.onerror = reject;
+            logoImg.src = reportData.school_info.logo_url!;
+          });
+          
+          const logoSize = 20; // Logo size in mm
+          const logoX = (pageWidth - logoSize) / 2;
+          pdf.addImage(logoImg, 'PNG', logoX, currentY, logoSize, logoSize);
+          logoHeight = logoSize + 5;
+          currentY += logoHeight;
+        } catch (error) {
+          console.warn('Failed to load logo:', error);
+        }
+      }
+      
       currentY += addText(reportData.school_info.name.toUpperCase(), 0, currentY, { 
         fontSize: 16, fontStyle: 'bold', align: 'center' 
       });
-      currentY += addText(reportData.school_info.address, 0, currentY, { 
+      currentY += addText(reportData.school_info.address || '', 0, currentY, { 
         fontSize: 10, align: 'center' 
       });
       currentY += addText(`TEL: ${reportData.school_info.phone} | EMAIL: ${reportData.school_info.email}`, 0, currentY, { 
         fontSize: 10, align: 'center' 
       });
-      currentY += addText('ACADEMIC PROGRESS REPORT FORM 2 - 2024', 0, currentY, { 
+      if (reportData.school_info.motto) {
+        currentY += addText(`MOTTO: ${reportData.school_info.motto}`, 0, currentY, { 
+          fontSize: 9, fontStyle: 'italic', align: 'center' 
+        });
+      }
+      currentY += addText('ACADEMIC PROGRESS REPORT', 0, currentY, { 
         fontSize: 14, fontStyle: 'bold', align: 'center' 
       });
       
@@ -210,7 +242,7 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       pdf.rect(tableX, currentY, contentWidth, rowHeight);
       currentY += rowHeight;
       
-      // Table data
+      // Table data - Show ALL subjects
       reportData.subjects.forEach((subject: any) => {
         currentX = tableX;
         const rowData = [
@@ -315,11 +347,11 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
       currentY += 30;
       
       // Footer
-      addText('NEXT TERM BEGINS: ________________', margin, currentY, { fontSize: 10 });
+      addText(`CLOSING DATE: ${reportData.exam_info.closing_date || '________________'}`, margin, currentY, { fontSize: 10 });
       addText('CLASS TEACHER: ________________', pageWidth / 2, currentY, { fontSize: 10 });
       currentY += 8;
       
-      addText('SCHOOL FEES: ________________', margin, currentY, { fontSize: 10 });
+      addText(`OPENING DATE: ${reportData.exam_info.opening_date || '________________'}`, margin, currentY, { fontSize: 10 });
       addText('SIGNATURE: ________________', pageWidth / 2, currentY, { fontSize: 10 });
       currentY += 15;
       
@@ -560,10 +592,23 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
         }}>
           {/* Header */}
           <div className="text-center border-b-2 border-black pb-4 mb-6">
+            {reportData.school_info.logo_url && (
+              <div className="flex justify-center mb-3">
+                <img 
+                  src={reportData.school_info.logo_url} 
+                  alt="School Logo" 
+                  className="w-20 h-20 object-contain"
+                  crossOrigin="anonymous"
+                />
+              </div>
+            )}
             <h1 className="text-xl font-bold mb-2">{reportData.school_info.name.toUpperCase()}</h1>
             <p className="text-sm mb-1">{reportData.school_info.address}</p>
             <p className="text-sm">TEL: {reportData.school_info.phone} | EMAIL: {reportData.school_info.email}</p>
-            <h2 className="text-lg font-bold mt-4 mb-2">ACADEMIC PROGRESS REPORT FORM 2 - 2024</h2>
+            {reportData.school_info.motto && (
+              <p className="text-sm italic mt-1">MOTTO: {reportData.school_info.motto}</p>
+            )}
+            <h2 className="text-lg font-bold mt-4 mb-2">ACADEMIC PROGRESS REPORT</h2>
           </div>
 
           {/* Student Information */}
@@ -666,8 +711,8 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
           {/* Next Term */}
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <p className="mb-2"><strong>NEXT TERM BEGINS:</strong> ________________</p>
-              <p className="mb-2"><strong>SCHOOL FEES:</strong> ________________</p>
+              <p className="mb-2"><strong>CLOSING DATE:</strong> {reportData.exam_info.closing_date || '________________'}</p>
+              <p className="mb-2"><strong>OPENING DATE:</strong> {reportData.exam_info.opening_date || '________________'}</p>
             </div>
             <div>
               <p className="mb-2"><strong>CLASS TEACHER:</strong> ________________</p>

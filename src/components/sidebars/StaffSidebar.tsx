@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface StaffSidebarProps {
   staffInfo: {
@@ -8,6 +9,7 @@ interface StaffSidebarProps {
     full_name: string;
     school_name: string;
     phone_number: string;
+    role?: string;
   };
   onLogout: () => void;
 }
@@ -15,13 +17,19 @@ interface StaffSidebarProps {
 const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const permissions = usePermissions();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isStatisticsOpen, setIsStatisticsOpen] = useState(false);
   const [isReportCardsOpen, setIsReportCardsOpen] = useState(false);
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
 
-  const menuItems = [
-    {
+  // Build menu items based on permissions
+  const getAllMenuItems = () => {
+    const items = [];
+
+    // Dashboard - everyone can see
+    items.push({
       name: 'Dashboard',
       path: '/staff/dashboard',
       icon: (
@@ -30,40 +38,187 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v0a2 2 0 01-2 2H10a2 2 0 01-2-2v0z" />
         </svg>
       )
-    },
-    {
-      name: 'Students',
-      path: '/staff/students',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-        </svg>
-      )
-    },
-    {
-      name: 'Classes',
-      path: '/staff/classes',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      )
-    },
-    {
-      name: 'Subjects',
-      path: '/staff/subjects',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      )
-    },
-    {
-      name: 'Results',
-      path: '/staff/results',
-      hasDropdown: true,
-      subItems: [
-        {
+    });
+
+    // Students
+    if (permissions.canViewStudents()) {
+      items.push({
+        name: 'Students',
+        path: '/staff/students',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+          </svg>
+        )
+      });
+    }
+
+    // Classes
+    if (permissions.canViewClasses()) {
+      items.push({
+        name: 'Classes',
+        path: '/staff/classes',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        )
+      });
+    }
+
+    // Subjects
+    if (permissions.canViewSubjects()) {
+      items.push({
+        name: 'Subjects',
+        path: '/staff/subjects',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        )
+      });
+    }
+
+    // Timetable
+    if (permissions.canViewTimetable()) {
+      const timetableSubItems = [];
+
+      // Only Director of Studies can manage timetable
+      if (permissions.canManageTimetable()) {
+        timetableSubItems.push(
+          {
+            name: 'Time Slots',
+            path: '/staff/timetable/time',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Subject Frequency',
+            path: '/staff/timetable/subject-frequency',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            )
+          },
+          {
+            name: 'Teacher-Subject',
+            path: '/staff/timetable/teacher-subject',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Priorities',
+            path: '/staff/timetable/priorities',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Class Schedules',
+            path: '/staff/timetable/class-schedules',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Teachers',
+            path: '/staff/timetable/teachers',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Block Subjects',
+            path: '/staff/timetable/block-subjects',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            )
+          }
+        );
+      }
+
+      // Everyone with view permission can see the timetable
+      timetableSubItems.push({
+        name: 'View Timetable',
+        path: '/staff/timetable/view',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        )
+      });
+
+      // Only Director of Studies can manage/generate timetable
+      if (permissions.canGenerateTimetable()) {
+        timetableSubItems.push({
+          name: 'All Teachers Schedules',
+          path: '/staff/timetable/all-teachers',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          )
+        });
+        
+        timetableSubItems.push({
+          name: 'Manage Timetable',
+          path: '/staff/timetable/manage',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )
+        });
+        
+        timetableSubItems.push({
+          name: 'Failed Schedules',
+          path: '/staff/timetable/failed',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          )
+        });
+      }
+
+      if (timetableSubItems.length > 0) {
+        items.push({
+          name: 'Timetable',
+          path: '/staff/timetable',
+          hasDropdown: true,
+          subItems: timetableSubItems,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          )
+        });
+      }
+    }
+
+    // Results
+    if (permissions.canViewResults() || permissions.canInputMarks()) {
+      const resultsSubItems = [];
+      
+      if (permissions.canInputMarks()) {
+        resultsSubItems.push({
           name: 'Input Marks',
           path: '/staff/input-marks',
           icon: (
@@ -71,8 +226,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           )
-        },
-        {
+        });
+      }
+
+      if (permissions.canViewResults()) {
+        resultsSubItems.push({
           name: 'View Results',
           path: '/staff/view-results',
           icon: (
@@ -80,94 +238,119 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           )
-        }
-      ],
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      )
-    },
-    {
-      name: 'Statistics',
-      path: '/staff/statistics',
-      hasDropdown: true,
-      subItems: [
-        {
-          name: 'Overview Dashboard',
-          path: '/staff/statistics',
+        });
+      }
+
+      if (resultsSubItems.length > 0) {
+        items.push({
+          name: 'Results',
+          path: '/staff/results',
+          hasDropdown: true,
+          subItems: resultsSubItems,
           icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           )
-        },
-        {
-          name: 'School Dashboard',
-          path: '/staff/statistics/school',
+        });
+      }
+    }
+
+    // Statistics - only for specific roles
+    if (permissions.canViewStatistics()) {
+      items.push({
+        name: 'Statistics',
+        path: '/staff/statistics',
+        hasDropdown: true,
+        subItems: [
+          {
+            name: 'Student Statistics',
+            path: '/staff/statistics/students',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            )
+          },
+          {
+            name: 'Subject Analysis',
+            path: '/staff/statistics/subjects',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            )
+          },
+          {
+            name: 'Class Statistics',
+            path: '/staff/statistics/classes',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            )
+          }
+        ],
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        )
+      });
+    }
+
+    // Reports - only those who can view reports
+    if (permissions.canViewReports()) {
+      items.push({
+        name: 'Reports',
+        path: '/staff/reports',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        )
+      });
+
+      if (permissions.canDownloadReports()) {
+        items.push({
+          name: 'Report Cards',
+          path: '/staff/reports/pdf',
+          hasDropdown: true,
+          subItems: [
+            {
+              name: 'Student Report Cards',
+              path: '/staff/report-card/pdf',
+              icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )
+            },
+          ],
           icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           )
-        },
-        {
-          name: 'Student Statistics',
-          path: '/staff/statistics/students',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          )
-        },
-        {
-          name: 'Class Statistics',
-          path: '/staff/statistics/classes',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          )
-        }
-      ],
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      )
-    },
-    {
-      name: 'Reports',
-      path: '/staff/reports',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-    },
-    {
-      name: 'Report Cards',
-      path: '/staff/reports/pdf',
-      hasDropdown: true,
-      subItems: [
-        {
-          name: 'Student Report Cards',
-          path: '/staff/report-card/pdf',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          )
-        },
-        
-      ],
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
+        });
+      }
+    }
+
+    // Finance - only for Bursar
+    if (permissions.canViewFinance()) {
+      items.push({
+        name: 'Finance',
+        path: '/staff/finance',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      });
+    }
+
+    // Profile - everyone can see
+    items.push({
       name: 'Profile',
       path: '/staff/profile',
       icon: (
@@ -175,8 +358,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       )
-    }
-  ];
+    });
+
+    return items;
+  };
+
+  const menuItems = getAllMenuItems();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -193,11 +380,20 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
            location.pathname === '/staff/statistics/school' || 
            location.pathname === '/staff/statistics/students' || 
            location.pathname === '/staff/statistics/classes' ||
+           location.pathname === '/staff/statistics/subjects' ||
            location.pathname.startsWith('/staff/statistics/');
   };
 
   const isReportCardsActive = () => {
     return location.pathname.startsWith('/staff/reports/pdf');
+  };
+
+  const isTimetableActive = () => {
+    return location.pathname === '/staff/timetable' ||
+           location.pathname === '/staff/timetable/time' ||
+           location.pathname === '/staff/timetable/schedule' ||
+           location.pathname === '/staff/timetable/classes' ||
+           location.pathname.startsWith('/staff/timetable/');
   };
 
   const handleNavigation = (path: string) => {
@@ -207,14 +403,34 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
 
   const handleResultsToggle = () => {
     setIsResultsOpen(!isResultsOpen);
+    // Close other dropdowns
+    setIsStatisticsOpen(false);
+    setIsReportCardsOpen(false);
+    setIsTimetableOpen(false);
   };
 
   const handleStatisticsToggle = () => {
     setIsStatisticsOpen(!isStatisticsOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsReportCardsOpen(false);
+    setIsTimetableOpen(false);
   };
 
   const handleReportCardsToggle = () => {
     setIsReportCardsOpen(!isReportCardsOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsStatisticsOpen(false);
+    setIsTimetableOpen(false);
+  };
+
+  const handleTimetableToggle = () => {
+    setIsTimetableOpen(!isTimetableOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsStatisticsOpen(false);
+    setIsReportCardsOpen(false);
   };
 
   // Auto-open dropdowns when on related pages
@@ -227,6 +443,9 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
     if (isReportCardsActive()) {
       setIsReportCardsOpen(true);
+    }
+    if (isTimetableActive()) {
+      setIsTimetableOpen(true);
     }
   }, [location.pathname]);
 
@@ -409,6 +628,55 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
             )}
           </div>
 
+          {/* Timetable Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleTimetableToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isTimetableActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isTimetableActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">Timetable</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isTimetableOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isTimetableOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'Timetable')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Report Cards Dropdown */}
           <div className="space-y-1">
             <button
@@ -495,10 +763,13 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               isStatisticsOpen={isStatisticsOpen}
               isReportCardsActive={isReportCardsActive}
               isReportCardsOpen={isReportCardsOpen}
+              isTimetableActive={isTimetableActive}
+              isTimetableOpen={isTimetableOpen}
               handleNavigation={handleNavigation} 
               handleResultsToggle={handleResultsToggle}
               handleStatisticsToggle={handleStatisticsToggle}
               handleReportCardsToggle={handleReportCardsToggle}
+              handleTimetableToggle={handleTimetableToggle}
               onLogout={onLogout} 
             />
           </div>
@@ -519,12 +790,33 @@ const SidebarContent: React.FC<{
   isStatisticsOpen: boolean;
   isReportCardsActive: () => boolean;
   isReportCardsOpen: boolean;
+  isTimetableActive: () => boolean;
+  isTimetableOpen: boolean;
   handleNavigation: (path: string) => void;
   handleResultsToggle: () => void;
   handleStatisticsToggle: () => void;
   handleReportCardsToggle: () => void;
+  handleTimetableToggle: () => void;
   onLogout: () => void;
-}> = ({ staffInfo, menuItems, isActive, isResultsActive, isResultsOpen, isStatisticsActive, isStatisticsOpen, isReportCardsActive, isReportCardsOpen, handleNavigation, handleResultsToggle, handleStatisticsToggle, handleReportCardsToggle, onLogout }) => {
+}> = ({ 
+  staffInfo, 
+  menuItems, 
+  isActive, 
+  isResultsActive, 
+  isResultsOpen, 
+  isStatisticsActive, 
+  isStatisticsOpen, 
+  isReportCardsActive, 
+  isReportCardsOpen, 
+  isTimetableActive,
+  isTimetableOpen,
+  handleNavigation, 
+  handleResultsToggle, 
+  handleStatisticsToggle, 
+  handleReportCardsToggle, 
+  handleTimetableToggle,
+  onLogout 
+}) => {
   return (
     <>
       {/* Logo/School Info */}
@@ -563,12 +855,14 @@ const SidebarContent: React.FC<{
                     item.name === 'Results' ? handleResultsToggle : 
                     item.name === 'Statistics' ? handleStatisticsToggle :
                     item.name === 'Report Cards' ? handleReportCardsToggle :
+                    item.name === 'Timetable' ? handleTimetableToggle :
                     handleStatisticsToggle
                   }
                   className={`${
                     (item.name === 'Results' ? isResultsActive() : 
                      item.name === 'Statistics' ? isStatisticsActive() :
                      item.name === 'Report Cards' ? isReportCardsActive() :
+                     item.name === 'Timetable' ? isTimetableActive() :
                      false)
                       ? 'bg-indigo-800 text-white'
                       : 'text-indigo-100 hover:bg-indigo-600 hover:text-white'
@@ -583,6 +877,7 @@ const SidebarContent: React.FC<{
                       (item.name === 'Results' ? isResultsOpen : 
                        item.name === 'Statistics' ? isStatisticsOpen :
                        item.name === 'Report Cards' ? isReportCardsOpen :
+                       item.name === 'Timetable' ? isTimetableOpen :
                        false) ? 'rotate-180' : 'rotate-0'
                     }`}
                     fill="none" 
@@ -595,6 +890,7 @@ const SidebarContent: React.FC<{
                 {(item.name === 'Results' ? isResultsOpen : 
                   item.name === 'Statistics' ? isStatisticsOpen :
                   item.name === 'Report Cards' ? isReportCardsOpen :
+                  item.name === 'Timetable' ? isTimetableOpen :
                   false) && (
                   <div className="ml-4 mt-1 space-y-1">
                     {item.subItems?.map((subItem: any) => (

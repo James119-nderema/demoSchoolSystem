@@ -1,34 +1,34 @@
-import { schoolAPI, staffAPI } from '../utils/api';
+import { APIService } from './baseUrl';
 import type { Subject, SubjectCreateData, SubjectResponse, SubjectStatsResponse, CSVUploadResponse } from '../types/subjects';
 
 const ENDPOINTS = {
-  SUBJECTS: '/subjects/',
-  SUBJECTS_STATS: '/subjects/stats/',
-  SUBJECTS_UPLOAD_CSV: '/subjects/upload-csv/',
-};
-
-// Helper function to get the appropriate API instance based on user type
-const getAPI = () => {
-  const userType = localStorage.getItem('user_type');
-  return userType === 'staff' ? staffAPI : schoolAPI;
+  SUBJECTS: '/api/subjects/',
+  SUBJECTS_STATS: '/api/subjects/stats/',
+  SUBJECTS_UPLOAD_CSV: '/api/subjects/upload-csv/',
 };
 
 export const subjectsService = {
   // Get all subjects with pagination
-  async getSubjects(page = 1, pageSize = 20): Promise<SubjectResponse> {
+  async getSubjects(page = 1, pageSize = 20, showAll = false): Promise<SubjectResponse> {
     try {
-      const api = getAPI();
-      const response = await api.get(`${ENDPOINTS.SUBJECTS}?page=${page}&page_size=${pageSize}`);
+      let url = `${ENDPOINTS.SUBJECTS}?page=${page}&page_size=${pageSize}`;
+      if (showAll) {
+        url += '&show_all=true';
+      }
+      
+      // Try school auth first, fall back to staff auth if needed
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(url, undefined, authType);
       
       // Handle paginated response from Django REST framework
-      if (response.data.results) {
+      if (response.results) {
         return {
           success: true,
           data: {
-            results: response.data.results,
-            count: response.data.count,
-            next: response.data.next || undefined,
-            previous: response.data.previous || undefined
+            results: response.results,
+            count: response.count,
+            next: response.next || undefined,
+            previous: response.previous || undefined
           }
         };
       } else {
@@ -36,8 +36,8 @@ export const subjectsService = {
         return {
           success: true,
           data: {
-            results: Array.isArray(response.data) ? response.data : [response.data],
-            count: Array.isArray(response.data) ? response.data.length : 1,
+            results: Array.isArray(response) ? response : [response],
+            count: Array.isArray(response) ? response.length : 1,
             next: undefined,
             previous: undefined
           }
@@ -47,7 +47,7 @@ export const subjectsService = {
       console.error('Error fetching subjects:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch subjects',
+        message: error.message || 'Failed to fetch subjects',
         data: {
           results: [],
           count: 0,
@@ -59,52 +59,59 @@ export const subjectsService = {
   },
 
   // Get a single subject by ID
-  async getSubject(id: number): Promise<{ success: boolean; data?: Subject; message?: string }> {
-    const api = getAPI();
-    const response = await api.get(`${ENDPOINTS.SUBJECTS}${id}/`);
-    return { success: true, data: response.data };
+  async getSubject(id: string): Promise<{ success: boolean; data?: Subject; message?: string }> {
+    try {
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(`${ENDPOINTS.SUBJECTS}${id}/`, undefined, authType);
+      return { success: true, data: response };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch subject'
+      };
+    }
   },
 
   // Create a new subject
   async createSubject(data: SubjectCreateData): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const api = getAPI();
-      const response = await api.post(ENDPOINTS.SUBJECTS, data);
-      return { success: true, data: response.data };
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.post(ENDPOINTS.SUBJECTS, data, authType);
+      return { success: true, data: response };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to create subject',
-        errors: error.response?.data?.errors || error.response?.data
+        message: error.message || 'Failed to create subject',
+        errors: error.response?.data
       };
     }
   },
 
   // Update a subject
-  async updateSubject(id: number, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
+  async updateSubject(id: string, data: Partial<SubjectCreateData>): Promise<{ success: boolean; data?: Subject; message?: string; errors?: Record<string, string[]> }> {
     try {
-      const api = getAPI();
-      const response = await api.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data);
-      return { success: true, data: response.data };
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.patch(`${ENDPOINTS.SUBJECTS}${id}/`, data, authType);
+      return { success: true, data: response };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to update subject',
-        errors: error.response?.data?.errors || error.response?.data
+        message: error.message || 'Failed to update subject',
+        errors: error.response?.data
       };
     }
   },
 
   // Delete a subject
-  async deleteSubject(id: number): Promise<{ success: boolean; message?: string }> {
+  async deleteSubject(id: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const api = getAPI();
-      await api.delete(`${ENDPOINTS.SUBJECTS}${id}/`);
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      await APIService.delete(`${ENDPOINTS.SUBJECTS}${id}/`, authType);
       return { success: true, message: 'Subject deleted successfully' };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to delete subject'
+        message: error.message || 'Failed to delete subject'
       };
     }
   },
@@ -112,22 +119,24 @@ export const subjectsService = {
   // Upload CSV file
   async uploadCSV(file: File): Promise<CSVUploadResponse> {
     try {
-      const api = getAPI();
       const formData = new FormData();
       formData.append('csv_file', file);
       
-      const response = await api.post(ENDPOINTS.SUBJECTS_UPLOAD_CSV, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.uploadWithProgress(
+        ENDPOINTS.SUBJECTS_UPLOAD_CSV, 
+        formData, 
+        undefined, 
+        authType
+      );
       
-      return response.data;
+      return response;
     } catch (error: any) {
+      const errorData = error.response?.data || {};
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to upload CSV',
-        errors: error.response?.data?.errors
+        message: errorData.message || error.message || 'Failed to upload CSV',
+        errors: errorData.errors || (typeof errorData === 'object' && !errorData.message ? errorData : undefined)
       };
     }
   },
@@ -135,13 +144,13 @@ export const subjectsService = {
   // Get subject statistics
   async getStats(): Promise<SubjectStatsResponse> {
     try {
-      const api = getAPI();
-      const response = await api.get(ENDPOINTS.SUBJECTS_STATS);
-      return response.data;
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(ENDPOINTS.SUBJECTS_STATS, undefined, authType);
+      return response;
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch statistics'
+        message: error.message || 'Failed to fetch statistics'
       };
     }
   }

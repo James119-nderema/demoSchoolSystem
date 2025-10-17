@@ -43,7 +43,7 @@ export const classService = {
   },
 
   // Update a class
-  updateClass: async (id: number, classData: Partial<CreateClassData>): Promise<Class> => {
+  updateClass: async (id: string, classData: Partial<CreateClassData>): Promise<Class> => {
     try {
       const response = await APIService.put(`${API_ENDPOINTS.CLASSES}${id}/`, classData, 'school');
       return response;
@@ -54,7 +54,7 @@ export const classService = {
   },
 
   // Delete a class
-  deleteClass: async (id: number): Promise<void> => {
+  deleteClass: async (id: string): Promise<void> => {
     try {
       await APIService.delete(`${API_ENDPOINTS.CLASSES}${id}/`, 'school');
     } catch (error) {

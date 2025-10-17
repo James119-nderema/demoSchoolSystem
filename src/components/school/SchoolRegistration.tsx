@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DataAPI } from '../../services/baseUrl'
 
@@ -9,6 +9,11 @@ interface SchoolFormData {
   email: string
   school_domain: string
   password: string
+  address: string
+  logo: File | null
+  motto: string
+  vision: string
+  mission: string
 }
 
 export default function SchoolRegistration() {
@@ -18,7 +23,12 @@ export default function SchoolRegistration() {
     phone_number: '',
     email: '',
     school_domain: '',
-    password: ''
+    password: '',
+    address: '',
+    logo: null,
+    motto: '',
+    vision: '',
+    mission: ''
   })
   
   const navigate = useNavigate()
@@ -26,12 +36,6 @@ export default function SchoolRegistration() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
-  const [schools, setSchools] = useState<any[]>([])
-  const [loadingSchools, setLoadingSchools] = useState(false)
-  
-  // Suppress TypeScript warnings - these variables are used for future functionality
-  void schools;
-  void loadingSchools;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -41,6 +45,16 @@ export default function SchoolRegistration() {
     }))
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        logo: file
+      }))
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       school_name: '',
@@ -48,7 +62,12 @@ export default function SchoolRegistration() {
       phone_number: '',
       email: '',
       school_domain: '',
-      password: ''
+      password: '',
+      address: '',
+      logo: null,
+      motto: '',
+      vision: '',
+      mission: ''
     })
   }
 
@@ -58,7 +77,22 @@ export default function SchoolRegistration() {
     setMessage('')
 
     try {
-      await DataAPI.createSchool(formData);
+      // Create FormData to handle file upload
+      const submitData = new FormData()
+      submitData.append('school_name', formData.school_name)
+      submitData.append('principal_name', formData.principal_name)
+      submitData.append('phone_number', formData.phone_number)
+      submitData.append('email', formData.email)
+      submitData.append('password', formData.password)
+      
+      if (formData.school_domain) submitData.append('school_domain', formData.school_domain)
+      if (formData.address) submitData.append('address', formData.address)
+      if (formData.motto) submitData.append('motto', formData.motto)
+      if (formData.vision) submitData.append('vision', formData.vision)
+      if (formData.mission) submitData.append('mission', formData.mission)
+      if (formData.logo) submitData.append('logo', formData.logo)
+
+      await DataAPI.createSchool(submitData as any);
       setMessage('School registered successfully! Redirecting to login...')
       setMessageType('success')
       resetForm()
@@ -80,18 +114,7 @@ export default function SchoolRegistration() {
     }, 5000)
   }
 
-  const loadSchools = async () => {
-    setLoadingSchools(true)
 
-    try {
-      const data = await DataAPI.getSchoolsList();
-      setSchools(data.schools)
-    } catch (error: any) {
-      console.error('Network error:', error)
-    }
-
-    setLoadingSchools(false)
-  }
 
   // const viewSchoolDetails = (school: any) => {
   //   const details = `
@@ -105,10 +128,7 @@ export default function SchoolRegistration() {
   //   alert(details)
   // }
 
-  // Load schools on component mount
-  useEffect(() => {
-    loadSchools()
-  }, [])
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -222,6 +242,89 @@ export default function SchoolRegistration() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Minimum 8 characters required</p>
+              </div>
+
+              {/* Optional Fields Section */}
+              <div className="border-t border-gray-200 pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Additional Information (Optional)</h3>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                      School Address
+                    </label>
+                    <textarea 
+                      id="address" 
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      placeholder="Enter school physical address"
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
+                      School Logo
+                    </label>
+                    <input 
+                      type="file" 
+                      id="logo" 
+                      name="logo"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Recommended: PNG or JPG, max 2MB</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="motto" className="block text-sm font-medium text-gray-700 mb-2">
+                      School Motto
+                    </label>
+                    <input 
+                      type="text" 
+                      id="motto" 
+                      name="motto"
+                      value={formData.motto}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Excellence in Education"
+                      maxLength={500}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="vision" className="block text-sm font-medium text-gray-700 mb-2">
+                      School Vision
+                    </label>
+                    <textarea 
+                      id="vision" 
+                      name="vision"
+                      value={formData.vision}
+                      onChange={handleInputChange}
+                      placeholder="Enter your school's vision statement"
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="mission" className="block text-sm font-medium text-gray-700 mb-2">
+                      School Mission
+                    </label>
+                    <textarea 
+                      id="mission" 
+                      name="mission"
+                      value={formData.mission}
+                      onChange={handleInputChange}
+                      placeholder="Enter your school's mission statement"
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
               
               <div className="flex items-center justify-center space-x-4 pt-4">

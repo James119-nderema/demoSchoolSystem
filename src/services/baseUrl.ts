@@ -41,6 +41,7 @@ const API_CONFIG = {
       STUDENT_ANALYTICS: '/api/input-marks/student-analytics/',
       CLASS_ANALYTICS: '/api/input-marks/class-analytics/',
       SUBJECT_ANALYTICS: '/api/input-marks/subject-analytics/',
+      UPDATE_RESULT: (id: string) => `/api/input-marks/results/${id}/`,
     },
     
     // Parent endpoints
@@ -164,6 +165,15 @@ export class APIService {
         throw error;
       }
       
+      // Check if response has content to parse
+      const contentType = response.headers.get('content-type');
+      const hasJsonContent = contentType && contentType.includes('application/json');
+      
+      // For 204 No Content or responses without JSON content, return empty object
+      if (response.status === 204 || !hasJsonContent) {
+        return {} as T;
+      }
+      
       return response.json();
     } catch (error) {
       clearTimeout(timeoutId);
@@ -197,7 +207,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
   
@@ -209,7 +219,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
   
@@ -313,7 +323,7 @@ export class APIService {
   ): Promise<T> {
     return this.fetch<T>(endpoint, {
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }, userType);
   }
 }
@@ -399,8 +409,10 @@ export const DataAPI = {
   // Schools
   createSchool: (data: any) => 
     APIService.post('/api/schools/', data, 'school'),
-  getSchoolsList: () => 
-    APIService.get('/api/schools/list/', undefined, 'school'),
+  getSchool: (id: string) =>
+    APIService.get(`/api/schools/${id}/`, undefined, 'school'),
+  updateSchool: (id: string, data: any) =>
+    APIService.put(`/api/schools/${id}/`, data, 'school'),
   getSchoolStaff: () => 
     APIService.get('/api/schools/staff/', undefined, 'school'),
   createSchoolStaff: (data: any) => 
@@ -410,6 +422,28 @@ export const DataAPI = {
 };
 
 export const MarksAPI = {
+  // Generic GET method
+  get: async (endpoint: string, config?: any) => {
+    try {
+      const response = await APIService.get(endpoint, config?.params, 'staff');
+      return response;
+    } catch (err) {
+      console.error('Error in MarksAPI GET:', err);
+      throw err;
+    }
+  },
+
+  // Update marks
+  updateResult: async (resultId: string, data: { marks_obtained: number }) => {
+    try {
+      const response = await APIService.put(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${resultId}/`, data, 'staff');
+      return response;
+    } catch (err) {
+      console.error('Error updating result:', err);
+      throw err;
+    }
+  },
+
   // Dropdown data
   getDropdownData: () => 
     APIService.get(API_ENDPOINTS.INPUT_MARKS.DROPDOWN_DATA, undefined, 'staff'),
@@ -427,8 +461,6 @@ export const MarksAPI = {
     APIService.get(API_ENDPOINTS.INPUT_MARKS.RESULTS, params, 'staff'),
   createResult: (data: any) => 
     APIService.post(API_ENDPOINTS.INPUT_MARKS.RESULTS, data, 'staff'),
-  updateResult: (id: string, data: any) => 
-    APIService.put(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${id}/`, data, 'staff'),
   deleteResult: (id: string) => 
     APIService.delete(`${API_ENDPOINTS.INPUT_MARKS.RESULTS}${id}/`, 'staff'),
     
