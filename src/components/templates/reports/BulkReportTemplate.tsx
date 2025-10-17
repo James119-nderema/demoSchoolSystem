@@ -331,14 +331,16 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
           currentX = tableX;
           const rowData = [
             subject.subject,
-            subject.marks_obtained.toString(),
-            subject.total_marks.toString(),
-            subject.percentage.toFixed(1),
-            subject.grade,
-            subject.percentage >= 80 ? 'EXCELLENT' : 
-            subject.percentage >= 70 ? 'VERY GOOD' :
-            subject.percentage >= 60 ? 'GOOD' :
-            subject.percentage >= 50 ? 'AVERAGE' : 'NEEDS IMPROVEMENT'
+            (subject.marks_obtained === null || subject.marks_obtained === undefined || subject.marks_obtained === 0) ? '-' : subject.marks_obtained.toString(),
+            (subject.total_marks === null || subject.total_marks === undefined || subject.total_marks === 0) ? '-' : subject.total_marks.toString(),
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0) ? '-' : subject.percentage.toFixed(1),
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0 || !subject.grade || subject.grade === '' || subject.grade === null || subject.grade === undefined) ? '-' : subject.grade,
+            (subject.percentage === null || subject.percentage === undefined || subject.percentage === 0)
+              ? '-' 
+              : subject.percentage >= 80 ? 'EXCELLENT' : 
+                subject.percentage >= 70 ? 'VERY GOOD' :
+                subject.percentage >= 60 ? 'GOOD' :
+                subject.percentage >= 50 ? 'AVERAGE' : 'NEEDS IMPROVEMENT'
           ];
           
           rowData.forEach((data, index) => {
