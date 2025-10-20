@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/environment';
+
+interface School {
+  id: string;
+  school_name: string;
+}
 
 interface RegistrationFormData {
   full_name: string;
@@ -10,6 +15,8 @@ interface RegistrationFormData {
   admission_number: string;
   password: string;
   confirm_password: string;
+  school_id: string;
+  school_name: string;
 }
 
 export default function ParentRegistration() {
@@ -21,8 +28,36 @@ export default function ParentRegistration() {
     student_name: '',
     admission_number: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    school_id: '',
+    school_name: ''
   });
+  
+  const [schools, setSchools] = useState<School[]>([]);
+  const [schoolQuery, setSchoolQuery] = useState('');
+  const [showSchoolResults, setShowSchoolResults] = useState(false);
+  
+  // Debounced school search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (schoolQuery.length >= 2) {
+        fetch(`${API_BASE_URL}/api/schools/search/?q=${encodeURIComponent(schoolQuery)}`)
+          .then(res => res.json())
+          .then(data => {
+            setSchools(data.schools);
+            setShowSchoolResults(true);
+          })
+          .catch(err => {
+            console.error('Failed to fetch schools:', err);
+          });
+      } else {
+        setSchools([]);
+        setShowSchoolResults(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [schoolQuery]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -61,6 +96,12 @@ export default function ParentRegistration() {
     setSuccess('');
 
     // Validate step 2 fields
+    if (!formData.school_id || !formData.school_name) {
+      setError('Please select a school from the search results');
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!formData.student_name || !formData.admission_number) {
       setError('Please provide your child\'s information');
       setIsSubmitting(false);
@@ -291,6 +332,50 @@ export default function ParentRegistration() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label htmlFor="school_search" className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter School Name *
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="school_search"
+                        type="text"
+                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                        placeholder="Type to search for your school"
+                        value={schoolQuery}
+                        onChange={(e) => setSchoolQuery(e.target.value)}
+                        autoComplete="off"
+                      />
+                      {showSchoolResults && schools.length > 0 && (
+                        <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                          {schools.map((school) => (
+                            <div
+                              key={school.id}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  school_id: school.id,
+                                  school_name: school.school_name
+                                }));
+                                setSchoolQuery(school.school_name);
+                                setShowSchoolResults(false);
+                              }}
+                            >
+                              {school.school_name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {formData.school_name && (
+                      <div className="mt-2">
+                        <span className="text-sm text-gray-600">Selected school: </span>
+                        <span className="text-sm font-medium text-blue-600">{formData.school_name}</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="md:col-span-2">
                     <label htmlFor="student_name" className="block text-sm font-medium text-gray-700 mb-2">
                       Student Full Name *
