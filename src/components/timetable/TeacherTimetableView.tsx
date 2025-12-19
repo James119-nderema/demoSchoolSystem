@@ -54,6 +54,101 @@ const TeacherTimetableView: React.FC = () => {
     return timetable[day]?.[timeSlot] || [];
   };
 
+  // Helper function to parse time string (e.g., "08:00" or "8:00 AM") to minutes since midnight
+  const parseTimeToMinutes = (timeStr: string): number => {
+    // Handle formats like "08:00", "8:00 AM", "14:30"
+    const cleanTime = timeStr.trim().toUpperCase();
+    let hours = 0;
+    let minutes = 0;
+    
+    // Check for AM/PM format
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    const timeOnly = cleanTime.replace(/\s*(AM|PM)\s*/i, '');
+    
+    const parts = timeOnly.split(':');
+    hours = parseInt(parts[0], 10);
+    minutes = parseInt(parts[1] || '0', 10);
+    
+    // Convert to 24-hour format if needed
+    if (isPM && hours !== 12) {
+      hours += 12;
+    } else if (isAM && hours === 12) {
+      hours = 0;
+    }
+    
+    return hours * 60 + minutes;
+  };
+
+  // Calculate breaks between time slots
+  interface BreakInfo {
+    afterSlotIndex: number;
+    durationMinutes: number;
+    type: 'SHORT BREAK' | 'LONG BREAK' | 'LUNCH BREAK';
+  }
+
+  const calculateBreaks = (): BreakInfo[] => {
+    if (timeSlots.length < 2) return [];
+    
+    const gaps: { afterSlotIndex: number; durationMinutes: number }[] = [];
+    
+    // Calculate all gaps between consecutive slots
+    for (let i = 0; i < timeSlots.length - 1; i++) {
+      const currentEndTime = parseTimeToMinutes(timeSlots[i].end_time);
+      const nextStartTime = parseTimeToMinutes(timeSlots[i + 1].start_time);
+      const gap = nextStartTime - currentEndTime;
+      
+      // Only consider gaps of more than 2 minutes as breaks
+      if (gap > 2) {
+        gaps.push({ afterSlotIndex: i, durationMinutes: gap });
+      }
+    }
+    
+    if (gaps.length === 0) return [];
+    
+    // Sort gaps by duration to assign break types
+    const sortedGaps = [...gaps].sort((a, b) => a.durationMinutes - b.durationMinutes);
+    
+    // Assign break types based on relative duration
+    const breaks: BreakInfo[] = gaps.map(gap => {
+      const rank = sortedGaps.findIndex(g => 
+        g.afterSlotIndex === gap.afterSlotIndex && g.durationMinutes === gap.durationMinutes
+      );
+      
+      let breakType: 'SHORT BREAK' | 'LONG BREAK' | 'LUNCH BREAK';
+      if (sortedGaps.length === 1) {
+        // Only one break - check duration to determine type
+        if (gap.durationMinutes <= 15) {
+          breakType = 'SHORT BREAK';
+        } else if (gap.durationMinutes <= 30) {
+          breakType = 'LONG BREAK';
+        } else {
+          breakType = 'LUNCH BREAK';
+        }
+      } else if (sortedGaps.length === 2) {
+        // Two breaks - shorter one is SHORT, longer is LUNCH
+        breakType = rank === 0 ? 'SHORT BREAK' : 'LUNCH BREAK';
+      } else {
+        // Three or more breaks
+        if (rank < sortedGaps.length / 3) {
+          breakType = 'SHORT BREAK';
+        } else if (rank < (sortedGaps.length * 2) / 3) {
+          breakType = 'LONG BREAK';
+        } else {
+          breakType = 'LUNCH BREAK';
+        }
+      }
+      
+      return {
+        afterSlotIndex: gap.afterSlotIndex,
+        durationMinutes: gap.durationMinutes,
+        type: breakType
+      };
+    });
+    
+    return breaks;
+  };
+
   const downloadTimetablePDF = () => {
     const doc = new jsPDF('landscape');
     
@@ -68,24 +163,85 @@ const TeacherTimetableView: React.FC = () => {
     doc.text(`Teacher: ${teacherName}`, 14, 28);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 34);
     
-    // Prepare table data with days as rows and time slots as columns
-    const headers = ['Day', ...timeSlots.map(slot => slot.time_slot)];  // Changed from slot.slot to slot.time_slot
+    // Calculate breaks between time slots
+    const breaks = calculateBreaks();
     
-    const rows = DAYS.map(day => {
-      const row = [day];
-      timeSlots.forEach(slot => {
-        const entries = getCellContent(day, slot.time_slot);  // Changed from slot.slot to slot.time_slot
-        if (entries.length > 0) {
-          const cellContent = entries
-            .map(entry => `${entry.subject}\n(${entry.class})`)
-            .join('\n\n');
-          row.push(cellContent);
-        } else {
-          row.push('-');
+    // Build headers with break columns inserted at correct positions
+    const buildHeadersWithBreaks = (): string[] => {
+      const headers: string[] = ['Day'];
+      let breakIndex = 0;
+      
+      for (let i = 0; i < timeSlots.length; i++) {
+        headers.push(timeSlots[i].time_slot);
+        
+        // Check if there's a break after this slot
+        const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
+        if (breakAfterThis) {
+          // Add break column header (empty or with vertical text indicator)
+          headers.push('');
+          breakIndex++;
         }
+      }
+      
+      return headers;
+    };
+    
+    // Build row data with break columns
+    const buildRowsWithBreaks = (): (string | { content: string; rowSpan?: number; styles?: object })[][] => {
+      const rows: (string | { content: string; rowSpan?: number; styles?: object })[][] = [];
+      
+      DAYS.forEach((day, dayIndex) => {
+        const row: (string | { content: string; rowSpan?: number; styles?: object })[] = [day];
+        
+        for (let i = 0; i < timeSlots.length; i++) {
+          const slot = timeSlots[i];
+          const entries = getCellContent(day, slot.time_slot);
+          
+          if (entries.length > 0) {
+            const cellContent = entries
+              .map(entry => `${entry.subject}\n(${entry.class})`)
+              .join('\n\n');
+            row.push(cellContent);
+          } else {
+            row.push('-');
+          }
+          
+          // Check if there's a break after this slot
+          const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
+          if (breakAfterThis) {
+            if (dayIndex === 0) {
+              // First row gets the merged cell with break text (vertical)
+              const breakText = breakAfterThis.type.split(' ').join('\n');
+              row.push({
+                content: breakText,
+                rowSpan: DAYS.length,
+                styles: {
+                  fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 243, 205] : 
+                             breakAfterThis.type === 'LONG BREAK' ? [219, 234, 254] : 
+                             [220, 252, 231],
+                  textColor: breakAfterThis.type === 'LUNCH BREAK' ? [146, 64, 14] : 
+                             breakAfterThis.type === 'LONG BREAK' ? [30, 64, 175] : 
+                             [22, 101, 52],
+                  fontStyle: 'bold',
+                  halign: 'center',
+                  valign: 'middle',
+                  fontSize: 8,
+                  cellWidth: 15,
+                }
+              });
+            }
+            // Other rows don't add anything for merged cells (autoTable handles this)
+          }
+        }
+        
+        rows.push(row);
       });
-      return row;
-    });
+      
+      return rows;
+    };
+    
+    const headers = buildHeadersWithBreaks();
+    const rows = buildRowsWithBreaks();
 
     // Add table using autoTable
     autoTable(doc, {

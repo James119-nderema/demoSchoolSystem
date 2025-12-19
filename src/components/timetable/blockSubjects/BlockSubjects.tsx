@@ -165,17 +165,20 @@ const BlockSubjects: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       #
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Block Subjects
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Total Subjects
+                      Block Name
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Date Created
+                      Subjects
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Count
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Created
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
@@ -191,6 +194,14 @@ const BlockSubjects: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-900 text-lg mb-1">
+                          {block.block_name || 'Unnamed Block'}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
+                          ID: {block.identifier.substring(0, 13)}...
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-3">
                           {block.subjects.map((subject, idx) => (
                             <React.Fragment key={subject.id}>
@@ -202,9 +213,6 @@ const BlockSubjects: React.FC = () => {
                               )}
                             </React.Fragment>
                           ))}
-                        </div>
-                        <div className="mt-3 text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
-                          Block ID: {block.identifier.substring(0, 13)}...
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">

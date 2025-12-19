@@ -68,6 +68,7 @@ import MessagesContent from './components/parents/MessagesContent'
 import ParentMainLayout from './layout/ParentMainLayout'
 import Dashboard from './pages/Dashboard'
 import Home from './components/Home'
+import Pricing from './components/pricing'
 import DashboardHome from './pages/Home'
 import Students from './pages/Students'
 import Subjects from './pages/Subjects'
@@ -85,6 +86,7 @@ const router = createBrowserRouter([
     element: <LandingLayout />,
     children: [
       { index: true, element: <Home /> },
+      { path: 'pricing', element: <Pricing /> },
       { path: 'create-school', element: <SchoolRegistration /> },
       { path: 'login', element: <SchoolLogin /> },
       { path: 'forgot-password', element: <ForgotPassword /> },

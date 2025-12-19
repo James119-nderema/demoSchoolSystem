@@ -16,6 +16,7 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
 }) => {
   const [subjects, setSubjects] = useState<StaffSubject[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
+  const [blockName, setBlockName] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,7 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
     if (isOpen) {
       fetchSubjects();
       setSelectedSubjects(new Set());
+      setBlockName('');
       setError(null);
     }
   }, [isOpen]);
@@ -73,6 +75,11 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!blockName.trim()) {
+      setError('Please enter a block name');
+      return;
+    }
+    
     if (selectedSubjects.size < 2) {
       setError('Please select at least 2 subjects to create a block');
       return;
@@ -83,7 +90,8 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
 
     try {
       await blockSubjectService.createBlock({
-        subject_ids: Array.from(selectedSubjects)
+        subject_ids: Array.from(selectedSubjects),
+        block_name: blockName.trim()
       });
       onSuccess();
       onClose();
@@ -122,6 +130,23 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Block Name Input */}
+          <div className="mb-4">
+            <label htmlFor="blockName" className="block text-sm font-medium text-gray-700 mb-2">
+              Block Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="blockName"
+              value={blockName}
+              onChange={(e) => setBlockName(e.target.value)}
+              placeholder="e.g., Religious Studies, Sciences Block A"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          {/* Search Input */}
           <div className="mb-4">
             <input
               type="text"
@@ -189,7 +214,7 @@ const AddBlockSubjectModal: React.FC<AddBlockSubjectModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={loading || selectedSubjects.size < 2}
+              disabled={loading || selectedSubjects.size < 2 || !blockName.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (

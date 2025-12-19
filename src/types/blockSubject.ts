@@ -11,6 +11,7 @@ export interface BlockSubject {
 
 export interface Block {
   identifier: string;
+  block_name: string;
   subjects: Array<{
     id: string;
     subject: string;
@@ -22,6 +23,7 @@ export interface Block {
 
 export interface BlockCreateData {
   subject_ids: string[];
+  block_name: string;
 }
 
 export interface BlockResponse {
