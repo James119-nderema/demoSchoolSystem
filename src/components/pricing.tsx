@@ -19,8 +19,8 @@ const Pricing: React.FC = () => {
     {
       name: 'Timetable Only',
       description: 'Perfect for schools starting with automated scheduling',
-      termPrice: 500,
-      yearPrice: 1500,
+      termPrice: 1000,
+      yearPrice:3000,
       color: 'blue',
       features: [
         'Automated timetable generation',
@@ -40,8 +40,8 @@ const Pricing: React.FC = () => {
     {
       name: 'Timetable + Results',
       description: 'Complete academic management solution',
-      termPrice: 8000,
-      yearPrice: 25000,
+      termPrice: 15000,
+      yearPrice: 40000,
       color: 'purple',
       recommended: true,
       features: [
@@ -60,8 +60,8 @@ const Pricing: React.FC = () => {
     {
       name: 'Fees Management',
       description: 'Streamline your school financial operations',
-      termPrice: 10000,
-      yearPrice: 25000,
+      termPrice: 15000,
+      yearPrice: 40000,
       color: 'green',
       features: [
         'Fee structure configuration',
@@ -83,8 +83,8 @@ const Pricing: React.FC = () => {
     {
       name: 'Complete Package',
       description: 'Full school management system',
-      termPrice: 20000,
-      yearPrice: 50000,
+      termPrice: 30000,
+      yearPrice: 80000,
       color: 'indigo',
       recommended: false,
       features: [
@@ -147,7 +147,7 @@ const Pricing: React.FC = () => {
             </span>
             {billingCycle === 'year' && (
               <span className="ml-2 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                Save up to KSh 4,000
+                Save up to KSh 5,000
               </span>
             )}
           </div>
