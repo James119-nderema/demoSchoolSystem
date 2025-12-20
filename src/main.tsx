@@ -56,6 +56,8 @@ import TeacherTimetableView from './components/timetable/TeacherTimetableView'
 import AllTeachersSchedules from './components/timetable/AllTeachersSchedules'
 import FailedSchedules from './components/timetable/generation/FailedSchedules'
 import Grading from './components/results/grading'
+import UploadResults from './components/nationalExams.tsx/uploadResults'
+import NationalExamStatistics from './components/nationalExams.tsx/NationalExamStatistics'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -302,6 +304,30 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <Grading />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'national-exams', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <UploadResults />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'national-exams/upload', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <UploadResults />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'national-exams/statistics', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <NationalExamStatistics />
               </AuthenticatedRoute>
             ) 
           },

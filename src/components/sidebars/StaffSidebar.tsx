@@ -23,6 +23,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   const [isStatisticsOpen, setIsStatisticsOpen] = useState(false);
   const [isReportCardsOpen, setIsReportCardsOpen] = useState(false);
   const [isTimetableOpen, setIsTimetableOpen] = useState(false);
+  const [isNationalExamsOpen, setIsNationalExamsOpen] = useState(false);
 
   // Build menu items based on permissions
   const getAllMenuItems = () => {
@@ -269,6 +270,38 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
+    // National Exams - visible to all staff with subtabs
+    items.push({
+      name: 'National Exams',
+      path: '/staff/national-exams',
+      hasDropdown: true,
+      subItems: [
+        {
+          name: 'Upload Results',
+          path: '/staff/national-exams/upload',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          )
+        },
+        {
+          name: 'Statistics',
+          path: '/staff/national-exams/statistics',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          )
+        }
+      ],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    });
+
     // Statistics - only for specific roles
     if (permissions.canViewStatistics()) {
       items.push({
@@ -420,6 +453,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     setIsStatisticsOpen(false);
     setIsReportCardsOpen(false);
     setIsTimetableOpen(false);
+    setIsNationalExamsOpen(false);
   };
 
   const handleStatisticsToggle = () => {
@@ -428,6 +462,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     setIsResultsOpen(false);
     setIsReportCardsOpen(false);
     setIsTimetableOpen(false);
+    setIsNationalExamsOpen(false);
   };
 
   const handleReportCardsToggle = () => {
@@ -436,6 +471,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     setIsResultsOpen(false);
     setIsStatisticsOpen(false);
     setIsTimetableOpen(false);
+    setIsNationalExamsOpen(false);
   };
 
   const handleTimetableToggle = () => {
@@ -444,7 +480,20 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     setIsResultsOpen(false);
     setIsStatisticsOpen(false);
     setIsReportCardsOpen(false);
+    setIsNationalExamsOpen(false);
   };
+
+  const handleNationalExamsToggle = () => {
+    setIsNationalExamsOpen(!isNationalExamsOpen);
+    // Close other dropdowns
+    setIsResultsOpen(false);
+    setIsStatisticsOpen(false);
+    setIsReportCardsOpen(false);
+    setIsTimetableOpen(false);
+  };
+
+  // Check if on National Exams pages
+  const isNationalExamsActive = () => location.pathname.startsWith('/staff/national-exams');
 
   // Auto-open dropdowns when on related pages
   useEffect(() => {
@@ -459,6 +508,9 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
     if (isTimetableActive()) {
       setIsTimetableOpen(true);
+    }
+    if (isNationalExamsActive()) {
+      setIsNationalExamsOpen(true);
     }
   }, [location.pathname]);
 
@@ -690,6 +742,55 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
             )}
           </div>
 
+          {/* National Exams Dropdown */}
+          <div className="space-y-1">
+            <button
+              onClick={handleNationalExamsToggle}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
+                isNationalExamsActive()
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className={isNationalExamsActive() ? 'text-indigo-700' : 'text-gray-400'}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+                <span className="font-medium">National Exams</span>
+              </div>
+              <svg 
+                className={`w-4 h-4 transition-transform ${isNationalExamsOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isNationalExamsOpen && (
+              <div className="ml-6 space-y-1">
+                {menuItems.find(item => item.name === 'National Exams')?.subItems?.map((subItem: any) => (
+                  <button
+                    key={subItem.name}
+                    onClick={() => handleNavigation(subItem.path)}
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors duration-200 w-full text-left ${
+                      isActive(subItem.path)
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={isActive(subItem.path) ? 'text-indigo-700' : 'text-gray-400'}>
+                      {subItem.icon}
+                    </span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Report Cards Dropdown */}
           <div className="space-y-1">
             <button
@@ -778,11 +879,14 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
               isReportCardsOpen={isReportCardsOpen}
               isTimetableActive={isTimetableActive}
               isTimetableOpen={isTimetableOpen}
+              isNationalExamsActive={isNationalExamsActive}
+              isNationalExamsOpen={isNationalExamsOpen}
               handleNavigation={handleNavigation} 
               handleResultsToggle={handleResultsToggle}
               handleStatisticsToggle={handleStatisticsToggle}
               handleReportCardsToggle={handleReportCardsToggle}
               handleTimetableToggle={handleTimetableToggle}
+              handleNationalExamsToggle={handleNationalExamsToggle}
               onLogout={onLogout} 
             />
           </div>
@@ -805,11 +909,14 @@ const SidebarContent: React.FC<{
   isReportCardsOpen: boolean;
   isTimetableActive: () => boolean;
   isTimetableOpen: boolean;
+  isNationalExamsActive: () => boolean;
+  isNationalExamsOpen: boolean;
   handleNavigation: (path: string) => void;
   handleResultsToggle: () => void;
   handleStatisticsToggle: () => void;
   handleReportCardsToggle: () => void;
   handleTimetableToggle: () => void;
+  handleNationalExamsToggle: () => void;
   onLogout: () => void;
 }> = ({ 
   staffInfo, 
@@ -823,11 +930,14 @@ const SidebarContent: React.FC<{
   isReportCardsOpen, 
   isTimetableActive,
   isTimetableOpen,
+  isNationalExamsActive,
+  isNationalExamsOpen,
   handleNavigation, 
   handleResultsToggle, 
   handleStatisticsToggle, 
   handleReportCardsToggle, 
   handleTimetableToggle,
+  handleNationalExamsToggle,
   onLogout 
 }) => {
   return (
@@ -869,6 +979,7 @@ const SidebarContent: React.FC<{
                     item.name === 'Statistics' ? handleStatisticsToggle :
                     item.name === 'Report Cards' ? handleReportCardsToggle :
                     item.name === 'Timetable' ? handleTimetableToggle :
+                    item.name === 'National Exams' ? handleNationalExamsToggle :
                     handleStatisticsToggle
                   }
                   className={`${
@@ -876,6 +987,7 @@ const SidebarContent: React.FC<{
                      item.name === 'Statistics' ? isStatisticsActive() :
                      item.name === 'Report Cards' ? isReportCardsActive() :
                      item.name === 'Timetable' ? isTimetableActive() :
+                     item.name === 'National Exams' ? isNationalExamsActive() :
                      false)
                       ? 'bg-indigo-800 text-white'
                       : 'text-indigo-100 hover:bg-indigo-600 hover:text-white'
@@ -891,6 +1003,7 @@ const SidebarContent: React.FC<{
                        item.name === 'Statistics' ? isStatisticsOpen :
                        item.name === 'Report Cards' ? isReportCardsOpen :
                        item.name === 'Timetable' ? isTimetableOpen :
+                       item.name === 'National Exams' ? isNationalExamsOpen :
                        false) ? 'rotate-180' : 'rotate-0'
                     }`}
                     fill="none" 
@@ -904,6 +1017,7 @@ const SidebarContent: React.FC<{
                   item.name === 'Statistics' ? isStatisticsOpen :
                   item.name === 'Report Cards' ? isReportCardsOpen :
                   item.name === 'Timetable' ? isTimetableOpen :
+                  item.name === 'National Exams' ? isNationalExamsOpen :
                   false) && (
                   <div className="ml-4 mt-1 space-y-1">
                     {item.subItems?.map((subItem: any) => (

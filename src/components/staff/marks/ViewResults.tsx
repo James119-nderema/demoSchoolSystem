@@ -227,11 +227,6 @@ const ViewResults: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Use the centralized grading utility for grade colors
-  const getGradeColorClass = (grade: string) => {
-    return getGradeColor(grade);
-  };
-
   const getExamTypeDisplay = (examType: string) => {
     const types: { [key: string]: string } = {
       'exam_1': 'Exam 1',

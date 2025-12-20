@@ -318,7 +318,7 @@ export default function Students() {
     }
     
     // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
+    searchTimeoutRef.current = window.setTimeout(() => {
       setCurrentPage(1); // Reset to first page when searching
       fetchStudentsWithParams(1, searchValue, classValue, admissionValue, false);
     }, 500); // 500ms debounce delay
