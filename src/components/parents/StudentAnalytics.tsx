@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import StudentAnalyticsFilters from './StudentAnalyticsFilters';
 import { ParentsAPI } from '../../services/baseUrl';
+import { getGradeColorFromMarks } from '../../utils/gradingUtils';
 
 interface StudentInfo {
   name: string;
@@ -172,11 +173,9 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
     return 'text-red-600';
   };
 
+  // Use centralized grading utility
   const getGradeColor = (marks: number) => {
-    if (marks >= 80) return 'bg-green-100 text-green-800';
-    if (marks >= 60) return 'bg-yellow-100 text-yellow-800';
-    if (marks >= 50) return 'bg-orange-100 text-orange-800';
-    return 'bg-red-100 text-red-800';
+    return getGradeColorFromMarks(marks);
   };
 
   if (loading) {

@@ -55,6 +55,7 @@ import TimetableView from './components/timetable/generation/TimetableView'
 import TeacherTimetableView from './components/timetable/TeacherTimetableView'
 import AllTeachersSchedules from './components/timetable/AllTeachersSchedules'
 import FailedSchedules from './components/timetable/generation/FailedSchedules'
+import Grading from './components/results/grading'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -293,6 +294,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <FailedSchedules />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'grading', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Grading />
               </AuthenticatedRoute>
             ) 
           },

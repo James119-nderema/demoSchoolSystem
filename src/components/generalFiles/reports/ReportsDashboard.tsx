@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { authFetch } from '../../../utils/apiInterceptors';
 import { generateReportsPDF } from '../../../utils/pdfGenerator';
+import { getGrade as calculateGradeFromPercent, getGradeColor } from '../../../utils/gradingUtils';
 
 export interface Student {
   student_name: string;
@@ -627,17 +628,7 @@ const ReportsDashboard: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {classData.streams?.map((streamRank, streamIndex) => {
-                      const getGrade = (average: number) => {
-                        if (average >= 90) return 'A+';
-                        if (average >= 80) return 'A';
-                        if (average >= 70) return 'B+';
-                        if (average >= 60) return 'B';
-                        if (average >= 50) return 'C+';
-                        if (average >= 40) return 'C';
-                        if (average >= 30) return 'D+';
-                        if (average >= 20) return 'D';
-                        return 'F';
-                      };
+                      const gradeForAverage = calculateGradeFromPercent(streamRank.average || 0);
 
                       return (
                         <tr key={streamIndex} className={streamIndex === 0 ? 'bg-green-50' : ''}>
@@ -662,13 +653,8 @@ const ReportsDashboard: React.FC = () => {
                             {streamRank.total_students || 0} students
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              getGrade(streamRank.average || 0).startsWith('A') ? 'bg-green-100 text-green-800' :
-                              getGrade(streamRank.average || 0).startsWith('B') ? 'bg-blue-100 text-blue-800' :
-                              getGrade(streamRank.average || 0).startsWith('C') ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {getGrade(streamRank.average || 0)}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGradeColor(gradeForAverage)}`}>
+                              {gradeForAverage}
                             </span>
                           </td>
                         </tr>

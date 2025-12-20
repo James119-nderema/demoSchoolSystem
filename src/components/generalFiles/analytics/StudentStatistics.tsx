@@ -5,6 +5,7 @@ import {
   LineChart, Line,ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { authFetch } from '../../../utils/apiInterceptors';
+import { getGradeColor as getGradeColorUtil } from '../../../utils/gradingUtils';
 
 interface StudentPerformance {
   student_id: number;
@@ -194,15 +195,9 @@ const StudentStatistics: React.FC = () => {
 
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
+  // Use centralized grading utility
   const getGradeColor = (grade: string) => {
-    switch (grade.toUpperCase()) {
-      case 'A': return 'text-green-600 bg-green-100';
-      case 'B': return 'text-blue-600 bg-blue-100';
-      case 'C': return 'text-yellow-600 bg-yellow-100';
-      case 'D': return 'text-orange-600 bg-orange-100';
-      case 'F': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
+    return getGradeColorUtil(grade);
   };
 
   return (

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ReportsData } from '../components/generalFiles/reports/ReportsDashboard';
+import { getGrade } from './gradingUtils';
 
 interface Filters {
   term: string;
@@ -135,7 +136,7 @@ export const generateReportsPDF = (reportsData: ReportsData, filters: Filters): 
           `${stream.class_name} (${stream.stream})`,
           `${stream.average?.toFixed(2)}%`,
           stream.total_students,
-          calculateGrade(stream.average || 0)
+          getGrade(stream.average || 0)
         ]),
         theme: 'grid',
         styles: { fontSize: 8 },
@@ -149,17 +150,4 @@ export const generateReportsPDF = (reportsData: ReportsData, filters: Filters): 
 
   // Save the PDF
   doc.save('academic-reports.pdf');
-};
-
-// Helper function to calculate grade
-const calculateGrade = (average: number): string => {
-  if (average >= 90) return 'A+';
-  if (average >= 80) return 'A';
-  if (average >= 70) return 'B+';
-  if (average >= 60) return 'B';
-  if (average >= 50) return 'C+';
-  if (average >= 40) return 'C';
-  if (average >= 30) return 'D+';
-  if (average >= 20) return 'D';
-  return 'F';
 };
