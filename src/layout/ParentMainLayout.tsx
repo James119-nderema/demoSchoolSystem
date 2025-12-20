@@ -144,10 +144,10 @@ export default function ParentMainLayout({ children, title = "Parent Dashboard" 
                   </svg>
                 </button>
                 
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{title}</h1>
                   {dashboardData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 truncate">
                       Welcome back, {dashboardData.parent.full_name}
                     </p>
                   )}

@@ -58,6 +58,11 @@ import FailedSchedules from './components/timetable/generation/FailedSchedules'
 import Grading from './components/results/grading'
 import UploadResults from './components/nationalExams.tsx/uploadResults'
 import NationalExamStatistics from './components/nationalExams.tsx/NationalExamStatistics'
+import InvoiceManagement from './components/feeManagement/invoice'
+import BursarDashboard from './components/feeManagement/BursarDashboard'
+import ParentPaymentHistory from './components/feeManagement/ParentPaymentHistory'
+import PayFees from './components/feeManagement/PayFees'
+import PaymentInstructions from './components/feeManagement/PaymentInstructions'
 import ParentRegistration from './components/parents/ParentRegistration'
 import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
@@ -82,11 +87,13 @@ import Staff from './pages/Staff'
 import Payment from './pages/Payment'
 import SchoolFinance from './components/finance/School_Finance'
 import SchoolPaymentMethod from './components/finance/School_Payment_Methods'
+import { RouteErrorBoundary } from './components/ErrorBoundary'
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <Home /> },
       { path: 'pricing', element: <Pricing /> },
@@ -101,6 +108,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/staff',
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: 'register', element: <StaffRegistration /> },
       { path: 'login', element: <StaffLogin /> },
@@ -331,6 +339,22 @@ const router = createBrowserRouter([
               </AuthenticatedRoute>
             ) 
           },
+          { 
+            path: 'finance/invoices', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <InvoiceManagement />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'finance/dashboard', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <BursarDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
           { path: 'profile', element: <StaffProfile /> },
         ],
       },
@@ -338,6 +362,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/parent',
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: 'register', element: <ParentRegistration /> },
       { path: 'login', element: <ParentLogin /> },
@@ -411,6 +436,36 @@ const router = createBrowserRouter([
           </ParentProtectedRoute>
         ) 
       },
+      { 
+        path: 'payment-history', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Payment History">
+              <ParentPaymentHistory />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'pay-fees', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Pay Fees">
+              <PayFees />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'pay-fees/:methodId', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Payment Instructions">
+              <PaymentInstructions />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
 
     { 
       path: 'payment', 
@@ -441,6 +496,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/school',
+    errorElement: <RouteErrorBoundary />,
     element: (
       <ProtectedRoute>
         <MainLayout />
@@ -458,7 +514,7 @@ const router = createBrowserRouter([
       { path: 'staff', element: <Staff /> },
       { path: 'finance', element: <SchoolFinance /> },
       { path: ':schoolId/fee-payment-methods', element: <SchoolPaymentMethod /> },
-      { path: '*', element: <div className="p-6">Not Found</div> },
+      { path: '*', element: <RouteErrorBoundary /> },
     ],
   },
 ])

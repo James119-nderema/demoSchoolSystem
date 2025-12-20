@@ -13,12 +13,13 @@ interface StaffUser {
   employee_id: string;
   school_id: number;
   user_type: string;
+  role?: string;
 }
 
 interface StaffAuthContextType {
   user: StaffUser | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; role?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -78,7 +79,7 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; role?: string }> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/api/staff/auth/login/`, {
         email,
@@ -95,22 +96,23 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
       setToken(access_token);
       setUser({
         id: staff.id,
-        first_name: staff.first_name,
-        last_name: staff.last_name,
+        first_name: staff.first_name || staff.full_name?.split(' ')[0] || '',
+        last_name: staff.last_name || staff.full_name?.split(' ').slice(1).join(' ') || '',
         email: staff.email,
-        phone: staff.phone,
-        employee_id: staff.employee_id,
+        phone: staff.phone || staff.phone_number || '',
+        employee_id: staff.employee_id || staff.id,
         school_id: staff.school_id,
-        user_type: 'staff'
+        user_type: 'staff',
+        role: staff.role
       });
       
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
-      return true;
+      return { success: true, role: staff.role };
     } catch (error) {
       console.error('Staff login error:', error);
-      return false;
+      return { success: false };
     }
   };
 

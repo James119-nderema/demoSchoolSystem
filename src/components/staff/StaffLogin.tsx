@@ -31,17 +31,22 @@ const StaffLogin: React.FC = () => {
     setMessage(null);
 
     try {
-      const success = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password);
       
-      if (success) {
+      if (result.success) {
         setMessage({
           type: 'success',
           text: 'Login successful! Redirecting...'
         });
         
-        // Redirect to staff dashboard after 1 second
+        // Redirect based on role
         setTimeout(() => {
-          navigate('/staff/dashboard');
+          // Bursar and Accountant go to finance dashboard
+          if (result.role === 'BURSAR' || result.role === 'ACCOUNTANT') {
+            navigate('/staff/finance/dashboard');
+          } else {
+            navigate('/staff/dashboard');
+          }
         }, 1000);
       } else {
         setMessage({
@@ -50,8 +55,8 @@ const StaffLogin: React.FC = () => {
         });
       }
 
-    } catch (error: any) {
-      let errorMessage = 'Login failed. Please check your credentials.';
+    } catch (error: unknown) {
+      const errorMessage = 'Login failed. Please check your credentials.';
       
       setMessage({
         type: 'error',
