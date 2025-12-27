@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles, Download } from 'lucide-react';
 import timetableGenerationService from '../../../services/timetableGenerationService';
-import type { TimetableByClass, TimetableStats } from '../../../types/generatedTimetable';
+import { generateAllClassesPDF } from '../../../utils/classTimetablePdfGenerator';
+import type { TimetableByClass, TimetableStats, TeacherIndexInfo } from '../../../types/generatedTimetable';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const TimetableView: React.FC = () => {
   const [timetables, setTimetables] = useState<TimetableByClass[]>([]);
+  const [teachers, setTeachers] = useState<TeacherIndexInfo[]>([]);
   const [stats, setStats] = useState<TimetableStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -24,6 +26,7 @@ const TimetableView: React.FC = () => {
     try {
       const response = await timetableGenerationService.getTimetableByClass();
       setTimetables(response.results);
+      setTeachers(response.teachers || []);
     } catch (err: any) {
       console.error('Error fetching timetables:', err);
       setError(err.response?.data?.error || 'Failed to load timetables');
@@ -78,6 +81,14 @@ const TimetableView: React.FC = () => {
     return Array.from(timeslots).sort();
   };
 
+  const handleDownloadAll = () => {
+    if (timetables.length === 0) {
+      alert('No timetables to download');
+      return;
+    }
+    generateAllClassesPDF(timetables, teachers);
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -89,23 +100,37 @@ const TimetableView: React.FC = () => {
               View generated timetables for all classes
             </p>
           </div>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-          >
-            {generating ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles size={20} />
-                Generate Timetable
-              </>
+          <div className="flex items-center gap-3">
+            {/* Download All Button */}
+            {timetables.length > 0 && (
+              <button
+                onClick={handleDownloadAll}
+                disabled={generating || loading}
+                className="px-4 py-3 bg-white border-2 border-green-600 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                <Download size={20} />
+                Download All
+              </button>
             )}
-          </button>
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            >
+              {generating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  Generate Timetable
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}

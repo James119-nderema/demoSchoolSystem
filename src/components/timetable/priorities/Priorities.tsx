@@ -106,7 +106,8 @@ export default function Priorities() {
   const filteredPriorities = priorities.filter(priority => {
     const matchesSearch = priority.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (priority.subject_code && priority.subject_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         priority.time_slot_display.toLowerCase().includes(searchTerm.toLowerCase());
+                         priority.time_slot_display.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (priority.teacher_name && priority.teacher_name.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
   });
 
@@ -152,7 +153,7 @@ export default function Priorities() {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Search by subject name, code, or time slot..."
+              placeholder="Search by subject, code, teacher, or time slot..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -200,6 +201,9 @@ export default function Priorities() {
                     Subject Code
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Teacher
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Preferred Time Slot
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -221,6 +225,27 @@ export default function Priorities() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">{priority.subject_code || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {priority.teacher_name ? (
+                        <div className="flex items-center">
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                            <span className="text-sm font-medium text-indigo-600">
+                              {priority.teacher_name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{priority.teacher_name}</div>
+                            {priority.teacher_email && (
+                              <div className="text-xs text-gray-500">{priority.teacher_email}</div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600">
+                          All Teachers
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">

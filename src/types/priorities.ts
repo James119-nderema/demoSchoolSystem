@@ -8,6 +8,9 @@ export interface SubjectPriority {
   start_time: string;
   end_time: string;
   time_slot_display: string;
+  teacher?: string | null;
+  teacher_name?: string | null;
+  teacher_email?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +18,19 @@ export interface SubjectPriority {
 export interface SubjectPriorityCreateData {
   subject: string;
   time_slot: string;
+  teacher?: string | null;
+}
+
+export interface Teacher {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+export interface TeachersBySubjectResponse {
+  success: boolean;
+  results: Teacher[];
+  message?: string;
 }
 
 export interface SubjectPriorityResponse {

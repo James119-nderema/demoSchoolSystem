@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { StudentReportTemplate, BulkReportTemplate } from '../templates';
-import { FileText, Calendar, BookOpen, Users, Search, ChevronDown, X } from 'lucide-react';
+import { TemplateSelection, REPORT_TEMPLATES } from './TemplatePreview';
+import { FileText, Calendar, BookOpen, Users, Search, ChevronDown, X, School, Lock, AlertCircle } from 'lucide-react';
 import { APIService, API_ENDPOINTS } from '../../services/baseUrl';
+import { usePermissions } from '../../hooks/usePermissions';
 
 
 interface Student {
@@ -25,13 +27,17 @@ interface Student {
 
 const ReportsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const permissions = usePermissions();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedTerm, setSelectedTerm] = useState<string>('1');
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024-2025');
   const [selectedExamType, setSelectedExamType] = useState<string>('exam_1');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('template1');
   const [loading, setLoading] = useState(false);
   const [userType, setUserType] = useState<'staff' | 'parent'>('staff');
+  const [classes, setClasses] = useState<{ id: string; class_name: string }[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('');
 
   // Searchable dropdown states
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
@@ -59,6 +65,7 @@ const ReportsPage: React.FC = () => {
     } else if (staffToken) {
       setUserType('staff');
       fetchStudents();
+      fetchClasses();
     }
 
     // Initialize form with URL parameters if they exist
@@ -75,6 +82,27 @@ const ReportsPage: React.FC = () => {
       setSelectedExamType(examTypeFromUrl);
     }
   }, [studentIdFromUrl, termFromUrl, academicYearFromUrl, examTypeFromUrl]);
+
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('staff_access_token');
+      if (!token) return;
+
+      const response = await fetch(APIService.getUrl('/api/staff/classes/?page_size=100'), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setClasses(data.results || []);
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
 
   // Filter students based on search query
   useEffect(() => {
@@ -186,6 +214,21 @@ const ReportsPage: React.FC = () => {
     // Set URL parameters for bulk report
     const params = new URLSearchParams();
     params.set('type', 'bulk');
+    params.set('template', selectedTemplate);
+    if (selectedClass) {
+      params.set('classId', selectedClass);
+    }
+    setSearchParams(params);
+  };
+
+  const handleGenerateSchoolReport = () => {
+    // Set URL parameters for whole school report
+    const params = new URLSearchParams();
+    params.set('type', 'school');
+    params.set('template', selectedTemplate);
+    params.set('term', selectedTerm);
+    params.set('academicYear', selectedAcademicYear);
+    params.set('examType', selectedExamType);
     setSearchParams(params);
   };
 
@@ -251,6 +294,7 @@ const ReportsPage: React.FC = () => {
         term={termFromUrl}
         academicYear={academicYearFromUrl}
         examType={examTypeFromUrl}
+        templateId={searchParams.get('template') || 'template1'}
         onClose={handleCloseReport}
       />
     );
@@ -258,7 +302,55 @@ const ReportsPage: React.FC = () => {
 
   if (validReportType === 'bulk') {
     return (
-      <BulkReportTemplate onClose={handleCloseBulkReport} />
+      <BulkReportTemplate 
+        onClose={handleCloseBulkReport}
+        templateId={searchParams.get('template') || 'template1'}
+        classId={searchParams.get('classId') || undefined}
+      />
+    );
+  }
+
+  // Access control check - using permissions hook
+  if (permissions.loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!permissions.canAccessReportCards()) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="bg-red-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h1>
+            <p className="text-gray-600 mb-6">
+              The Report Cards section is only accessible to the Director of Studies and Administrative Staff.
+            </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-2" />
+                <div className="text-left">
+                  <p className="text-sm text-yellow-800 font-medium">Your current role: {permissions.role || 'Unknown'}</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Contact your school administrator if you need access to generate report cards.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => window.history.back()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -434,8 +526,45 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Generate Buttons */}
-          <div className="mt-8 flex justify-center space-x-4">
+          {/* Class Selection for Bulk/School Reports */}
+          <div className="mt-6">
+            <div className="space-y-2 max-w-md">
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <School className="w-4 h-4" />
+                <span>Class (for Bulk Reports)</span>
+              </label>
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Classes (Whole School)</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.class_name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500">
+                Leave empty to generate reports for all students in the school
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Template Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Select Report Template</h2>
+          <TemplateSelection
+            selectedTemplate={selectedTemplate}
+            onSelectTemplate={setSelectedTemplate}
+          />
+        </div>
+
+        {/* Generate Buttons */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Generate Reports</h2>
+          <div className="flex flex-wrap justify-center gap-4">
             <button
               onClick={handleGenerateReport}
               disabled={userType === 'staff' && !selectedStudent}
@@ -450,14 +579,30 @@ const ReportsPage: React.FC = () => {
             </button>
             
             {userType === 'staff' && (
-              <button
-                onClick={handleGenerateBulkReport}
-                className="flex items-center space-x-2 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-              >
-                <Users className="w-5 h-5" />
-                <span>Generate Bulk Reports</span>
-              </button>
+              <>
+                <button
+                  onClick={handleGenerateBulkReport}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                >
+                  <Users className="w-5 h-5" />
+                  <span>{selectedClass ? 'Generate Class Reports' : 'Generate Bulk Reports'}</span>
+                </button>
+                
+                <button
+                  onClick={handleGenerateSchoolReport}
+                  className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                >
+                  <School className="w-5 h-5" />
+                  <span>Generate Whole School Reports</span>
+                </button>
+              </>
             )}
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-gray-500">
+            <p>Selected Template: <span className="font-medium text-gray-700">
+              {REPORT_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Template 1'}
+            </span></p>
           </div>
         </div>
 

@@ -24,11 +24,19 @@ export interface TimetableByClass {
         subject_name: string;
         teacher_id: string;
         teacher_name: string;
+        teacher_index?: number;
         start_time: string;
         end_time: string;
       };
     };
   };
+}
+
+export interface TeacherIndexInfo {
+  id: string;
+  index: number;
+  name: string;
+  email: string;
 }
 
 export interface FailedSchedule {
@@ -77,6 +85,7 @@ export interface GenerateResponse {
 export interface TimetableByClassResponse {
   count: number;
   results: TimetableByClass[];
+  teachers?: TeacherIndexInfo[];
 }
 
 export interface FailedScheduleResponse {

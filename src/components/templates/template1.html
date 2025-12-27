@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teremi High School Report Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            background: #f5f5f5;
+            padding: 10px;
+        }
+
+        .report-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            background: white;
+            padding: 15mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .school-logo {
+            width: 50px;
+            height: 60px;
+            background: #333;
+            flex-shrink: 0;
+            clip-path: polygon(0 15%, 50% 0, 100% 15%, 100% 100%, 0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+
+        .header-text {
+            flex: 1;
+            text-align: center;
+        }
+
+        .school-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .school-details {
+            font-size: 11px;
+            margin: 2px 0;
+        }
+
+        .motto {
+            font-style: italic;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .term-info {
+            display: flex;
+            justify-content: space-between;
+            background: #e0e0e0;
+            padding: 6px 12px;
+            margin: 10px 0;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .student-info {
+            border: 2px solid #000;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .info-item {
+            display: flex;
+            gap: 5px;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            text-align: center;
+        }
+
+        th {
+            background: #d0d0d0;
+            font-weight: bold;
+            font-size: 9px;
+        }
+
+        .subject-col {
+            text-align: left;
+            padding-left: 6px;
+        }
+
+        .remarks-col {
+            font-size: 9px;
+        }
+
+        .section-title {
+            background: #e0e0e0;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px;
+            margin: 10px 0 8px;
+            border: 1px solid #000;
+            font-size: 12px;
+        }
+
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .progress-section {
+            border: 1px solid #000;
+        }
+
+        .progress-header {
+            font-weight: bold;
+            text-align: center;
+            background: #e0e0e0;
+            padding: 4px;
+            font-size: 10px;
+        }
+
+        .progress-table {
+            width: 100%;
+            font-size: 8px;
+        }
+
+        .progress-table td {
+            padding: 2px;
+        }
+
+        .performance-section {
+            margin: 10px 0;
+        }
+
+        .performance-table {
+            font-size: 9px;
+        }
+
+        .remarks-section {
+            margin: 10px 0;
+        }
+
+        .remark-row {
+            display: flex;
+            border: 1px solid #000;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+
+        .remark-label {
+            width: 120px;
+            background: #e0e0e0;
+            padding: 8px;
+            font-weight: bold;
+        }
+
+        .remark-content {
+            flex: 1;
+            padding: 8px;
+            font-style: italic;
+        }
+
+        .remark-teacher {
+            width: 180px;
+            padding: 8px;
+            text-align: right;
+            border-left: 1px solid #000;
+            font-weight: bold;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid #000;
+            font-size: 10px;
+        }
+
+        .footer-dates{
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 10px;
+            font-size: 10px;
+        }
+
+        .footer-motto {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 9px;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .report-container {
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="header-section">
+            <div class="school-logo">
+                <div style="width: 30px; height: 20px; background: white; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></div>
+            </div>
+            <div class="header-text">
+                <div class="school-name">TEREMI HIGH SCHOOL</div>
+                <div class="school-details">P.O BOX 203-50202 CHWELE</div>
+                <div class="school-details">0727926399</div>
+                <div class="motto">Knowledge is the key to success</div>
+            </div>
+        </div>
+
+        <div class="term-info">
+            <span>TERM 3 2018</span>
+            <span>REPORT FORM</span>
+            <span>FORM: 1 R</span>
+        </div>
+
+        <div class="student-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">ADM NO:</span>
+                    <span>11975</span>
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                    <span class="info-label">NAME:</span>
+                    <span>Nderema James Ouma</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">V.A.P:</span>
+                    <span>-1.36 Points</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">KCPE MARKS:</span>
+                    <span>366 B+</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">KCPE POS:</span>
+                    <span>69</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">MG:</span>
+                    <span>B</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">OVERALL POS:</span>
+                    <span>109/542</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">TOTAL MARKS:</span>
+                    <span>728</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">POINTS:</span>
+                    <span>95</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">MMARK:</span>
+                    <span>66.18</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">POS BY STREAM:</span>
+                    <span>20/59</span>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">CODE</th>
+                    <th style="width: 15%;">SUBJECT</th>
+                    <th style="width: 6%;">EXAM1</th>
+                    <th style="width: 6%;">EXAM2</th>
+                    <th style="width: 6%;">EXAM3</th>
+                    <th style="width: 6%;">EXAM4</th>
+                    <th style="width: 8%;">AVG</th>
+                    <th style="width: 4%;">GR</th>
+                    <th style="width: 4%;">PTS</th>
+                    <th style="width: 4%;">POS</th>
+                    <th style="width: 20%;">REMARKS</th>
+                    <th style="width: 6%;">INITIALS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>101</td>
+                    <td class="subject-col">English</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>58C+</td>
+                    <td>58 C+</td>
+                    <td>7</td>
+                    <td>7</td>
+                    <td>26</td>
+                    <td class="remarks-col">Can do better, aim high</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>102</td>
+                    <td class="subject-col">Kiswahili</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>54C</td>
+                    <td>54 C</td>
+                    <td>6</td>
+                    <td>6</td>
+                    <td>41</td>
+                    <td class="remarks-col">wastani</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>121</td>
+                    <td class="subject-col">Mathematics</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>63B</td>
+                    <td>63 B</td>
+                    <td>9</td>
+                    <td>9</td>
+                    <td>2</td>
+                    <td class="remarks-col">Satisfactory, aim higher</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>231</td>
+                    <td class="subject-col">Biology</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>61B</td>
+                    <td>61 B</td>
+                    <td>9</td>
+                    <td>9</td>
+                    <td>8</td>
+                    <td class="remarks-col">Satisfactory, aim higher</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>232</td>
+                    <td class="subject-col">Physics</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>86A</td>
+                    <td>86 A</td>
+                    <td>12</td>
+                    <td>12</td>
+                    <td>3</td>
+                    <td class="remarks-col">Excellent, Keep up</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>233</td>
+                    <td class="subject-col">Chemistry</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>68B+</td>
+                    <td>68 B+</td>
+                    <td>10</td>
+                    <td>10</td>
+                    <td>5</td>
+                    <td class="remarks-col">Good, can do better</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>311</td>
+                    <td class="subject-col">History & Government</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>48C-</td>
+                    <td>48 C-</td>
+                    <td>5</td>
+                    <td>5</td>
+                    <td>43</td>
+                    <td class="remarks-col">Put in More Effort</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>312</td>
+                    <td class="subject-col">Geography</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>73B+</td>
+                    <td>73 B+</td>
+                    <td>10</td>
+                    <td>10</td>
+                    <td>11</td>
+                    <td class="remarks-col">Good, can do better</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>313</td>
+                    <td class="subject-col">C.R.E</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>58C+</td>
+                    <td>58 C+</td>
+                    <td>7</td>
+                    <td>7</td>
+                    <td>23</td>
+                    <td class="remarks-col">Can do better, aim high</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>443</td>
+                    <td class="subject-col">Computer Studies</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>60B-</td>
+                    <td>60 B-</td>
+                    <td>8</td>
+                    <td>8</td>
+                    <td>5</td>
+                    <td class="remarks-col">Satisfactory, aim higher</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>501</td>
+                    <td class="subject-col">French</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>99A</td>
+                    <td>99 A</td>
+                    <td>12</td>
+                    <td>12</td>
+                    <td>1</td>
+                    <td class="remarks-col">Excellent, Keep up</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">PROGRESS REPORT</div>
+
+        <div class="progress-grid">
+            <div class="progress-section">
+                <div class="progress-header">FORM ONE</div>
+                <table class="progress-table">
+                    <tr><td><b>Form</b></td><td><b>MKS</b></td><td><b>PT</b></td><td><b>MG</b></td><td><b>O.P</b></td></tr>
+                    <tr><td>F1T1</td><td>834</td><td>10.5</td><td>A-</td><td>52</td></tr>
+                    <tr><td>F1T2</td><td>745</td><td>9.3</td><td>B</td><td>61</td></tr>
+                    <tr><td>F1T3</td><td>728</td><td>8.6</td><td>B</td><td>109</td></tr>
+                </table>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-header">FORM TWO</div>
+                <table class="progress-table">
+                    <tr><td><b>Form</b></td><td><b>MKS</b></td><td><b>PTS</b></td><td><b>MG</b></td><td><b>O.P</b></td></tr>
+                    <tr><td>F2T1</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F2T2</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F2T3</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                </table>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-header">FORM THREE</div>
+                <table class="progress-table">
+                    <tr><td><b>Form</b></td><td><b>MKS</b></td><td><b>PTS</b></td><td><b>MG</b></td><td><b>O.P</b></td></tr>
+                    <tr><td>F3T1</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F3T2</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F3T3</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                </table>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-header">FORM FOUR</div>
+                <table class="progress-table">
+                    <tr><td><b>Form</b></td><td><b>MKS</b></td><td><b>PTS</b></td><td><b>MG</b></td><td><b>O.P</b></td></tr>
+                    <tr><td>F4T1</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F4T2</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                    <tr><td>F4T3</td><td>0</td><td>0.0</td><td>Z</td><td>-</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-title">PERFORMANCE PER SUBJECT PER EXAM</div>
+        
+        <table class="performance-table">
+            <tr>
+                <th>Term</th>
+                <th>Exam</th>
+                <th>Eng</th>
+                <th>Kis</th>
+                <th>Mat</th>
+                <th>Bio</th>
+                <th>Phy</th>
+                <th>Che</th>
+                <th>His</th>
+                <th>Geo</th>
+                <th>CRE</th>
+                <th>Comp</th>
+                <th>Fre</th>
+                <th>Bst</th>
+                <th>Hsc</th>
+                <th>Mus</th>
+                <th>Cps</th>
+                <th>Mark</th>
+                <th>MPt</th>
+                <th>MG</th>
+                <th>CP</th>
+                <th>OP</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>EXAM</td>
+                <td>53C</td>
+                <td>85A</td>
+                <td>80A</td>
+                <td>83A</td>
+                <td>85A</td>
+                <td>74A-</td>
+                <td>64B</td>
+                <td>91A</td>
+                <td>55C+</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>83A</td>
+                <td>834</td>
+                <td>10.5</td>
+                <td>A-</td>
+                <td>11</td>
+                <td>72</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>CAT 1</td>
+                <td>38D</td>
+                <td>70B-</td>
+                <td>80A</td>
+                <td>56B</td>
+                <td>79A</td>
+                <td>66B+</td>
+                <td>47C</td>
+                <td>65B</td>
+                <td>43D+</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>80A</td>
+                <td>704</td>
+                <td>8.6</td>
+                <td>B</td>
+                <td>13</td>
+                <td>89</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>CAT 2</td>
+                <td>56C+</td>
+                <td>43D+</td>
+                <td>81A</td>
+                <td>71A-</td>
+                <td>70A-</td>
+                <td>71A-</td>
+                <td>84A</td>
+                <td>60B</td>
+                <td>62B</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>83A</td>
+                <td>777</td>
+                <td>9.3</td>
+                <td>B+</td>
+                <td>7</td>
+                <td>109</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>EXAM</td>
+                <td>58C+</td>
+                <td>54C</td>
+                <td>63B</td>
+                <td>61B</td>
+                <td>86A</td>
+                <td>68B+</td>
+                <td>48C-</td>
+                <td>73B+</td>
+                <td>58C+</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>60B-</td>
+                <td>728</td>
+                <td>8.6</td>
+                <td>B</td>
+                <td>20</td>
+                <td>109</td>
+            </tr>
+        </table>
+
+        <div class="section-title">REMARKS</div>
+
+        <div class="remarks-section">
+            <div class="remark-row">
+                <div class="remark-label">ClassTeacher</div>
+                <div class="remark-content">Encouraging performance</div>
+                <div class="remark-teacher">MR. MUFUTU FERDINAND</div>
+            </div>
+            
+            <div class="remark-row">
+                <div class="remark-label">Principal</div>
+                <div class="remark-content">Satisfactory, aim higher</div>
+                <div class="remark-teacher">MR. WAMANGA BENARD</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div><strong>Fees Arrears:</strong> ___________</div>
+            <div><strong>Next term fees:</strong> ___________</div>
+            <div>
+                <strong>Total fees expected:</strong> ___________<br>
+            </div>
+        </div>
+
+        <div class="footer-dates">
+                <strong>Clossing Date:</strong> 30/10/2019
+                <strong>Opening Date:</strong> 02/01/2019
+        </div>
+
+        <div class="footer-motto">
+            motto: Knowledge is the key to success
+        </div>
+    </div>
+</body>
+</html>

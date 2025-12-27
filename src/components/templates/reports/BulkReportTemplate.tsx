@@ -59,11 +59,17 @@ interface BulkReportData {
 
 interface BulkReportTemplateProps {
   onClose?: () => void;
+  templateId?: string;
+  classId?: string;
 }
 
-const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
+const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ 
+  onClose, 
+  templateId: _templateId = 'template1',
+  classId 
+}) => {
   const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>(classId || '');
   const [selectedTerm, setSelectedTerm] = useState<string>('1');
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024-2025');
   const [selectedExamType, setSelectedExamType] = useState<string>('exam_1');
@@ -80,16 +86,21 @@ const BulkReportTemplate: React.FC<BulkReportTemplateProps> = ({ onClose }) => {
     
     // Read URL parameters and set initial state
     const urlParams = new URLSearchParams(window.location.search);
-    const classId = urlParams.get('class_id');
+    const urlClassId = urlParams.get('class_id');
     const term = urlParams.get('term');
     const examType = urlParams.get('exam_type');
     const academicYear = urlParams.get('academic_year');
     
-    if (classId) setSelectedClass(classId);
+    // Set classId from prop if provided, otherwise from URL
+    if (classId) {
+      setSelectedClass(classId);
+    } else if (urlClassId) {
+      setSelectedClass(urlClassId);
+    }
     if (term) setSelectedTerm(term);
     if (examType) setSelectedExamType(examType);
     if (academicYear) setSelectedAcademicYear(academicYear);
-  }, []);
+  }, [classId]);
 
   const fetchClasses = async () => {
     try {

@@ -83,6 +83,10 @@ export const usePermissions = () => {
   const canDownloadClassReports = (): boolean => hasPermission('download_class_reports');
   const canDownloadAllReports = (): boolean => hasPermission('download_all_reports');
   
+  // Report Cards access - only Director of Studies and Administrative Staff
+  const canAccessReportCards = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+  
   const canManageFinance = (): boolean => hasPermission('manage_finance');
   const canViewFinance = (): boolean => hasPermission('view_finance');
 
@@ -119,6 +123,7 @@ export const usePermissions = () => {
     canDownloadReports,
     canDownloadClassReports,
     canDownloadAllReports,
+    canAccessReportCards,
     canManageFinance,
     canViewFinance,
     // Role checks

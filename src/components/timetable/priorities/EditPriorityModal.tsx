@@ -2,22 +2,25 @@ import { useState, useEffect } from 'react';
 import { APIService } from '../../../services/baseUrl';
 import type { Subject } from '../../../types/subjects';
 import type { TimeSlot } from '../../../types/timetable';
-import type { SubjectPriority } from '../../../types/priorities';
+import type { SubjectPriority, Teacher } from '../../../types/priorities';
 
 interface EditPriorityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { subject: string; time_slot: string }) => Promise<void>;
+  onSubmit: (data: { subject: string; time_slot: string; teacher?: string | null }) => Promise<void>;
   priority: SubjectPriority;
 }
 
 export default function EditPriorityModal({ isOpen, onClose, onSubmit, priority }: EditPriorityModalProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedSubject, setSelectedSubject] = useState(priority.subject);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(priority.time_slot);
+  const [selectedTeacher, setSelectedTeacher] = useState<string>(priority.teacher || '');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -25,8 +28,53 @@ export default function EditPriorityModal({ isOpen, onClose, onSubmit, priority 
       loadDropdownData();
       setSelectedSubject(priority.subject);
       setSelectedTimeSlot(priority.time_slot);
+      setSelectedTeacher(priority.teacher || '');
     }
   }, [isOpen, priority]);
+
+  // Load teachers when subject changes or initially when editing
+  useEffect(() => {
+    if (selectedSubject && isOpen) {
+      loadTeachersForSubject(selectedSubject);
+    } else {
+      setTeachers([]);
+    }
+  }, [selectedSubject, isOpen]);
+
+  const loadTeachersForSubject = async (subjectId: string) => {
+    setLoadingTeachers(true);
+    try {
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.get(`/api/priorities/teachers-by-subject/${subjectId}/`, {}, authType);
+      
+      // API returns { success: true, results: [...] }
+      if (response?.results && Array.isArray(response.results)) {
+        setTeachers(response.results);
+      } else if (Array.isArray(response)) {
+        setTeachers(response);
+      } else {
+        setTeachers([]);
+      }
+      
+      // If editing and the current teacher is not in the list, clear it
+      if (priority.teacher && subjectId !== priority.subject) {
+        setSelectedTeacher('');
+      }
+    } catch (error) {
+      console.error('Failed to load teachers:', error);
+      setTeachers([]);
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
+
+  const handleSubjectChange = (newSubjectId: string) => {
+    setSelectedSubject(newSubjectId);
+    // Clear teacher selection when subject changes
+    if (newSubjectId !== priority.subject) {
+      setSelectedTeacher('');
+    }
+  };
 
   const formatTime = (time: string) => {
     // Remove seconds from time (HH:MM:SS -> HH:MM)
@@ -79,6 +127,7 @@ export default function EditPriorityModal({ isOpen, onClose, onSubmit, priority 
       await onSubmit({
         subject: selectedSubject,
         time_slot: selectedTimeSlot,
+        teacher: selectedTeacher || null,
       });
     } catch (error: any) {
       console.error('Error updating priority:', error);
@@ -131,7 +180,7 @@ export default function EditPriorityModal({ isOpen, onClose, onSubmit, priority 
                 </label>
                 <select
                   value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  onChange={(e) => handleSubjectChange(e.target.value)}
                   className={`block w-full px-3 py-2 border ${
                     errors.subject ? 'border-red-300' : 'border-gray-300'
                   } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
@@ -149,6 +198,51 @@ export default function EditPriorityModal({ isOpen, onClose, onSubmit, priority 
                   <p className="mt-1 text-sm text-red-600">{errors.subject[0]}</p>
                 )}
               </div>
+
+              {/* Teacher (Optional) - Only show when subject is selected */}
+              {selectedSubject && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teacher <span className="text-gray-400">(Optional)</span>
+                  </label>
+                  {loadingTeachers ? (
+                    <div className="flex items-center space-x-2 py-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm text-gray-500">Loading teachers...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        value={selectedTeacher}
+                        onChange={(e) => setSelectedTeacher(e.target.value)}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.teacher ? 'border-red-300' : 'border-gray-300'
+                        } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        disabled={loading}
+                      >
+                        <option value="">All Teachers (Global Priority)</option>
+                        {teachers.map((teacher) => (
+                          <option key={teacher.id} value={teacher.id}>
+                            {teacher.full_name} ({teacher.email})
+                          </option>
+                        ))}
+                      </select>
+                      {teachers.length === 0 && (
+                        <p className="mt-1 text-xs text-gray-500">No teachers assigned to this subject</p>
+                      )}
+                      {errors.teacher && (
+                        <p className="mt-1 text-sm text-red-600">{errors.teacher[0]}</p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        {selectedTeacher 
+                          ? "Priority will only apply to classes taught by this teacher"
+                          : "Priority will apply to all classes for this subject"
+                        }
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Time Slot */}
               <div>

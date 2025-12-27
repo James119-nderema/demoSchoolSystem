@@ -60,6 +60,7 @@ interface StudentReportTemplateProps {
   term?: string;
   academicYear?: string;
   examType?: string;
+  templateId?: string;
   onClose?: () => void;
 }
 
@@ -68,6 +69,7 @@ const StudentReportTemplate: React.FC<StudentReportTemplateProps> = ({
   term = '1',
   academicYear = '2024-2025',
   examType = 'exam_1',
+  templateId: _templateId = 'template1',
   onClose
 }) => {
   const [reportData, setReportData] = useState<ReportData | null>(null);

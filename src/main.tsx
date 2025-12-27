@@ -44,6 +44,7 @@ import SubjectList from './components/generalFiles/analytics/SubjectList'
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import ReportsPage from './components/templates/ReportsPage'
+import TemplateFullPreview from './components/templates/TemplateFullPreview'
 import TimetableDashboard from './components/timetable/TimetableDashboard'
 import SubjectFrequency from './components/timetable/SubjectFrequency/SubjectFrequency'
 import TeacherSubjectAssignment from './components/timetable/TeacherSubjectAssignment/TeacherSubjectAssignment'
@@ -192,6 +193,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <ReportsPage />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'report-card/pdf/:templateName', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <TemplateFullPreview />
               </AuthenticatedRoute>
             ) 
           },
