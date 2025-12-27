@@ -89,6 +89,15 @@ interface YearOption {
   label: string;
 }
 
+interface SchoolInfo {
+  name: string;
+  principal_name?: string;
+  phone_number?: string;
+  email?: string;
+  address?: string;
+  motto?: string;
+}
+
 const ParentReportCard: React.FC = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +107,7 @@ const ParentReportCard: React.FC = () => {
   const [availableTerms, setAvailableTerms] = useState<TermOption[]>([]);
   const [availableYears, setAvailableYears] = useState<YearOption[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -120,6 +130,22 @@ const ParentReportCard: React.FC = () => {
         setError('Not authenticated');
         setLoading(false);
         return;
+      }
+
+      // First fetch dashboard to get school info
+      const dashboardResponse = await fetch(`${API_BASE_URL}/api/parents/dashboard/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (dashboardResponse.ok) {
+        const dashData = await dashboardResponse.json();
+        // Store school info for later use
+        if (dashData.school) {
+          setSchoolInfo(dashData.school);
+        }
       }
 
       // Fetch student analytics to get filter options
@@ -226,12 +252,12 @@ const ParentReportCard: React.FC = () => {
             photo: null,
           },
           school: {
-            school_name: data.student_info?.school || '',
+            school_name: schoolInfo?.name || data.student_info?.school || '',
             logo: null,
-            address: '',
-            phone_number: '',
-            email: '',
-            motto: '',
+            address: schoolInfo?.address || '',
+            phone_number: schoolInfo?.phone_number || '',
+            email: schoolInfo?.email || '',
+            motto: schoolInfo?.motto || '',
           },
           term: selectedTerm,
           academic_year: selectedYear,
