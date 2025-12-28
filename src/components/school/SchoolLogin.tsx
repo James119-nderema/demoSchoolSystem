@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../authentication/contexts/AuthContext';
 
 interface LoginFormData {
@@ -7,15 +7,33 @@ interface LoginFormData {
   password: string;
 }
 
+interface LocationState {
+  message?: string;
+  email?: string;
+}
+
 const SchoolLogin: React.FC = () => {
+  const location = useLocation();
+  const state = location.state as LocationState | null;
+  
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
+    email: state?.email || '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(
+    state?.message ? { type: 'success', text: state.message } : null
+  );
   const navigate = useNavigate();
   const { login } = useAuth();
+  
+  // Clear location state after reading it
+  useEffect(() => {
+    if (state?.message) {
+      // Replace history state to prevent message showing again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [state]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

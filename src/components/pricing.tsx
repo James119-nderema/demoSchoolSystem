@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, X, ArrowRight } from 'lucide-react';
 
 interface PricingTier {
   name: string;
+  packageKey: string; // Backend package key
   description: string;
   termPrice: number;
   yearPrice: number;
@@ -12,12 +14,43 @@ interface PricingTier {
   color: string;
 }
 
+interface RegistrationData {
+  name: string;
+  school_email: string;
+  password: string;
+  motto: string;
+  school_address: string;
+  school_type: string;
+  curriculum: string;
+  telephone: string;
+  country: string;
+  website?: string;
+  logo?: File | null;
+}
+
+interface LocationState {
+  schoolEmail?: string;
+  fromRegistration?: boolean;
+  registrationData?: RegistrationData;
+}
+
 const Pricing: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as LocationState | null;
   const [billingCycle, setBillingCycle] = useState<'term' | 'year'>('term');
+  
+  // Get registration data from navigation state or sessionStorage
+  const registrationData = state?.registrationData || 
+    (sessionStorage.getItem('pendingSchoolRegistration') 
+      ? JSON.parse(sessionStorage.getItem('pendingSchoolRegistration')!) 
+      : null);
+  const fromRegistration = state?.fromRegistration || !!registrationData;
 
   const pricingTiers: PricingTier[] = [
     {
       name: 'Timetable Only',
+      packageKey: 'TIMETABLE_ONLY',
       description: 'Perfect for schools starting with automated scheduling',
       termPrice: 1000,
       yearPrice:3000,
@@ -39,6 +72,7 @@ const Pricing: React.FC = () => {
     },
     {
       name: 'Timetable + Results',
+      packageKey: 'TIMETABLE_RESULTS',
       description: 'Complete academic management solution',
       termPrice: 15000,
       yearPrice: 40000,
@@ -59,6 +93,7 @@ const Pricing: React.FC = () => {
     },
     {
       name: 'Fees Management',
+      packageKey: 'FEES_MANAGEMENT',
       description: 'Streamline your school financial operations',
       termPrice: 15000,
       yearPrice: 40000,
@@ -82,9 +117,10 @@ const Pricing: React.FC = () => {
     },
     {
       name: 'Complete Package',
+      packageKey: 'COMPLETE_PACKAGE',
       description: 'Full school management system',
-      termPrice: 30000,
-      yearPrice: 80000,
+      termPrice: 1,
+      yearPrice: 1,
       color: 'indigo',
       recommended: false,
       features: [
@@ -105,6 +141,24 @@ const Pricing: React.FC = () => {
 
   const getPrice = (tier: PricingTier) => {
     return billingCycle === 'term' ? tier.termPrice : tier.yearPrice;
+  };
+
+  const handleSelectPackage = (tier: PricingTier) => {
+    const packageInfo = {
+      name: tier.packageKey,
+      displayName: tier.name,
+      billingCycle: billingCycle === 'term' ? 'TERM' : 'YEAR',
+      amount: getPrice(tier),
+    };
+    
+    navigate('/subscription-payment', {
+      state: {
+        package: packageInfo,
+        schoolEmail: registrationData?.school_email || state?.schoolEmail,
+        fromRegistration: fromRegistration,
+        registrationData: registrationData,
+      }
+    });
   };
 
   const getSavings = (tier: PricingTier) => {
@@ -193,6 +247,7 @@ const Pricing: React.FC = () => {
 
                 {/* CTA Button */}
                 <button
+                  onClick={() => handleSelectPackage(tier)}
                   className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors mb-8 flex items-center justify-center gap-2 bg-${tier.color}-600 hover:bg-${tier.color}-700`}
                   style={{
                     backgroundColor: tier.recommended ? '#4F46E5' : 
@@ -303,13 +358,13 @@ const Pricing: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="mailto:support@schoolresult.com"
+              href="mailto:support@schoolmaster.co.ke"
               className="px-8 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
             >
               Email Us
             </a>
             <a
-              href="tel:+254700000000"
+              href="tel:+254706394482"
               className="px-8 py-3 bg-indigo-700 text-white rounded-lg font-semibold hover:bg-indigo-800 transition-colors"
             >
               Call Us

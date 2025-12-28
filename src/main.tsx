@@ -61,6 +61,7 @@ import UploadResults from './components/nationalExams.tsx/uploadResults'
 import NationalExamStatistics from './components/nationalExams.tsx/NationalExamStatistics'
 import InvoiceManagement from './components/feeManagement/invoice'
 import BursarDashboard from './components/feeManagement/BursarDashboard'
+import Payments from './components/feeManagement/payments'
 import ParentPaymentHistory from './components/feeManagement/ParentPaymentHistory'
 import PayFees from './components/feeManagement/PayFees'
 import PaymentInstructions from './components/feeManagement/PaymentInstructions'
@@ -78,6 +79,7 @@ import ParentMainLayout from './layout/ParentMainLayout'
 import Dashboard from './pages/Dashboard'
 import Home from './components/Home'
 import Pricing from './components/pricing'
+import SubscriptionPayment from './components/school/SubscriptionPayment'
 import DashboardHome from './pages/Home'
 import Students from './pages/Students'
 import Subjects from './pages/Subjects'
@@ -98,7 +100,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'pricing', element: <Pricing /> },
+      { path: 'subscription-payment', element: <SubscriptionPayment /> },
       { path: 'create-school', element: <SchoolRegistration /> },
+      { path: 'register-school', element: <SchoolRegistration /> },
       { path: 'login', element: <SchoolLogin /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
@@ -361,6 +365,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <BursarDashboard />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'finance/payments', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Payments />
               </AuthenticatedRoute>
             ) 
           },
