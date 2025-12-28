@@ -179,7 +179,7 @@ export default function PaymentInstructions() {
 
   // Poll for payment status
   useEffect(() => {
-    let pollInterval: NodeJS.Timeout | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
     
     if (stkStatus === 'processing' && stkTransactionId) {
       pollInterval = setInterval(async () => {
