@@ -79,7 +79,7 @@ export default function ParentSidebar({ parentName, studentName, isOpen, onToggl
       ),
       href: '/parent/analytics'
     },
-    {
+    /*{
       id: 'attendance',
       name: 'Attendance',
       icon: (
@@ -99,7 +99,7 @@ export default function ParentSidebar({ parentName, studentName, isOpen, onToggl
         </svg>
       ),
       href: '/parent/fees'
-    },
+    },*/
     {
       id: 'payment-history',
       name: 'Payment History',

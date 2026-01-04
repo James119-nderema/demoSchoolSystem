@@ -7,7 +7,7 @@ interface PaymentHistoryItem {
   id: string;
   date: string;
   description: string;
-  invoice_number: string;
+  invoice_number: string;  // For invoices: actual invoice number, For payments: M-PESA receipt or bank transaction number
   type: 'invoice' | 'payment';
   debit: number | null;
   credit: number | null;
@@ -243,7 +243,9 @@ export default function ParentPaymentHistory() {
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                         <span>{formatDate(item.date)}</span>
                         <span>•</span>
-                        <span className="font-mono">{item.invoice_number}</span>
+                        <span className="font-mono" title={item.type === 'invoice' ? 'Invoice Number' : 'Receipt/Transaction No'}>
+                          {item.type === 'invoice' ? 'INV: ' : 'REF: '}{item.invoice_number}
+                        </span>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -296,7 +298,7 @@ export default function ParentPaymentHistory() {
                       Description
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Invoice #
+                      Invoice # / Receipt #
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Debit
@@ -330,7 +332,9 @@ export default function ParentPaymentHistory() {
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-600">
-                        {item.invoice_number}
+                        <span title={item.type === 'invoice' ? 'Invoice Number' : 'Receipt/Transaction Number'}>
+                          {item.invoice_number}
+                        </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
                         {formatCurrency(item.debit)}
@@ -373,18 +377,20 @@ export default function ParentPaymentHistory() {
       {/* Legend - Responsive */}
       <div className="bg-white rounded-xl p-4 border border-gray-200 mt-6">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Legend</h3>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
-          <div className="flex items-center">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-              Invoice
-            </span>
-            <span className="text-gray-600">School fees/charges (Debit)</span>
-          </div>
-          <div className="flex items-center">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
-              Payment
-            </span>
-            <span className="text-gray-600">Payments made (Credit)</span>
+        <div className="flex flex-col gap-3 text-sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+            <div className="flex items-center">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                Invoice
+              </span>
+              <span className="text-gray-600">School fees/charges (Debit) - Shows Invoice Number</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
+                Payment
+              </span>
+              <span className="text-gray-600">Payments made (Credit) - Shows M-PESA Receipt or Bank Transaction No.</span>
+            </div>
           </div>
         </div>
       </div>

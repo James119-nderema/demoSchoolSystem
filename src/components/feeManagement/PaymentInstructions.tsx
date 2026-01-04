@@ -78,28 +78,6 @@ const paymentMethodsDetails: Record<string, PaymentMethodDetails> = {
       'Enter the transaction code below'
     ]
   },
-  bank_transfer: {
-    id: 'bank_transfer',
-    name: 'Bank Transfer',
-    type: 'bank_transfer',
-    bankName: 'School Main Bank Account',
-    accountNumber: '1234567890',
-    branchName: 'Main Branch',
-    swiftCode: 'SCBLKENX',
-    color: 'purple',
-    bgGradient: 'from-purple-500 to-purple-600',
-    instructions: [
-      'Log in to your bank\'s mobile or internet banking',
-      'Select "Transfer" or "Send Money"',
-      'Enter Account Number: 1234567890',
-      'Bank: School Main Bank',
-      'Branch: Main Branch',
-      'Reference: Your child\'s admission number',
-      'Enter the amount',
-      'Confirm the transfer',
-      'Enter the transaction reference below'
-    ]
-  },
   equity_bank: {
     id: 'equity_bank',
     name: 'Equity Bank',
@@ -107,17 +85,20 @@ const paymentMethodsDetails: Record<string, PaymentMethodDetails> = {
     bankName: 'Equity Bank',
     accountNumber: '0987654321',
     branchName: 'School Branch',
+    swiftCode: 'EABORKE1',
     color: 'orange',
     bgGradient: 'from-orange-500 to-orange-600',
     instructions: [
       'Visit any Equity Bank branch or use Equity Mobile',
       'For Mobile: Dial *247#',
       'Select "Send Money" > "Pay Bill"',
+      'For Internet Banking: Login to equityonline.co.ke',
+      'Select "Transfers" > "Pay Bills"',
       'Enter Account Number: 0987654321',
       'Reference: Your child\'s admission number',
       'Enter the amount',
       'Confirm payment',
-      'Enter the transaction code below'
+      'Note down the transaction reference and enter below'
     ]
   },
   kcb_bank: {
@@ -127,17 +108,204 @@ const paymentMethodsDetails: Record<string, PaymentMethodDetails> = {
     bankName: 'KCB Bank',
     accountNumber: '1122334455',
     branchName: 'School Branch',
+    swiftCode: 'KCBLKENX',
     color: 'teal',
     bgGradient: 'from-teal-500 to-teal-600',
     instructions: [
       'Visit any KCB Bank branch or use KCB Mobile',
-      'For Mobile: Download KCB App',
+      'For Mobile: Download KCB App or dial *522#',
       'Select "Transfers" > "Pay Bill"',
+      'For Internet Banking: Login to ibank.kcbbankgroup.com',
+      'Select "Payments" > "Bill Payments"',
       'Enter Account Number: 1122334455',
       'Reference: Your child\'s admission number',
       'Enter the amount',
       'Confirm payment',
-      'Enter the transaction code below'
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  cooperative_bank: {
+    id: 'cooperative_bank',
+    name: 'Co-operative Bank',
+    type: 'bank_transfer',
+    bankName: 'Co-operative Bank of Kenya',
+    accountNumber: '01129876543210',
+    branchName: 'School Branch',
+    swiftCode: 'COLOKEXX',
+    color: 'indigo',
+    bgGradient: 'from-indigo-500 to-indigo-600',
+    instructions: [
+      'Visit any Co-operative Bank branch',
+      'For Mobile: Use MCo-op Cash App',
+      'Select "Payments" > "Pay Bill"',
+      'For Internet Banking: Login to corporateibank.co-opbank.co.ke',
+      'Select "Payments" > "Bill Payment"',
+      'Enter Account Number: 01129876543210',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  absa_bank: {
+    id: 'absa_bank',
+    name: 'ABSA Bank',
+    type: 'bank_transfer',
+    bankName: 'ABSA Bank Kenya',
+    accountNumber: '2055667788',
+    branchName: 'School Branch',
+    swiftCode: 'BABORKE1',
+    color: 'pink',
+    bgGradient: 'from-pink-500 to-pink-600',
+    instructions: [
+      'Visit any ABSA Bank branch',
+      'For Mobile: Download ABSA Mobile Banking App',
+      'Select "Payments" > "Pay Bill"',
+      'For Internet Banking: Login to online.absa.co.ke',
+      'Select "Pay" > "Pay Bill"',
+      'Enter Account Number: 2055667788',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  stanbic_bank: {
+    id: 'stanbic_bank',
+    name: 'Stanbic Bank',
+    type: 'bank_transfer',
+    bankName: 'Stanbic Bank Kenya',
+    accountNumber: '0100112233445',
+    branchName: 'School Branch',
+    swiftCode: 'SBICKENX',
+    color: 'cyan',
+    bgGradient: 'from-cyan-500 to-cyan-600',
+    instructions: [
+      'Visit any Stanbic Bank branch',
+      'For Mobile: Download Stanbic Mobile App',
+      'Select "Transact" > "Pay"',
+      'For Internet Banking: Login to online.stanbicbank.co.ke',
+      'Select "Payments" > "Bill Payment"',
+      'Enter Account Number: 0100112233445',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  standard_chartered: {
+    id: 'standard_chartered',
+    name: 'Standard Chartered',
+    type: 'bank_transfer',
+    bankName: 'Standard Chartered Bank Kenya',
+    accountNumber: '0102030405060',
+    branchName: 'School Branch',
+    swiftCode: 'SCBLKENX',
+    color: 'emerald',
+    bgGradient: 'from-emerald-500 to-emerald-600',
+    instructions: [
+      'Visit any Standard Chartered Bank branch',
+      'For Mobile: Download SC Mobile Kenya App',
+      'Select "Pay" > "Pay Bills"',
+      'For Internet Banking: Login to online.standardchartered.co.ke',
+      'Select "Pay & Transfer" > "Pay Bills"',
+      'Enter Account Number: 0102030405060',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  dtb_bank: {
+    id: 'dtb_bank',
+    name: 'DTB Bank',
+    type: 'bank_transfer',
+    bankName: 'Diamond Trust Bank',
+    accountNumber: '0201234567890',
+    branchName: 'School Branch',
+    swiftCode: 'DLOOKENX',
+    color: 'amber',
+    bgGradient: 'from-amber-500 to-amber-600',
+    instructions: [
+      'Visit any DTB Bank branch',
+      'For Mobile: Download DTB Mobile App',
+      'Select "Payments" > "Bill Payment"',
+      'For Internet Banking: Login to ibank.dtbafrica.com',
+      'Select "Payments" > "Pay Bills"',
+      'Enter Account Number: 0201234567890',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  ncba_bank: {
+    id: 'ncba_bank',
+    name: 'NCBA Bank',
+    type: 'bank_transfer',
+    bankName: 'NCBA Bank Kenya',
+    accountNumber: '1001234567',
+    branchName: 'School Branch',
+    swiftCode: 'LOYDKENX',
+    color: 'violet',
+    bgGradient: 'from-violet-500 to-violet-600',
+    instructions: [
+      'Visit any NCBA Bank branch or use NCBA Loop',
+      'For Mobile: Download NCBA Loop App',
+      'Select "Pay" > "Pay Bill"',
+      'For Internet Banking: Login to online.ncbagroup.com',
+      'Select "Payments" > "Bill Payment"',
+      'Enter Account Number: 1001234567',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  family_bank: {
+    id: 'family_bank',
+    name: 'Family Bank',
+    type: 'bank_transfer',
+    bankName: 'Family Bank',
+    accountNumber: '099123456789',
+    branchName: 'School Branch',
+    swiftCode: 'FAMOKENX',
+    color: 'rose',
+    bgGradient: 'from-rose-500 to-rose-600',
+    instructions: [
+      'Visit any Family Bank branch',
+      'For Mobile: Use PesaPap App or dial *325#',
+      'Select "Pay Bill"',
+      'For Internet Banking: Login to familybank.co.ke',
+      'Select "Payments" > "Bill Payments"',
+      'Enter Account Number: 099123456789',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
+    ]
+  },
+  im_bank: {
+    id: 'im_bank',
+    name: 'I&M Bank',
+    type: 'bank_transfer',
+    bankName: 'I&M Bank Kenya',
+    accountNumber: '0012345678901',
+    branchName: 'School Branch',
+    swiftCode: 'IMLOKEXX',
+    color: 'sky',
+    bgGradient: 'from-sky-500 to-sky-600',
+    instructions: [
+      'Visit any I&M Bank branch',
+      'For Mobile: Download I&M Mobile App',
+      'Select "Payments" > "Pay Bill"',
+      'For Internet Banking: Login to online.imbank.co.ke',
+      'Select "Payments" > "Bill Payment"',
+      'Enter Account Number: 0012345678901',
+      'Reference: Your child\'s admission number',
+      'Enter the amount',
+      'Confirm payment',
+      'Note down the transaction reference and enter below'
     ]
   }
 };
@@ -316,7 +484,15 @@ export default function PaymentInstructions() {
     blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', button: 'bg-blue-600 hover:bg-blue-700' },
     purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', button: 'bg-purple-600 hover:bg-purple-700' },
     orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200', button: 'bg-orange-600 hover:bg-orange-700' },
-    teal: { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200', button: 'bg-teal-600 hover:bg-teal-700' }
+    teal: { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200', button: 'bg-teal-600 hover:bg-teal-700' },
+    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200', button: 'bg-indigo-600 hover:bg-indigo-700' },
+    pink: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200', button: 'bg-pink-600 hover:bg-pink-700' },
+    cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', button: 'bg-cyan-600 hover:bg-cyan-700' },
+    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', button: 'bg-emerald-600 hover:bg-emerald-700' },
+    amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', button: 'bg-amber-600 hover:bg-amber-700' },
+    violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', button: 'bg-violet-600 hover:bg-violet-700' },
+    rose: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-200', button: 'bg-rose-600 hover:bg-rose-700' },
+    sky: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200', button: 'bg-sky-600 hover:bg-sky-700' }
   };
 
   const colors = colorClasses[method.color] || colorClasses.blue;

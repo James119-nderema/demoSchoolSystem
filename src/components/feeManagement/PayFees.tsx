@@ -65,22 +65,6 @@ const paymentMethods: PaymentMethod[] = [
     ),
   },
   {
-    id: 'bank_transfer',
-    name: 'Bank Transfer',
-    type: 'bank_transfer',
-    description: 'Pay via direct bank transfer',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 hover:bg-purple-100 border-purple-200',
-    icon: (
-      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
-        <rect x="4" y="14" width="40" height="28" rx="3" fill="#7C3AED"/>
-        <rect x="8" y="18" width="32" height="4" fill="#A78BFA"/>
-        <path d="M12 28h6v8h-6v-8zm9 0h6v8h-6v-8zm9 0h6v8h-6v-8z" fill="white"/>
-        <path d="M24 6l16 8H8l16-8z" fill="#7C3AED"/>
-      </svg>
-    ),
-  },
-  {
     id: 'equity_bank',
     name: 'Equity Bank',
     type: 'bank_transfer',
@@ -106,6 +90,118 @@ const paymentMethods: PaymentMethod[] = [
       <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
         <circle cx="24" cy="24" r="22" fill="#0D9488"/>
         <text x="24" y="30" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">KCB</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'cooperative_bank',
+    name: 'Co-operative Bank',
+    type: 'bank_transfer',
+    description: 'Pay via Co-operative Bank',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#4F46E5"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">COOP</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'absa_bank',
+    name: 'ABSA Bank',
+    type: 'bank_transfer',
+    description: 'Pay via ABSA Bank',
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-50 hover:bg-pink-100 border-pink-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#EC4899"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">ABSA</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'stanbic_bank',
+    name: 'Stanbic Bank',
+    type: 'bank_transfer',
+    description: 'Pay via Stanbic Bank',
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#0891B2"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">STANBIC</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'standard_chartered',
+    name: 'Standard Chartered',
+    type: 'bank_transfer',
+    description: 'Pay via Standard Chartered',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#059669"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">SCB</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'dtb_bank',
+    name: 'DTB Bank',
+    type: 'bank_transfer',
+    description: 'Pay via Diamond Trust Bank',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50 hover:bg-amber-100 border-amber-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#D97706"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">DTB</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'ncba_bank',
+    name: 'NCBA Bank',
+    type: 'bank_transfer',
+    description: 'Pay via NCBA Bank',
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-50 hover:bg-violet-100 border-violet-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#7C3AED"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">NCBA</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'family_bank',
+    name: 'Family Bank',
+    type: 'bank_transfer',
+    description: 'Pay via Family Bank',
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-50 hover:bg-rose-100 border-rose-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#E11D48"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">FAMILY</text>
+      </svg>
+    ),
+  },
+  {
+    id: 'im_bank',
+    name: 'I&M Bank',
+    type: 'bank_transfer',
+    description: 'Pay via I&M Bank',
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200',
+    icon: (
+      <svg className="w-10 h-10" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#0284C7"/>
+        <text x="24" y="28" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">I&amp;M</text>
       </svg>
     ),
   },
