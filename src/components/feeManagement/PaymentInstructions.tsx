@@ -419,7 +419,7 @@ export default function PaymentInstructions() {
     try {
       const token = localStorage.getItem('parent_access_token');
       await axios.post(
-        `${API_BASE_URL}/api/finance/parent/confirm-payment/`,
+        `${API_BASE_URL}/api/mpesa/confirm-payment/`,
         {
           transaction_code: transactionCode,
           amount: parseFloat(amount),

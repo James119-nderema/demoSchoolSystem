@@ -62,6 +62,7 @@ import NationalExamStatistics from './components/nationalExams.tsx/NationalExamS
 import InvoiceManagement from './components/feeManagement/invoice'
 import BursarDashboard from './components/feeManagement/BursarDashboard'
 import Payments from './components/feeManagement/payments'
+import Reconcile from './components/feeManagement/Reconcile'
 import ParentPaymentHistory from './components/feeManagement/ParentPaymentHistory'
 import PayFees from './components/feeManagement/PayFees'
 import PaymentInstructions from './components/feeManagement/PaymentInstructions'
@@ -373,6 +374,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <Payments />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'finance/reconcile', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <Reconcile />
               </AuthenticatedRoute>
             ) 
           },

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { API_BASE_URL } from '../../config/environment';
 
 interface PaymentHistoryItem {
@@ -70,6 +72,86 @@ export default function ParentPaymentHistory() {
     });
   };
 
+  const downloadStatement = () => {
+    if (!data) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fee Statement', pageWidth / 2, 20, { align: 'center' });
+    
+    // Student Info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Student: ${data.student_name}`, 14, 35);
+    doc.text(`Statement Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 42);
+    
+    // Summary Box
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, 50, pageWidth - 28, 25, 'F');
+    doc.setFontSize(10);
+    doc.text(`Total Invoiced: ${formatCurrency(data.stats.total_invoiced)}`, 20, 60);
+    doc.text(`Total Paid: ${formatCurrency(data.stats.total_paid)}`, 80, 60);
+    doc.text(`Balance Due: ${formatCurrency(data.stats.total_balance)}`, 140, 60);
+    
+    // Table
+    const tableData = data.history.map((item, index) => [
+      index + 1,
+      formatDate(item.date),
+      item.type === 'invoice' ? 'Invoice' : 'Payment',
+      item.description,
+      item.invoice_number,
+      item.debit ? formatCurrency(item.debit) : '-',
+      item.credit ? formatCurrency(item.credit) : '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 80,
+      head: [['#', 'Date', 'Type', 'Description', 'Ref No.', 'Debit', 'Credit']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 50 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 25, halign: 'right' },
+        6: { cellWidth: 25, halign: 'right' }
+      },
+      foot: [[
+        '', '', '', '', 'Totals:',
+        formatCurrency(data.stats.total_invoiced),
+        formatCurrency(data.stats.total_paid)
+      ]],
+      footStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0], fontStyle: 'bold' }
+    });
+
+    // Get final Y position
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 150;
+    
+    // Balance Due footer
+    doc.setFillColor(data.stats.total_balance > 0 ? 254 : 220, data.stats.total_balance > 0 ? 243 : 252, data.stats.total_balance > 0 ? 199 : 231);
+    doc.rect(14, finalY + 5, pageWidth - 28, 15, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Balance Due: ${formatCurrency(data.stats.total_balance)}`, pageWidth - 20, finalY + 14, { align: 'right' });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128);
+    doc.text('This is a computer generated statement', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+    // Save the PDF
+    doc.save(`Fee_Statement_${data.student_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   if (loading) {
     return (
       <div className="p-4 sm:p-6">
@@ -125,15 +207,26 @@ export default function ParentPaymentHistory() {
             Student: <span className="font-medium">{data.student_name}</span>
           </p>
         </div>
-        <Link
-          to="/parent/pay-fees"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Pay Fees
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={downloadStatement}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm sm:text-base"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Statement
+          </button>
+          <Link
+            to="/parent/pay-fees"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Pay Fees
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards - Responsive Grid */}
