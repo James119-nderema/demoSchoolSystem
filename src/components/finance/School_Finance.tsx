@@ -357,7 +357,7 @@ const SchoolFinance: React.FC = () => {
                   cy="50%"
                   outerRadius={120}
                   innerRadius={60}
-                  label={({ method, percent }) => `${method} (${(percent * 100).toFixed(0)}%)`}
+                  label={(props: any) => `${props.name} (${(props.percent * 100).toFixed(0)}%)`}
                   labelLine={true}
                 >
                   {(analytics?.payment_methods || []).map((_, index) => (

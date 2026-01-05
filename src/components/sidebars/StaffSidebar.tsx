@@ -423,7 +423,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           </svg>
         )
       });
-    //}
+    
 
       items.push({
         name: 'Invoice',
