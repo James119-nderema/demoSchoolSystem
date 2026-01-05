@@ -10,6 +10,7 @@ interface Transaction {
   payment_method: string;
   payment_method_display: string;
   mpesa_receipt_number: string | null;
+  reference_number: string | null;
   result_desc: string | null;
   transaction_date: string | null;
   created_at: string;
@@ -102,6 +103,7 @@ export default function Reconcile() {
       filtered = filtered.filter(t => 
         (t.student_name?.toLowerCase().includes(query)) ||
         (t.admission_number?.toLowerCase().includes(query)) ||
+        (t.reference_number?.toLowerCase().includes(query)) ||
         (t.mpesa_receipt_number?.toLowerCase().includes(query)) ||
         (t.phone_number?.toLowerCase().includes(query))
       );
@@ -362,7 +364,7 @@ export default function Reconcile() {
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-600">
-                      {transaction.mpesa_receipt_number || 'N/A'}
+                      {transaction.reference_number || transaction.mpesa_receipt_number || 'N/A'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900">
                       {formatCurrency(transaction.amount)}
