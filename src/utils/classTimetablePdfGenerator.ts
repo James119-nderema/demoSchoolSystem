@@ -100,6 +100,22 @@ const calculateBreaks = (timeslots: TimeSlotInfo[]): BreakInfo[] => {
 };
 
 /**
+ * Normalize time slot string for consistent comparison
+ */
+const normalizeTimeslot = (timeslot: string): string => {
+  // Handle various formats like "8:00-9:00", "08:00-09:00", "8:00 - 9:00"
+  const parts = timeslot.replace(/\s+/g, '').split('-');
+  if (parts.length !== 2) return timeslot;
+  
+  const normalizeTime = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(p => p.replace(/[^0-9]/g, ''));
+    return `${hours.padStart(2, '0')}:${(minutes || '00').padStart(2, '0')}`;
+  };
+  
+  return `${normalizeTime(parts[0])}-${normalizeTime(parts[1])}`;
+};
+
+/**
  * Extract unique time slots from timetable data and sort them
  */
 const extractTimeslots = (timetables: TimetableByClass[]): TimeSlotInfo[] => {
@@ -108,9 +124,11 @@ const extractTimeslots = (timetables: TimetableByClass[]): TimeSlotInfo[] => {
   timetables.forEach(classData => {
     Object.values(classData.timetable).forEach(daySchedule => {
       Object.entries(daySchedule).forEach(([timeslot, entry]) => {
-        if (!timeslotMap.has(timeslot)) {
-          timeslotMap.set(timeslot, {
-            time_slot: timeslot,
+        // Normalize timeslot for consistent comparison
+        const normalizedSlot = normalizeTimeslot(timeslot);
+        if (!timeslotMap.has(normalizedSlot)) {
+          timeslotMap.set(normalizedSlot, {
+            time_slot: normalizedSlot,
             start_time: entry.start_time,
             end_time: entry.end_time
           });
@@ -169,6 +187,20 @@ export const generateSingleClassPDF = (
   // Collect teachers used in this class's timetable
   const teachersInClass = new Set<string>();
   
+  // Helper to find entry by normalized timeslot
+  const findEntry = (daySchedule: any, targetSlot: string) => {
+    if (!daySchedule) return null;
+    // First try exact match
+    if (daySchedule[targetSlot]) return daySchedule[targetSlot];
+    // Try to find by normalized comparison
+    for (const slot of Object.keys(daySchedule)) {
+      if (normalizeTimeslot(slot) === targetSlot) {
+        return daySchedule[slot];
+      }
+    }
+    return null;
+  };
+  
   // Prepare table data with break columns
   const tableData: any[][] = [];
   
@@ -176,7 +208,7 @@ export const generateSingleClassPDF = (
     const rowData: any[] = [day];
     
     for (let i = 0; i < timeslots.length; i++) {
-      const entry = classData.timetable[day]?.[timeslots[i].time_slot];
+      const entry = findEntry(classData.timetable[day], timeslots[i].time_slot);
       
       if (entry) {
         const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
@@ -190,7 +222,8 @@ export const generateSingleClassPDF = (
       const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
       if (breakAfterThis) {
         if (dayIndex === 0) {
-          const breakText = breakAfterThis.type.split(' ').join('\n');
+          // Format break text vertically - one letter per line
+          const breakText = breakAfterThis.type.replace(' ', '').split('').join('\n');
           rowData.push({
             content: breakText,
             rowSpan: DAYS.length,
@@ -204,8 +237,9 @@ export const generateSingleClassPDF = (
               fontStyle: 'bold',
               halign: 'center',
               valign: 'middle',
-              fontSize: 7,
-              cellWidth: 12,
+              fontSize: 6,
+              cellWidth: 10,
+              cellPadding: 1,
             }
           });
         }
@@ -357,6 +391,18 @@ export const generateAllClassesPDF = (
     // Collect teachers used in this class
     const teachersInClass = new Set<string>();
     
+    // Helper to find entry by normalized timeslot
+    const findEntryForClass = (daySchedule: any, targetSlot: string) => {
+      if (!daySchedule) return null;
+      if (daySchedule[targetSlot]) return daySchedule[targetSlot];
+      for (const slot of Object.keys(daySchedule)) {
+        if (normalizeTimeslot(slot) === targetSlot) {
+          return daySchedule[slot];
+        }
+      }
+      return null;
+    };
+    
     // Prepare table data with break columns
     const tableData: any[][] = [];
     
@@ -364,7 +410,7 @@ export const generateAllClassesPDF = (
       const rowData: any[] = [day];
       
       for (let i = 0; i < timeslots.length; i++) {
-        const entry = classData.timetable[day]?.[timeslots[i].time_slot];
+        const entry = findEntryForClass(classData.timetable[day], timeslots[i].time_slot);
         
         if (entry) {
           const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
@@ -378,7 +424,8 @@ export const generateAllClassesPDF = (
         const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
         if (breakAfterThis) {
           if (dayIndex === 0) {
-            const breakText = breakAfterThis.type.split(' ').join('\n');
+            // Format break text vertically - one letter per line
+            const breakText = breakAfterThis.type.replace(' ', '').split('').join('\n');
             rowData.push({
               content: breakText,
               rowSpan: DAYS.length,
@@ -392,8 +439,9 @@ export const generateAllClassesPDF = (
                 fontStyle: 'bold',
                 halign: 'center',
                 valign: 'middle',
-                fontSize: 7,
-                cellWidth: 12,
+                fontSize: 6,
+                cellWidth: 10,
+                cellPadding: 1,
               }
             });
           }

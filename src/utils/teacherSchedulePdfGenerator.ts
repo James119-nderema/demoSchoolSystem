@@ -169,8 +169,8 @@ export const generateSingleTeacherPDF = (
       const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
       if (breakAfterThis) {
         if (dayIndex === 0) {
-          // First row gets the merged cell with break text
-          const breakText = breakAfterThis.type.split(' ').join('\n');
+          // First row gets the merged cell with break text - one letter per line
+          const breakText = breakAfterThis.type.replace(' ', '').split('').join('\n');
           rowData.push({
             content: breakText,
             rowSpan: DAYS.length,
@@ -184,8 +184,9 @@ export const generateSingleTeacherPDF = (
               fontStyle: 'bold',
               halign: 'center',
               valign: 'middle',
-              fontSize: 7,
-              cellWidth: 12,
+              fontSize: 6,
+              cellWidth: 10,
+              cellPadding: 1,
             }
           });
         }
@@ -305,8 +306,8 @@ export const generateAllTeachersPDF = (
         const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
         if (breakAfterThis) {
           if (dayIndex === 0) {
-            // First row gets the merged cell with break text
-            const breakText = breakAfterThis.type.split(' ').join('\n');
+            // First row gets the merged cell with break text - one letter per line
+            const breakText = breakAfterThis.type.replace(' ', '').split('').join('\n');
             rowData.push({
               content: breakText,
               rowSpan: DAYS.length,
@@ -322,6 +323,7 @@ export const generateAllTeachersPDF = (
                 valign: 'middle',
                 fontSize: 6,
                 cellWidth: 10,
+                cellPadding: 1,
               }
             });
           }

@@ -84,13 +84,21 @@ const TimetableView: React.FC = () => {
   };
 
   const getTimeslots = (classTimetable: TimetableByClass['timetable']) => {
-    const timeslots = new Set<string>();
+    const timeslotSet = new Set<string>();
     
     Object.values(classTimetable).forEach(daySchedule => {
-      Object.keys(daySchedule).forEach(slot => timeslots.add(slot));
+      Object.keys(daySchedule).forEach(slot => timeslotSet.add(slot));
     });
     
-    return Array.from(timeslots).sort();
+    // Sort by start time numerically
+    return Array.from(timeslotSet).sort((a, b) => {
+      const parseTime = (slot: string): number => {
+        const startTime = slot.split('-')[0].replace(/\s+/g, '');
+        const parts = startTime.split(':');
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1] || '0', 10);
+      };
+      return parseTime(a) - parseTime(b);
+    });
   };
 
   const handleDownloadAll = () => {
