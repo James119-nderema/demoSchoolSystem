@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { APIService } from '../../services/baseUrl';
-import { BookOpen, Search, Calendar } from 'lucide-react';
+import { APIService, DataAPI } from '../../services/baseUrl';
+import { BookOpen, Search, Calendar, Plus } from 'lucide-react';
+import { usePermissions } from '../../hooks/usePermissions';
+import AddSubjectModal from '../generalFiles/subjects/AddSubjectModal';
+import type { SubjectCreateData } from '../../types/subjects';
 
 interface Subject {
   id: number;
@@ -18,6 +21,15 @@ const StaffSubjects: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
+  
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
+  
+  // Permissions
+  const { canAddSubjects } = usePermissions();
 
   useEffect(() => {
     fetchSubjects();
@@ -49,6 +61,25 @@ const StaffSubjects: React.FC = () => {
     }
   };
 
+  const handleAddSubject = async (data: SubjectCreateData) => {
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      await DataAPI.createSubject(data);
+      setSuccessMessage('Subject added successfully!');
+      setShowAddModal(false);
+      fetchSubjects();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error adding subject:', err);
+      setError(err.message || 'Failed to add subject. Please try again.');
+      throw err; // Re-throw to show error in modal
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Reset to first page when searching
@@ -66,15 +97,48 @@ const StaffSubjects: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="py-4 sm:py-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Subjects</h1>
-            <p className="mt-1 text-sm sm:text-base text-gray-600">View all available subjects</p>
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Subjects</h1>
+              <p className="mt-1 text-sm sm:text-base text-gray-600">View all available subjects</p>
+            </div>
+            
+            {/* Add Subject button for Director of Studies */}
+            {canAddSubjects() && (
+              <div className="mt-4 sm:mt-0">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <Plus className="-ml-1 mr-2 h-5 w-5" />
+                  Add Subject
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="p-4 sm:p-6 lg:p-8">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="ml-3 text-sm text-green-700">{successMessage}</div>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
+        )}
+        
         <div className="max-w-none">
           <div className="bg-white overflow-hidden shadow-sm rounded-lg">
             {/* Search and Info Bar */}
@@ -244,6 +308,14 @@ const StaffSubjects: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Add Subject Modal */}
+      <AddSubjectModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddSubject}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

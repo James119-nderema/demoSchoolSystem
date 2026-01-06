@@ -54,10 +54,22 @@ const TimetableView: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const result = await timetableGenerationService.generateTimetable();
+      // Use polling approach for long-running generation
+      const result = await timetableGenerationService.generateTimetableWithPolling(
+        (status) => {
+          // Update UI with progress if needed
+          if (status.elapsed_seconds) {
+            console.log(`Generation in progress... ${status.elapsed_seconds}s elapsed`);
+          }
+        },
+        2000, // Poll every 2 seconds
+        600000 // Max 10 minutes
+      );
       
       setSuccessMessage(
-        `Timetable generated successfully! ${result.data.filled} of ${result.data.total_slots} slots filled. ${result.data.failed} failed.`
+        result.data 
+          ? `Timetable generated successfully! ${result.data.filled} of ${result.data.total_slots} slots filled. ${result.data.failed} failed.`
+          : 'Timetable generated successfully!'
       );
       
       // Refresh data
@@ -65,7 +77,7 @@ const TimetableView: React.FC = () => {
       await fetchStats();
     } catch (err: any) {
       console.error('Error generating timetable:', err);
-      setError(err.response?.data?.error || 'Failed to generate timetable');
+      setError(err.message || err.response?.data?.error || 'Failed to generate timetable');
     } finally {
       setGenerating(false);
     }

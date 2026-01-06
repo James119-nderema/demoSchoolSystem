@@ -7,7 +7,13 @@ import {
   AreaChart, Area
 } from 'recharts';
 import { MarksAPI } from '../../../services/baseUrl';
-import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users } from 'lucide-react';
+import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users, Filter, RefreshCw } from 'lucide-react';
+
+interface AvailableFilters {
+  terms: string[];
+  academic_years: string[];
+  exam_types: string[];
+}
 
 
 interface SubjectAnalyticsData {
@@ -35,6 +41,12 @@ interface SubjectAnalyticsData {
   challenging_topics: string[];
   success_areas: string[];
   grade_distribution: Record<string, number>;
+  available_filters?: AvailableFilters;
+  current_filters?: {
+    term: string;
+    academic_year: string;
+    exam_type: string;
+  };
 }
 
 interface SubjectAnalyticsProps {
@@ -53,15 +65,47 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Filter states
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [selectedExamType, setSelectedExamType] = useState<string>('');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
+  const [availableFilters, setAvailableFilters] = useState<AvailableFilters>({
+    terms: [],
+    academic_years: [],
+    exam_types: []
+  });
 
-  const fetchSubjectData = async () => {
+  const EXAM_TYPE_LABELS: Record<string, string> = {
+    'exam_1': 'Exam 1',
+    'exam_2': 'Exam 2',
+    'exam_3': 'Exam 3',
+    'cat_1': 'CAT 1',
+    'cat_2': 'CAT 2',
+    'cat_3': 'CAT 3',
+    'midterm': 'Mid-Term',
+    'endterm': 'End-Term',
+    'final': 'Final Exam'
+  };
+
+  const fetchSubjectData = async (useFilters = false) => {
     try {
       setLoading(true);
       console.log('Fetching data for subject ID:', subjectId);
+      
+      const params: Record<string, string> = {
+        subject_id: subjectId
+      };
+      
+      // Only add filters if explicitly requested (after initial load)
+      if (useFilters) {
+        if (selectedTerm) params.term = selectedTerm;
+        if (selectedExamType) params.exam_type = selectedExamType;
+        if (selectedAcademicYear) params.academic_year = selectedAcademicYear;
+      }
+      
       const response = await MarksAPI.get('/api/input-marks/subject-analytics/', {
-        params: {
-          subject_id: subjectId
-        }
+        params
       });
       
       if (!response) {
@@ -69,46 +113,35 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
       }
 
       // Check if data is in response or response.data
-      // Use response.data if it exists, otherwise use response itself
       const data = response.data || response;
       
-      console.log('API Response structure:', {
-        hasResponseData: !!response.data,
-        responseKeys: Object.keys(response),
-        dataKeys: Object.keys(data),
-        hasSubjectInfo: !!data.subject_info,
-        hasStatistics: !!data.statistics,
-        allKeys: {
-          subject_info: data.subject_info ? Object.keys(data.subject_info) : [],
-          statistics: data.statistics ? Object.keys(data.statistics) : [],
-          other: Object.keys(data).filter(k => !['subject_info', 'statistics'].includes(k))
-        }
-      });
+      console.log('API Response:', data);
+      
       if (!data) {
         throw new Error('No data available in response');
       }
 
-      console.log('Raw subject_info:', data.subject_info);
-      console.log('Raw statistics:', data.statistics);
-      console.log('Statistics values:', {
-        average: data.statistics?.average_marks,
-        totalAssessments: data.statistics?.total_assessments || data.statistics?.assessments,
-        totalStudents: data.statistics?.total_students,
-        highest: data.statistics?.highest_marks || data.statistics?.highest_score,
-        lowest: data.statistics?.lowest_marks || data.statistics?.lowest_score,
-        passRate: data.statistics?.pass_rate,
-        excellenceRate: data.statistics?.excellence_rate
-      });
+      // Update available filters from response
+      if (data.available_filters) {
+        setAvailableFilters(data.available_filters);
+      }
+      
+      // Set current filter values from response (what the backend actually used)
+      if (data.filters) {
+        if (!selectedTerm && data.filters.term) setSelectedTerm(data.filters.term);
+        if (!selectedExamType && data.filters.exam_type) setSelectedExamType(data.filters.exam_type);
+        if (!selectedAcademicYear && data.filters.academic_year) setSelectedAcademicYear(data.filters.academic_year);
+      }
 
       // Transform the backend response to match our frontend data structure
       const transformedData: SubjectAnalyticsData = {
         subject_info: {
           name: data.subject_info?.subject_name || data.subject_info?.name || 'Unknown Subject',
           code: data.subject_info?.subject_code || data.subject_info?.code || 'N/A',
-          academic_year: data.academic_year || '2024-2025'
+          academic_year: data.filters?.academic_year || data.academic_year || '2024-2025'
         },
         overall_average: Number(data.statistics?.average_marks) || 0,
-        total_assessments: Number(data.statistics?.total_assessments || data.statistics?.assessments) || 0,
+        total_assessments: Number(data.statistics?.total_assessments || data.statistics?.total_students) || 0,
         total_students_assessed: Number(data.statistics?.total_students) || 0,
         highest_score: Number(data.statistics?.highest_marks || data.statistics?.highest_score) || 0,
         lowest_score: Number(data.statistics?.lowest_marks || data.statistics?.lowest_score) || 0,
@@ -118,7 +151,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           const classData = value as any;
           acc[key] = {
             average: classData?.average || 0,
-            assessments: classData?.assessments || 0,
+            assessments: classData?.student_count || classData?.assessments || 0,
             pass_rate: classData?.pass_rate || 0
           };
           return acc;
@@ -133,42 +166,37 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
         }, {} as Record<string, { average: number; count: number }>),
         challenging_topics: Array.isArray(data.challenging_topics) ? data.challenging_topics : [],
         success_areas: Array.isArray(data.success_areas) ? data.success_areas : [],
-        grade_distribution: data.grade_distribution || {}
+        grade_distribution: data.grade_distribution || {},
+        available_filters: data.available_filters,
+        current_filters: data.filters ? {
+          term: data.filters.term,
+          academic_year: data.filters.academic_year,
+          exam_type: data.filters.exam_type
+        } : undefined
       };
 
-      console.log('Transformed data:', {
-        subjectInfo: transformedData.subject_info,
-        performance: {
-          overall: transformedData.overall_average,
-          total: transformedData.total_assessments,
-          students: transformedData.total_students_assessed
-        },
-        distributions: {
-          grades: Object.keys(transformedData.grade_distribution).length,
-          classes: Object.keys(transformedData.class_performance).length,
-          trends: Object.keys(transformedData.performance_trends).length
-        }
-      });
+      console.log('Transformed data:', transformedData);
       setSubjectData(transformedData);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching subject analytics:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response,
-        status: err.response?.status
-      });
-      setError(err.response?.data?.detail || err.message || 'Failed to fetch subject analytics');
+      setError(err.response?.data?.detail || err.response?.data?.error || err.message || 'Failed to fetch subject analytics');
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial fetch without filters (let backend use latest results)
   useEffect(() => {
     if (subjectId) {
-      fetchSubjectData();
+      fetchSubjectData(false);
     }
   }, [subjectId]);
+  
+  // Refetch when filters change
+  const handleApplyFilters = () => {
+    fetchSubjectData(true);
+  };
 
   const formatClassPerformanceData = () => {
     if (!subjectData?.class_performance) return [];
@@ -243,7 +271,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <h3 className="text-sm font-medium text-red-800">Error Loading Subject Analytics</h3>
             <div className="mt-2 text-sm text-red-700">{error}</div>
             <button 
-              onClick={fetchSubjectData}
+              onClick={() => fetchSubjectData(false)}
               className="mt-2 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
             >
               Retry
@@ -270,7 +298,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center space-x-4">
           <Link 
             to="/staff/statistics/subjects"
@@ -294,6 +322,106 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-500" />
+              <span className="font-medium text-gray-700">Filters:</span>
+            </div>
+            
+            {/* Term Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 mb-1">Term</label>
+              <select
+                value={selectedTerm}
+                onChange={(e) => setSelectedTerm(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableFilters.terms.length > 0 ? (
+                  availableFilters.terms.map(term => (
+                    <option key={term} value={term}>Term {term}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="1">Term 1</option>
+                    <option value="2">Term 2</option>
+                    <option value="3">Term 3</option>
+                  </>
+                )}
+              </select>
+            </div>
+            
+            {/* Exam Type Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 mb-1">Exam Type</label>
+              <select
+                value={selectedExamType}
+                onChange={(e) => setSelectedExamType(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableFilters.exam_types.length > 0 ? (
+                  availableFilters.exam_types.map(examType => (
+                    <option key={examType} value={examType}>
+                      {EXAM_TYPE_LABELS[examType] || examType}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="exam_1">Exam 1</option>
+                    <option value="exam_2">Exam 2</option>
+                    <option value="exam_3">Exam 3</option>
+                    <option value="cat_1">CAT 1</option>
+                    <option value="cat_2">CAT 2</option>
+                    <option value="midterm">Mid-Term</option>
+                    <option value="endterm">End-Term</option>
+                  </>
+                )}
+              </select>
+            </div>
+            
+            {/* Academic Year Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 mb-1">Academic Year</label>
+              <select
+                value={selectedAcademicYear}
+                onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableFilters.academic_years.length > 0 ? (
+                  availableFilters.academic_years.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                  </>
+                )}
+              </select>
+            </div>
+            
+            {/* Apply Filters Button */}
+            <button
+              onClick={handleApplyFilters}
+              disabled={loading}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-blue-300 transition-colors mt-5"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Apply
+            </button>
+            
+            {/* Current filter display */}
+            {subjectData?.current_filters && (
+              <div className="ml-auto text-sm text-gray-500">
+                Showing: Term {subjectData.current_filters.term} | {EXAM_TYPE_LABELS[subjectData.current_filters.exam_type] || subjectData.current_filters.exam_type} | {subjectData.current_filters.academic_year}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">

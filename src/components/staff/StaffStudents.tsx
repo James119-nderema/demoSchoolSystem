@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { APIService } from '../../services/baseUrl';
+import { APIService, DataAPI } from '../../services/baseUrl';
+import { usePermissions } from '../../hooks/usePermissions';
+import AddStudentModal from '../generalFiles/students/modals/AddStudentModal';
+import UploadStudentModal from '../generalFiles/students/modals/UploadStudentModal';
 
 interface Student {
   id: number;
@@ -19,19 +22,70 @@ interface Student {
   school_name: string;
 }
 
+interface AddStudentFormData {
+  upi_no: string;
+  assessment_no: string;
+  surname: string;
+  first_name: string;
+  other_names: string;
+  gender: string;
+  date_of_birth: string;
+  birth_entry_no: string;
+  disability: string;
+  admission_number: string;
+  class: string;
+  parent_guardian_name: string;
+  parent_guardian_phone: string;
+  parent_guardian_email: string;
+  address: string;
+  status: string;
+}
+
 const StaffStudents: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+  
+  // Form data for add student modal
+  const [formData, setFormData] = useState<AddStudentFormData>({
+    upi_no: '',
+    assessment_no: '',
+    surname: '',
+    first_name: '',
+    other_names: '',
+    gender: '',
+    date_of_birth: '',
+    birth_entry_no: '',
+    disability: '',
+    admission_number: '',
+    class: '',
+    parent_guardian_name: '',
+    parent_guardian_phone: '',
+    parent_guardian_email: '',
+    address: '',
+    status: 'active'
+  });
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(20);
+  
+  // Permissions
+  const { canAddStudents, canUploadStudents, canViewAllStudents } = usePermissions();
 
   useEffect(() => {
     fetchStudents();
@@ -56,8 +110,13 @@ const StaffStudents: React.FC = () => {
       if (selectedStatus) {
         params.append('status', selectedStatus);
       }
+      
+      // Director of Studies and Bursar can view ALL students (not filtered by assigned classes)
+      if (canViewAllStudents()) {
+        params.append('view_all', 'true');
+      }
 
-      const response = await APIService.get(`/api/students/?${params.toString()}`);
+      const response = await APIService.get(`/api/students/?${params.toString()}`, undefined, 'staff');
       
       if (response) {
         // Handle paginated response
@@ -92,6 +151,79 @@ const StaffStudents: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add student handler
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      await DataAPI.createStudent(formData);
+      setSuccessMessage('Student added successfully!');
+      setShowAddModal(false);
+      setFormData({
+        upi_no: '',
+        assessment_no: '',
+        surname: '',
+        first_name: '',
+        other_names: '',
+        gender: '',
+        date_of_birth: '',
+        birth_entry_no: '',
+        disability: '',
+        admission_number: '',
+        class: '',
+        parent_guardian_name: '',
+        parent_guardian_phone: '',
+        parent_guardian_email: '',
+        address: '',
+        status: 'active'
+      });
+      fetchStudents();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error adding student:', err);
+      setError(err.message || 'Failed to add student. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Upload students handler
+  const handleUploadStudents = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) {
+      setError('Please select a file to upload');
+      return;
+    }
+    
+    setIsUploading(true);
+    setError('');
+    setUploadProgress('Uploading...');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      
+      await DataAPI.bulkUploadStudents(formData, (progress) => {
+        setUploadProgress(`Uploading... ${progress}%`);
+      });
+      
+      setSuccessMessage('Students uploaded successfully!');
+      setShowUploadModal(false);
+      setUploadFile(null);
+      setUploadProgress('');
+      fetchStudents();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error uploading students:', err);
+      setError(err.message || 'Failed to upload students. Please check the file format.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress('');
     }
   };
 
@@ -157,17 +289,59 @@ const StaffStudents: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="py-4 sm:py-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Students</h1>
-            <p className="mt-1 text-sm sm:text-base text-gray-600">
-              View and manage student records for your school
-            </p>
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Students</h1>
+              <p className="mt-1 text-sm sm:text-base text-gray-600">
+                View and manage student records for your school
+              </p>
+            </div>
+            
+            {/* Add/Upload buttons for Director of Studies and Bursar */}
+            {(canAddStudents() || canUploadStudents()) && (
+              <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+                {canUploadStudents() && (
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg className="-ml-1 mr-2 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Upload Students
+                  </button>
+                )}
+                {canAddStudents() && (
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Student
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="p-4 sm:p-6 lg:p-8">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="ml-3 text-sm text-green-700">{successMessage}</div>
+            </div>
+          </div>
+        )}
+        
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="text-sm text-red-700">{error}</div>
@@ -518,6 +692,28 @@ const StaffStudents: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Add Student Modal */}
+      <AddStudentModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleAddStudent}
+        isSubmitting={isSubmitting}
+        title="Add New Student"
+      />
+      
+      {/* Upload Students Modal */}
+      <UploadStudentModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        uploadFile={uploadFile}
+        setUploadFile={setUploadFile}
+        onSubmit={handleUploadStudents}
+        isUploading={isUploading}
+        uploadProgress={uploadProgress}
+      />
     </div>
   );
 };

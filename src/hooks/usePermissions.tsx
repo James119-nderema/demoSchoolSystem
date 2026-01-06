@@ -98,6 +98,24 @@ export const usePermissions = () => {
   const isBursar = (): boolean => role === 'BURSAR';
   const isAdministrativeStaff = (): boolean => role === 'ADMINISTRATIVE_STAFF';
 
+  // Special permissions for Director of Studies
+  // DOS can add students, classes, and subjects
+  const canAddStudents = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
+  
+  const canUploadStudents = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
+  
+  const canAddClasses = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+  
+  const canAddSubjects = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+  
+  // Director of Studies and Bursar can view ALL students (not filtered by assigned classes)
+  const canViewAllStudents = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
+
   return {
     permissions,
     role,
@@ -126,6 +144,12 @@ export const usePermissions = () => {
     canAccessReportCards,
     canManageFinance,
     canViewFinance,
+    // Special permissions for DOS/Bursar
+    canAddStudents,
+    canUploadStudents,
+    canAddClasses,
+    canAddSubjects,
+    canViewAllStudents,
     // Role checks
     isTeacher,
     isClassTeacher,
