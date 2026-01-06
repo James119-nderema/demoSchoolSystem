@@ -116,24 +116,23 @@ const normalizeTimeslot = (timeslot: string): string => {
 };
 
 /**
- * Extract unique time slots from timetable data and sort them
+ * Extract unique time slots from a SINGLE class timetable data (sorted)
+ * This ensures the PDF only shows timeslots that belong to that specific class
  */
-const extractTimeslots = (timetables: TimetableByClass[]): TimeSlotInfo[] => {
+const extractTimeslotsForClass = (classData: TimetableByClass): TimeSlotInfo[] => {
   const timeslotMap = new Map<string, TimeSlotInfo>();
   
-  timetables.forEach(classData => {
-    Object.values(classData.timetable).forEach(daySchedule => {
-      Object.entries(daySchedule).forEach(([timeslot, entry]) => {
-        // Normalize timeslot for consistent comparison
-        const normalizedSlot = normalizeTimeslot(timeslot);
-        if (!timeslotMap.has(normalizedSlot)) {
-          timeslotMap.set(normalizedSlot, {
-            time_slot: normalizedSlot,
-            start_time: entry.start_time,
-            end_time: entry.end_time
-          });
-        }
-      });
+  Object.values(classData.timetable).forEach(daySchedule => {
+    Object.entries(daySchedule).forEach(([timeslot, entry]) => {
+      // Normalize timeslot for consistent comparison
+      const normalizedSlot = normalizeTimeslot(timeslot);
+      if (!timeslotMap.has(normalizedSlot)) {
+        timeslotMap.set(normalizedSlot, {
+          time_slot: normalizedSlot,
+          start_time: entry.start_time,
+          end_time: entry.end_time
+        });
+      }
     });
   });
   
@@ -343,6 +342,7 @@ const addTeacherKey = (doc: jsPDF, teachers: TeacherIndexInfo[], startY: number)
 
 /**
  * Generate a single PDF containing all class timetables
+ * Each class page only shows timeslots that belong to that specific class
  */
 export const generateAllClassesPDF = (
   timetables: TimetableByClass[],
@@ -354,18 +354,6 @@ export const generateAllClassesPDF = (
   }
 
   const doc = new jsPDF('landscape');
-  const timeslots = extractTimeslots(timetables);
-  const breaks = calculateBreaks(timeslots);
-  
-  // Build headers with break columns
-  const headers: string[] = ['Day'];
-  for (let i = 0; i < timeslots.length; i++) {
-    headers.push(`${formatTime(timeslots[i].start_time)}\n${formatTime(timeslots[i].end_time)}`);
-    const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
-    if (breakAfterThis) {
-      headers.push('');
-    }
-  }
   
   // Build teacher index lookup
   const teacherIndexMap = new Map<string, number>();
@@ -376,6 +364,20 @@ export const generateAllClassesPDF = (
     // Add new page for each class after the first
     if (index > 0) {
       doc.addPage();
+    }
+    
+    // Extract timeslots for THIS CLASS only - not all classes combined
+    const classTimeslots = extractTimeslotsForClass(classData);
+    const classBreaks = calculateBreaks(classTimeslots);
+    
+    // Build headers with break columns for this class's timeslots
+    const classHeaders: string[] = ['Day'];
+    for (let i = 0; i < classTimeslots.length; i++) {
+      classHeaders.push(`${formatTime(classTimeslots[i].start_time)}\n${formatTime(classTimeslots[i].end_time)}`);
+      const breakAfterThis = classBreaks.find(b => b.afterSlotIndex === i);
+      if (breakAfterThis) {
+        classHeaders.push('');
+      }
     }
     
     // Add title
@@ -409,8 +411,8 @@ export const generateAllClassesPDF = (
     DAYS.forEach((day, dayIndex) => {
       const rowData: any[] = [day];
       
-      for (let i = 0; i < timeslots.length; i++) {
-        const entry = findEntryForClass(classData.timetable[day], timeslots[i].time_slot);
+      for (let i = 0; i < classTimeslots.length; i++) {
+        const entry = findEntryForClass(classData.timetable[day], classTimeslots[i].time_slot);
         
         if (entry) {
           const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
@@ -421,7 +423,7 @@ export const generateAllClassesPDF = (
         }
         
         // Add break cell if needed
-        const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
+        const breakAfterThis = classBreaks.find(b => b.afterSlotIndex === i);
         if (breakAfterThis) {
           if (dayIndex === 0) {
             // Format break text vertically - one letter per line
@@ -459,7 +461,7 @@ export const generateAllClassesPDF = (
     const rowHeight = (availableHeight * 0.6) / DAYS.length;
     
     autoTable(doc, {
-      head: [headers],
+      head: [classHeaders],
       body: tableData,
       startY: startY,
       theme: 'grid',
