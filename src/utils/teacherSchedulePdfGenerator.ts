@@ -285,12 +285,12 @@ export const generateSingleTeacherPDF = (
     tableData.push(rowData);
   });
   
-  // Calculate row height to occupy 60% of page
+  // Calculate row height to occupy 60% of page (+30px increase)
   const pageHeight = doc.internal.pageSize.height;
   const startY = 28;
   const bottomMargin = 10;
   const availableHeight = pageHeight - startY - bottomMargin;
-  const rowHeight = (availableHeight * 0.6) / DAYS.length; // 60% of available height
+  const rowHeight = ((availableHeight * 0.6) / DAYS.length) + 6; // +6 points (~30px / 5 rows)
   
   autoTable(doc, {
     head: [headers],
@@ -322,6 +322,7 @@ export const generateSingleTeacherPDF = (
       0: { 
         cellWidth: 25, 
         fontStyle: 'bold', 
+        fontSize: 10, // Larger font for day names
         halign: 'center', // Center day names
         textColor: [0, 0, 0], // Black text
         fillColor: [255, 255, 255], // White background
@@ -446,12 +447,12 @@ export const generateAllTeachersPDF = (
       tableData.push(rowData);
     });
     
-    // Calculate row height to occupy 60% of page
+    // Calculate row height to occupy 60% of page (+30px increase)
     const pageHeight = doc.internal.pageSize.height;
     const startTableY = currentY + 20;
     const bottomMargin = 50;
     const availableHeight = pageHeight - startTableY - bottomMargin;
-    const rowHeight = (availableHeight * 0.6) / DAYS.length; // 60% of available height
+    const rowHeight = ((availableHeight * 0.6) / DAYS.length) + 6; // +6 points (~30px / 5 rows)
     
     autoTable(doc, {
       head: [headers],
@@ -483,6 +484,7 @@ export const generateAllTeachersPDF = (
         0: { 
           cellWidth: 22, 
           fontStyle: 'bold', 
+          fontSize: 9, // Larger font for day names
           halign: 'center', // Center day names
           textColor: [0, 0, 0], // Black text
           fillColor: [255, 255, 255], // White background

@@ -38,18 +38,18 @@ export default function Priorities() {
     }
   };
 
-  const handleAddPriority = async (data: { subject: string; time_slot: string }) => {
+  const handleAddPriority = async (data: { subject: string; time_slots: string[]; teacher?: string | null }) => {
     try {
-      const result = await prioritiesService.createPriority(data);
+      const result = await prioritiesService.bulkCreatePriorities(data);
       if (result.success) {
         await loadPriorities();
         setIsAddModalOpen(false);
-        alert('Priority added successfully!');
+        alert(result.message || `${result.created_count} priorities added successfully!`);
       } else {
-        throw new Error(result.message || 'Failed to add priority');
+        throw new Error(result.message || 'Failed to add priorities');
       }
     } catch (error) {
-      console.error('Failed to add priority:', error);
+      console.error('Failed to add priorities:', error);
       throw error;
     }
   };

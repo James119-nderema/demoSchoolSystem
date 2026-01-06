@@ -7,19 +7,21 @@ import type { Teacher } from '../../../types/priorities';
 interface AddPriorityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { subject: string; time_slot: string; teacher?: string | null }) => Promise<void>;
+  onSubmit: (data: { subject: string; time_slots: string[]; teacher?: string | null }) => Promise<void>;
 }
 
 export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPriorityModalProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [filteredTimeSlots, setFilteredTimeSlots] = useState<TimeSlot[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [loadingTeacherClasses, setLoadingTeacherClasses] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -37,6 +39,18 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
       setSelectedTeacher(null);
     }
   }, [selectedSubject]);
+
+  // Filter timeslots when teacher changes
+  useEffect(() => {
+    if (selectedTeacher) {
+      loadTimeslotsForTeacher(selectedTeacher);
+    } else {
+      // Show all timeslots if no teacher selected
+      setFilteredTimeSlots(timeSlots);
+    }
+    // Reset selected timeslots when teacher changes
+    setSelectedTimeSlots([]);
+  }, [selectedTeacher, timeSlots]);
 
   const formatTime = (time: string) => {
     // Remove seconds from time (HH:MM:SS -> HH:MM)
@@ -65,13 +79,14 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
       const timeSlotsResponse = await APIService.get('/api/timetable/time-slots/', { page: '1', page_size: '10000' }, authType);
       
       // Handle different response structures
+      let loadedTimeSlots: TimeSlot[] = [];
       if (timeSlotsResponse.results) {
-        setTimeSlots(timeSlotsResponse.results);
+        loadedTimeSlots = timeSlotsResponse.results;
       } else if (Array.isArray(timeSlotsResponse)) {
-        setTimeSlots(timeSlotsResponse);
-      } else {
-        setTimeSlots([]);
+        loadedTimeSlots = timeSlotsResponse;
       }
+      setTimeSlots(loadedTimeSlots);
+      setFilteredTimeSlots(loadedTimeSlots);
       
       
     } catch (error) {
@@ -110,26 +125,89 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
     }
   };
 
+  const loadTimeslotsForTeacher = async (teacherId: string) => {
+    setLoadingTeacherClasses(true);
+    try {
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      
+      // Get classes that this teacher teaches
+      const response = await APIService.get(`/api/staff-profile/assignments/`, { staff: teacherId }, authType);
+      
+      // Extract unique class levels from assignments
+      const classLevels = new Set<string>();
+      const assignments = response?.results || response || [];
+      
+      if (Array.isArray(assignments)) {
+        assignments.forEach((assignment: any) => {
+          if (assignment.class_assigned_details?.class_level) {
+            classLevels.add(assignment.class_assigned_details.class_level);
+          } else if (assignment.class_level) {
+            classLevels.add(assignment.class_level);
+          }
+        });
+      }
+      
+      // Filter timeslots by the class levels the teacher teaches
+      if (classLevels.size > 0) {
+        const filtered = timeSlots.filter(slot => classLevels.has(slot.class_level));
+        setFilteredTimeSlots(filtered.length > 0 ? filtered : timeSlots);
+      } else {
+        setFilteredTimeSlots(timeSlots);
+      }
+    } catch (error) {
+      console.error('Failed to load timeslots for teacher:', error);
+      setFilteredTimeSlots(timeSlots);
+    } finally {
+      setLoadingTeacherClasses(false);
+    }
+  };
+
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSubject(e.target.value);
     setSelectedTeacher(null); // Reset teacher when subject changes
+    setSelectedTimeSlots([]); // Reset timeslots when subject changes
+  };
+
+  const handleTimeSlotToggle = (slotId: string) => {
+    setSelectedTimeSlots(prev => {
+      if (prev.includes(slotId)) {
+        return prev.filter(id => id !== slotId);
+      } else {
+        return [...prev, slotId];
+      }
+    });
+  };
+
+  const handleSelectAllTimeSlots = () => {
+    if (selectedTimeSlots.length === filteredTimeSlots.length) {
+      setSelectedTimeSlots([]);
+    } else {
+      setSelectedTimeSlots(filteredTimeSlots.map(slot => slot.id));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    
+    if (selectedTimeSlots.length === 0) {
+      setErrors({ time_slot: ['Please select at least one time slot'] });
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      // Submit all selected timeslots in a single bulk request
       await onSubmit({
         subject: selectedSubject,
-        time_slot: selectedTimeSlot,
+        time_slots: selectedTimeSlots,
         teacher: selectedTeacher || null,
       });
       
       // Reset form
       setSelectedSubject('');
-      setSelectedTimeSlot('');
+      setSelectedTimeSlots([]);
       setSelectedTeacher(null);
       setTeachers([]);
     } catch (error: any) {
@@ -148,7 +226,7 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
 
   const handleClose = () => {
     setSelectedSubject('');
-    setSelectedTimeSlot('');
+    setSelectedTimeSlots([]);
     setSelectedTeacher(null);
     setTeachers([]);
     setErrors({});
@@ -247,27 +325,63 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
                 </div>
               )}
 
-              {/* Time Slot */}
+              {/* Time Slots (Checkboxes for bulk selection) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Preferred Time Slot <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={selectedTimeSlot}
-                  onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                  className={`block w-full px-3 py-2 border ${
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Preferred Time Slots <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSelectAllTimeSlots}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                    disabled={loading || loadingTeacherClasses}
+                  >
+                    {selectedTimeSlots.length === filteredTimeSlots.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                {loadingTeacherClasses ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-500">Loading timeslots...</span>
+                  </div>
+                ) : (
+                  <div className={`max-h-48 overflow-y-auto border ${
                     errors.time_slot ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  required
-                  disabled={loading}
-                >
-                  <option value="">Select Time Slot</option>
-                  {timeSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
-                      {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                    </option>
-                  ))}
-                </select>
+                  } rounded-md p-2 space-y-1`}>
+                    {filteredTimeSlots.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-2">No time slots available</p>
+                    ) : (
+                      filteredTimeSlots.map((slot) => (
+                        <label
+                          key={slot.id}
+                          className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 ${
+                            selectedTimeSlots.includes(slot.id) ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedTimeSlots.includes(slot.id)}
+                            onChange={() => handleTimeSlotToggle(slot.id)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            {slot.class_level && (
+                              <span className="ml-2 text-xs text-gray-500">({slot.class_level})</span>
+                            )}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                )}
+                {selectedTimeSlots.length > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {selectedTimeSlots.length} time slot{selectedTimeSlots.length > 1 ? 's' : ''} selected
+                  </p>
+                )}
                 {errors.time_slot && (
                   <p className="mt-1 text-sm text-red-600">{errors.time_slot[0]}</p>
                 )}

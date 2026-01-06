@@ -6,14 +6,14 @@ import type { TimeSlot } from '../../../types/timetable';
 interface AddPriorityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { subject: string; time_slot: string }) => Promise<void>;
+  onSubmit: (data: { subject: string; time_slots: string[]; teacher?: string | null }) => Promise<void>;
 }
 
 export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPriorityModalProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -44,20 +44,42 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
     }
   };
 
+  const handleTimeSlotToggle = (slotId: string) => {
+    setSelectedTimeSlots(prev => 
+      prev.includes(slotId) 
+        ? prev.filter(id => id !== slotId)
+        : [...prev, slotId]
+    );
+  };
+
+  const handleSelectAllTimeSlots = () => {
+    if (selectedTimeSlots.length === timeSlots.length) {
+      setSelectedTimeSlots([]);
+    } else {
+      setSelectedTimeSlots(timeSlots.map(slot => slot.id));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    
+    if (selectedTimeSlots.length === 0) {
+      setErrors({ time_slot: ['Please select at least one time slot'] });
+      return;
+    }
+    
     setLoading(true);
 
     try {
       await onSubmit({
         subject: selectedSubject,
-        time_slot: selectedTimeSlot,
+        time_slots: selectedTimeSlots,
       });
       
       // Reset form
       setSelectedSubject('');
-      setSelectedTimeSlot('');
+      setSelectedTimeSlots([]);
     } catch (error: any) {
       console.error('Error submitting priority:', error);
       
@@ -74,7 +96,7 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
 
   const handleClose = () => {
     setSelectedSubject('');
-    setSelectedTimeSlot('');
+    setSelectedTimeSlots([]);
     setErrors({});
     onClose();
   };
@@ -130,27 +152,51 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
                 )}
               </div>
 
-              {/* Time Slot */}
+              {/* Time Slots - Checkbox Multi-select */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Preferred Time Slot <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={selectedTimeSlot}
-                  onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                  className={`block w-full px-3 py-2 border ${
-                    errors.time_slot ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  required
-                  disabled={loading}
-                >
-                  <option value="">Select Time Slot</option>
-                  {timeSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
-                      {slot.start_time} - {slot.end_time}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Preferred Time Slots <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSelectAllTimeSlots}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                    disabled={loading}
+                  >
+                    {selectedTimeSlots.length === timeSlots.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className={`border ${
+                  errors.time_slot ? 'border-red-300' : 'border-gray-300'
+                } rounded-md max-h-48 overflow-y-auto p-2`}>
+                  {timeSlots.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-2">No time slots available</p>
+                  ) : (
+                    timeSlots.map((slot) => (
+                      <label
+                        key={slot.id}
+                        className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTimeSlots.includes(slot.id)}
+                          onChange={() => handleTimeSlotToggle(slot.id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          disabled={loading}
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          {slot.start_time} - {slot.end_time}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {selectedTimeSlots.length > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {selectedTimeSlots.length} time slot{selectedTimeSlots.length !== 1 ? 's' : ''} selected
+                  </p>
+                )}
                 {errors.time_slot && (
                   <p className="mt-1 text-sm text-red-600">{errors.time_slot[0]}</p>
                 )}

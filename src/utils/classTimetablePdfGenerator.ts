@@ -259,12 +259,12 @@ export const generateSingleClassPDF = (
     tableData.push(rowData);
   });
   
-  // Calculate row height
+  // Calculate row height (+30px increase)
   const pageHeight = doc.internal.pageSize.height;
   const startY = 25;
   const bottomMargin = 40; // Leave room for teacher key
   const availableHeight = pageHeight - startY - bottomMargin;
-  const rowHeight = (availableHeight * 0.6) / DAYS.length;
+  const rowHeight = ((availableHeight * 0.6) / DAYS.length) + 6; // +6 points (~30px / 5 rows)
   
   autoTable(doc, {
     head: [headers],
@@ -296,6 +296,7 @@ export const generateSingleClassPDF = (
       0: {
         cellWidth: 25,
         fontStyle: 'bold',
+        fontSize: 10, // Larger font for day names
         halign: 'center',
         textColor: [0, 0, 0],
         fillColor: [255, 255, 255],
@@ -445,10 +446,10 @@ export const generateAllClassesPDF = (
               styles: {
                 fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 255, 255] : 
                            breakAfterThis.type === 'LONG BREAK' ? [255, 255, 255] : 
-                           [220, 252, 231],
+                           [255, 255, 255],
                 textColor: breakAfterThis.type === 'LUNCH BREAK' ? [0, 0, 0] : 
                            breakAfterThis.type === 'LONG BREAK' ? [0, 0, 0] : 
-                           [22, 101, 52],
+                           [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center',
                 valign: 'middle',
@@ -464,12 +465,12 @@ export const generateAllClassesPDF = (
       tableData.push(rowData);
     });
     
-    // Calculate row height
+    // Calculate row height (+30px increase)
     const pageHeight = doc.internal.pageSize.height;
     const startY = 25;
     const bottomMargin = 40;
     const availableHeight = pageHeight - startY - bottomMargin;
-    const rowHeight = (availableHeight * 0.6) / DAYS.length;
+    const rowHeight = ((availableHeight * 0.6) / DAYS.length) + 6; // +6 points (~30px / 5 rows)
     
     autoTable(doc, {
       head: [classHeaders],
@@ -501,6 +502,7 @@ export const generateAllClassesPDF = (
         0: {
           cellWidth: 25,
           fontStyle: 'bold',
+          fontSize: 10, // Larger font for day names
           halign: 'center',
           textColor: [0, 0, 0],
           fillColor: [255, 255, 255],

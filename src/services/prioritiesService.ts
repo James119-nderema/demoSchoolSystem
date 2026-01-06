@@ -8,6 +8,7 @@ import type {
 
 const ENDPOINTS = {
   PRIORITIES: '/api/priorities/',
+  PRIORITIES_BULK: '/api/priorities/bulk/',
   PRIORITIES_STATS: '/api/priorities/stats/',
 };
 
@@ -82,6 +83,34 @@ export const prioritiesService = {
       return {
         success: false,
         message: error.message || 'Failed to create priority',
+        errors: error.response?.data?.errors || error.response?.data
+      };
+    }
+  },
+
+  // Bulk create priorities (multiple time slots at once)
+  async bulkCreatePriorities(data: { subject: string; time_slots: string[]; teacher?: string | null }): Promise<{ 
+    success: boolean; 
+    data?: SubjectPriority[]; 
+    message?: string; 
+    created_count?: number;
+    skipped_count?: number;
+    errors?: Record<string, string[]>;
+  }> {
+    try {
+      const authType = localStorage.getItem('access_token') ? 'school' : 'staff';
+      const response = await APIService.post(ENDPOINTS.PRIORITIES_BULK, data, authType);
+      return { 
+        success: true, 
+        data: response.data,
+        message: response.message,
+        created_count: response.created_count,
+        skipped_count: response.skipped_count
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to create priorities',
         errors: error.response?.data?.errors || error.response?.data
       };
     }
