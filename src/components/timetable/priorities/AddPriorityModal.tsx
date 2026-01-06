@@ -133,23 +133,37 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
       // Get classes that this teacher teaches
       const response = await APIService.get(`/api/staff-profile/assignments/`, { staff: teacherId }, authType);
       
-      // Extract unique class levels from assignments
-      const classLevels = new Set<string>();
+      // Extract unique class IDs from assignments
+      const classIds = new Set<string>();
       const assignments = response?.results || response || [];
       
       if (Array.isArray(assignments)) {
         assignments.forEach((assignment: any) => {
-          if (assignment.class_assigned_details?.class_level) {
-            classLevels.add(assignment.class_assigned_details.class_level);
-          } else if (assignment.class_level) {
-            classLevels.add(assignment.class_level);
+          if (assignment.class_assigned_details?.id) {
+            classIds.add(assignment.class_assigned_details.id);
+          } else if (assignment.class_assigned) {
+            classIds.add(assignment.class_assigned);
           }
         });
       }
       
-      // Filter timeslots by the class levels the teacher teaches
-      if (classLevels.size > 0) {
-        const filtered = timeSlots.filter(slot => classLevels.has(slot.class_level));
+      // Get timeslots from ClassSchedule for those classes
+      if (classIds.size > 0) {
+        const classScheduleResponse = await APIService.get('/api/timetable/class-schedules/', { page: '1', page_size: '10000' }, authType);
+        const schedules = classScheduleResponse?.results || classScheduleResponse || [];
+        
+        // Get unique timeslot IDs used by the teacher's classes
+        const timeslotIds = new Set<string>();
+        if (Array.isArray(schedules)) {
+          schedules.forEach((schedule: any) => {
+            if (classIds.has(schedule.class_assigned) && schedule.time_slot) {
+              timeslotIds.add(schedule.time_slot);
+            }
+          });
+        }
+        
+        // Filter to only timeslots used by teacher's classes
+        const filtered = timeSlots.filter(slot => timeslotIds.has(slot.id));
         setFilteredTimeSlots(filtered.length > 0 ? filtered : timeSlots);
       } else {
         setFilteredTimeSlots(timeSlots);
@@ -368,9 +382,6 @@ export default function AddPriorityModal({ isOpen, onClose, onSubmit }: AddPrior
                           />
                           <span className="ml-2 text-sm text-gray-700">
                             {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                            {slot.class_level && (
-                              <span className="ml-2 text-xs text-gray-500">({slot.class_level})</span>
-                            )}
                           </span>
                         </label>
                       ))
