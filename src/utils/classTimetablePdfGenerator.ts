@@ -238,17 +238,17 @@ export const generateSingleClassPDF = (
             content: breakText,
             rowSpan: DAYS.length,
             styles: {
-              fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 243, 205] : 
-                         breakAfterThis.type === 'LONG BREAK' ? [219, 234, 254] : 
+              fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 255, 255] : 
+                         breakAfterThis.type === 'LONG BREAK' ? [255, 255, 255] : 
                          [220, 252, 231],
-              textColor: breakAfterThis.type === 'LUNCH BREAK' ? [146, 64, 14] : 
-                         breakAfterThis.type === 'LONG BREAK' ? [30, 64, 175] : 
+              textColor: breakAfterThis.type === 'LUNCH BREAK' ? [0, 0, 0] : 
+                         breakAfterThis.type === 'LONG BREAK' ? [0, 0, 0] : 
                          [22, 101, 52],
               fontStyle: 'bold',
               halign: 'center',
               valign: 'middle',
-              fontSize: 6,
-              cellWidth: 10,
+              fontSize: 10,
+              cellWidth: 12,
               cellPadding: 1,
             }
           });
@@ -443,17 +443,17 @@ export const generateAllClassesPDF = (
               content: breakText,
               rowSpan: DAYS.length,
               styles: {
-                fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 243, 205] : 
-                           breakAfterThis.type === 'LONG BREAK' ? [219, 234, 254] : 
+                fillColor: breakAfterThis.type === 'LUNCH BREAK' ? [255, 255, 255] : 
+                           breakAfterThis.type === 'LONG BREAK' ? [255, 255, 255] : 
                            [220, 252, 231],
-                textColor: breakAfterThis.type === 'LUNCH BREAK' ? [146, 64, 14] : 
-                           breakAfterThis.type === 'LONG BREAK' ? [30, 64, 175] : 
+                textColor: breakAfterThis.type === 'LUNCH BREAK' ? [0, 0, 0] : 
+                           breakAfterThis.type === 'LONG BREAK' ? [0, 0, 0] : 
                            [22, 101, 52],
                 fontStyle: 'bold',
                 halign: 'center',
                 valign: 'middle',
-                fontSize: 6,
-                cellWidth: 10,
+                fontSize: 10,
+                cellWidth: 12,
                 cellPadding: 1,
               }
             });

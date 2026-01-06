@@ -119,13 +119,85 @@ const calculateBreaks = (timeslots: TimeSlot[]): BreakInfo[] => {
 };
 
 /**
+ * Normalize timeslot string for consistent comparison
+ */
+const normalizeTimeslot = (timeslot: string): string => {
+  const parts = timeslot.replace(/\s+/g, '').split('-');
+  if (parts.length !== 2) return timeslot;
+  
+  const normalizeTime = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(p => p.replace(/[^0-9]/g, ''));
+    return `${hours.padStart(2, '0')}:${(minutes || '00').padStart(2, '0')}`;
+  };
+  
+  return `${normalizeTime(parts[0])}-${normalizeTime(parts[1])}`;
+};
+
+/**
+ * Extract only timeslots where the teacher has at least one entry across any day
+ * This removes empty columns from the PDF
+ */
+const extractTeacherTimeslots = (teacher: TeacherSchedule): TimeSlot[] => {
+  const timeslotMap = new Map<string, TimeSlot>();
+  const seenTimeRanges = new Set<string>();
+  
+  // Go through all days and collect timeslots where teacher has entries
+  DAYS.forEach(day => {
+    const daySchedule = teacher.schedule[day];
+    if (!daySchedule) return;
+    
+    Object.entries(daySchedule).forEach(([timeSlotKey, entries]) => {
+      if (entries && entries.length > 0) {
+        const normalizedSlot = normalizeTimeslot(timeSlotKey);
+        const entry = entries[0]; // Use first entry for time info
+        
+        // Create unique key based on actual times to avoid duplicates
+        const startTimeNorm = entry.start_time.substring(0, 5);
+        const endTimeNorm = entry.end_time.substring(0, 5);
+        const timeRangeKey = `${startTimeNorm}-${endTimeNorm}`;
+        
+        if (!seenTimeRanges.has(timeRangeKey)) {
+          seenTimeRanges.add(timeRangeKey);
+          timeslotMap.set(normalizedSlot, {
+            time_slot: normalizedSlot,
+            start_time: entry.start_time,
+            end_time: entry.end_time,
+            label: `${entry.start_time}-${entry.end_time}`
+          });
+        }
+      }
+    });
+  });
+  
+  // Sort by start time
+  return Array.from(timeslotMap.values()).sort((a, b) => {
+    const aTime = parseTimeToMinutes(a.start_time);
+    const bTime = parseTimeToMinutes(b.start_time);
+    return aTime - bTime;
+  });
+};
+
+/**
  * Generate PDF for a single teacher's schedule
  */
 export const generateSingleTeacherPDF = (
   teacher: TeacherSchedule,
-  timeslots: TimeSlot[]
+  _timeslots: TimeSlot[] // Kept for backward compatibility but we extract our own
 ): void => {
   const doc = new jsPDF('landscape');
+  
+  // Extract only timeslots where teacher has entries
+  const teacherTimeslots = extractTeacherTimeslots(teacher);
+  
+  if (teacherTimeslots.length === 0) {
+    doc.setFontSize(14);
+    doc.text(`Timetable - ${teacher.teacher_name}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text('No schedule entries found for this teacher.', 14, 30);
+    const filename = `timetable_${teacher.teacher_name.replace(/\s+/g, '_')}.pdf`;
+    doc.save(filename);
+    return;
+  }
   
   // Add title
   doc.setFontSize(16);
@@ -133,13 +205,13 @@ export const generateSingleTeacherPDF = (
   doc.setFontSize(10);
   doc.text(`Email: ${teacher.teacher_email}`, 14, 22);
   
-  // Calculate breaks
-  const breaks = calculateBreaks(timeslots);
+  // Calculate breaks from gaps between teacher's timeslots
+  const breaks = calculateBreaks(teacherTimeslots);
   
   // Build headers with break columns
   const headers: string[] = ['Day'];
-  for (let i = 0; i < timeslots.length; i++) {
-    headers.push(`${timeslots[i].start_time}\n${timeslots[i].end_time}`);
+  for (let i = 0; i < teacherTimeslots.length; i++) {
+    headers.push(`${teacherTimeslots[i].start_time.substring(0, 5)}\n${teacherTimeslots[i].end_time.substring(0, 5)}`);
     const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
     if (breakAfterThis) {
       headers.push(''); // Empty header for break column
@@ -152,8 +224,24 @@ export const generateSingleTeacherPDF = (
   DAYS.forEach((day, dayIndex) => {
     const rowData: any[] = [day];
     
-    for (let i = 0; i < timeslots.length; i++) {
-      const entries = teacher.schedule[day]?.[timeslots[i].time_slot] || [];
+    for (let i = 0; i < teacherTimeslots.length; i++) {
+      // Find entry matching this timeslot (check both exact and normalized)
+      let entries: ScheduleEntry[] = [];
+      const daySchedule = teacher.schedule[day];
+      if (daySchedule) {
+        // Try exact match first
+        if (daySchedule[teacherTimeslots[i].time_slot]) {
+          entries = daySchedule[teacherTimeslots[i].time_slot];
+        } else {
+          // Try to find by normalized comparison
+          for (const [slotKey, slotEntries] of Object.entries(daySchedule)) {
+            if (normalizeTimeslot(slotKey) === teacherTimeslots[i].time_slot) {
+              entries = slotEntries;
+              break;
+            }
+          }
+        }
+      }
       
       if (entries.length === 0) {
         rowData.push('-');
@@ -250,16 +338,14 @@ export const generateSingleTeacherPDF = (
 
 /**
  * Generate PDF for all teachers' schedules
+ * Each teacher page only shows timeslots where that teacher has entries
  */
 export const generateAllTeachersPDF = (
   teachers: TeacherSchedule[],
-  timeslots: TimeSlot[]
+  _timeslots: TimeSlot[] // Kept for backward compatibility
 ): void => {
   const doc = new jsPDF('landscape');
   let currentY = 15;
-  
-  // Calculate breaks once (same for all teachers)
-  const breaks = calculateBreaks(timeslots);
   
   teachers.forEach((teacher, index) => {
     // Add new page if not first teacher
@@ -268,17 +354,29 @@ export const generateAllTeachersPDF = (
       currentY = 15;
     }
     
+    // Extract only timeslots where this teacher has entries
+    const teacherTimeslots = extractTeacherTimeslots(teacher);
+    
     // Add title
     doc.setFontSize(14);
     doc.text(`${teacher.teacher_name}`, 14, currentY);
     doc.setFontSize(9);
     doc.text(`${teacher.teacher_email}`, 14, currentY + 6);
     
+    if (teacherTimeslots.length === 0) {
+      doc.setFontSize(10);
+      doc.text('No schedule entries found for this teacher.', 14, currentY + 20);
+      return;
+    }
+    
+    // Calculate breaks from gaps between this teacher's timeslots
+    const teacherBreaks = calculateBreaks(teacherTimeslots);
+    
     // Build headers with break columns
     const headers: string[] = ['Day'];
-    for (let i = 0; i < timeslots.length; i++) {
-      headers.push(`${timeslots[i].start_time}\n${timeslots[i].end_time}`);
-      const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
+    for (let i = 0; i < teacherTimeslots.length; i++) {
+      headers.push(`${teacherTimeslots[i].start_time.substring(0, 5)}\n${teacherTimeslots[i].end_time.substring(0, 5)}`);
+      const breakAfterThis = teacherBreaks.find(b => b.afterSlotIndex === i);
       if (breakAfterThis) {
         headers.push(''); // Empty header for break column
       }
@@ -290,8 +388,22 @@ export const generateAllTeachersPDF = (
     DAYS.forEach((day, dayIndex) => {
       const rowData: any[] = [day];
       
-      for (let i = 0; i < timeslots.length; i++) {
-        const entries = teacher.schedule[day]?.[timeslots[i].time_slot] || [];
+      for (let i = 0; i < teacherTimeslots.length; i++) {
+        // Find entry matching this timeslot
+        let entries: ScheduleEntry[] = [];
+        const daySchedule = teacher.schedule[day];
+        if (daySchedule) {
+          if (daySchedule[teacherTimeslots[i].time_slot]) {
+            entries = daySchedule[teacherTimeslots[i].time_slot];
+          } else {
+            for (const [slotKey, slotEntries] of Object.entries(daySchedule)) {
+              if (normalizeTimeslot(slotKey) === teacherTimeslots[i].time_slot) {
+                entries = slotEntries;
+                break;
+              }
+            }
+          }
+        }
         
         if (entries.length === 0) {
           rowData.push('-');
@@ -303,7 +415,7 @@ export const generateAllTeachersPDF = (
         }
         
         // Add break cell if needed
-        const breakAfterThis = breaks.find(b => b.afterSlotIndex === i);
+        const breakAfterThis = teacherBreaks.find(b => b.afterSlotIndex === i);
         if (breakAfterThis) {
           if (dayIndex === 0) {
             // First row gets the merged cell with break text - one letter per line
