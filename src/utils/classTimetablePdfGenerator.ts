@@ -118,15 +118,26 @@ const normalizeTimeslot = (timeslot: string): string => {
 /**
  * Extract unique time slots from a SINGLE class timetable data (sorted)
  * This ensures the PDF only shows timeslots that belong to that specific class
+ * Also deduplicates timeslots that have the same start/end times
  */
 const extractTimeslotsForClass = (classData: TimetableByClass): TimeSlotInfo[] => {
   const timeslotMap = new Map<string, TimeSlotInfo>();
+  // Track unique time ranges to prevent duplicates
+  const seenTimeRanges = new Set<string>();
   
   Object.values(classData.timetable).forEach(daySchedule => {
     Object.entries(daySchedule).forEach(([timeslot, entry]) => {
       // Normalize timeslot for consistent comparison
       const normalizedSlot = normalizeTimeslot(timeslot);
-      if (!timeslotMap.has(normalizedSlot)) {
+      
+      // Create a unique key based on start and end times to detect true duplicates
+      const startTimeNorm = entry.start_time.substring(0, 5); // HH:MM
+      const endTimeNorm = entry.end_time.substring(0, 5); // HH:MM
+      const timeRangeKey = `${startTimeNorm}-${endTimeNorm}`;
+      
+      // Only add if we haven't seen this exact time range before
+      if (!seenTimeRanges.has(timeRangeKey)) {
+        seenTimeRanges.add(timeRangeKey);
         timeslotMap.set(normalizedSlot, {
           time_slot: normalizedSlot,
           start_time: entry.start_time,

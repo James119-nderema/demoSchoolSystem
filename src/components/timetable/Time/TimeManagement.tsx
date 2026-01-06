@@ -87,6 +87,35 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
       return;
     }
 
+    // Check for duplicate or overlapping timeslots in the same class level
+    const existingSlots = timeSlots.filter(slot => 
+      slot.class_level === selectedClassLevel && 
+      (!editingSlot || slot.id !== editingSlot.id)
+    );
+    
+    // Check for exact duplicate
+    const exactDuplicate = existingSlots.find(slot => 
+      slot.start_time === selectedStartTime && slot.end_time === selectedEndTime
+    );
+    if (exactDuplicate) {
+      setError(`A time slot with the same start and end time already exists for ${selectedClassLevel}`);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Check for overlapping timeslots
+    const overlapping = existingSlots.find(slot => {
+      const existingStart = slot.start_time;
+      const existingEnd = slot.end_time;
+      // Overlap occurs if: start < existingEnd AND end > existingStart
+      return selectedStartTime < existingEnd && selectedEndTime > existingStart;
+    });
+    if (overlapping) {
+      setError(`Time slot overlaps with existing slot: ${overlapping.start_time} - ${overlapping.end_time} for ${selectedClassLevel}`);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const timeSlotData: TimeSlotCreate | TimeSlotUpdate = {
         start_time: selectedStartTime,
