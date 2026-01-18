@@ -49,7 +49,11 @@ const InputMarks: React.FC = () => {
   const [examType, setExamType] = useState<string>('');
   const [term, setTerm] = useState<string>('');
   const [totalMarks, setTotalMarks] = useState<number | ''>('');
-  const [academicYear, setAcademicYear] = useState<string>('2024-2025');
+  const [academicYear, setAcademicYear] = useState<string>('2026');
+
+  // Generate academic year options (current year and a few years back)
+  const currentYear = new Date().getFullYear();
+  const academicYearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   useEffect(() => {
     fetchDropdownData();
@@ -370,13 +374,17 @@ const InputMarks: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Academic Year
                 </label>
-                <input
-                  type="text"
+                <select
                   value={academicYear}
                   onChange={(e) => setAcademicYear(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="2024-2025"
-                />
+                >
+                  {academicYearOptions.map((year) => (
+                    <option key={year} value={year.toString()}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

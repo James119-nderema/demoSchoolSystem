@@ -134,8 +134,12 @@ const ViewResults: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedTerm, setSelectedTerm] = useState<string>('');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024-2025');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2026');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Generate academic year options (current year and a few years back)
+  const currentYear = new Date().getFullYear();
+  const academicYearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
   
   // View state
   const [showStatistics, setShowStatistics] = useState(false);
@@ -418,13 +422,18 @@ const ViewResults: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-              <input
-                type="text"
+              <select
                 value={selectedAcademicYear}
                 onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                placeholder="2024-2025"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              />
+              >
+                <option value="">All Years</option>
+                {academicYearOptions.map((year) => (
+                  <option key={year} value={year.toString()}>
+                    {year}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -439,7 +448,7 @@ const ViewResults: React.FC = () => {
                 setSelectedExamType('');
                 setSelectedTerm('');
                 setSearchTerm('');
-                setSelectedAcademicYear('2024-2025');
+                setSelectedAcademicYear('');
               }}
               className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
             >
