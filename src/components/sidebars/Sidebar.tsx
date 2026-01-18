@@ -155,29 +155,25 @@ export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 						<span>📊</span>
 						<span>Dashboard</span>
 					</NavLink>
-					<NavLink to="/school/profile" className={navLinkClass}>
-						<span>🏢</span>
-						<span>Profile</span>
-					</NavLink>
 					<NavLink to="/school/students" className={navLinkClass}>
 						<span>👨‍🎓</span>
 						<span>Students</span>
+					</NavLink>
+					<NavLink to="/school/classes" className={navLinkClass}>
+						<span>🏫</span>
+						<span>Classes</span>
 					</NavLink>
 					<NavLink to="/school/subjects" className={navLinkClass}>
 						<span>📚</span>
 						<span>Subjects</span>
 					</NavLink>
-					<NavLink to="/school/results" className={navLinkClass}>
+					{/*<NavLink to="/school/results" className={navLinkClass}>
 						<span>📝</span>
 						<span>Results</span>
-					</NavLink>
+					</NavLink>*/}
 					<NavLink to="/school/reports" className={navLinkClass}>
 						<span>📋</span>
 						<span>Reports</span>
-					</NavLink>
-					<NavLink to="/school/classes" className={navLinkClass}>
-						<span>🏫</span>
-						<span>Classes</span>
 					</NavLink>
 					<NavLink to="/school/staff" className={navLinkClass}>
 						<span>👥</span>
@@ -186,6 +182,10 @@ export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 					<NavLink to="/school/finance" className={navLinkClass}>
 						<span>💰</span>
 						<span>Finance</span>
+					</NavLink>
+					<NavLink to="/school/profile" className={navLinkClass}>
+						<span>🏢</span>
+						<span>Profile</span>
 					</NavLink>	
 				</nav>
 			</aside>

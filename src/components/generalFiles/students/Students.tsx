@@ -64,10 +64,12 @@ export default function Students() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   
   
   // Pagination states
@@ -734,6 +736,35 @@ export default function Students() {
     }
   };
 
+  const handleBulkDeleteStudents = async () => {
+    setIsBulkDeleting(true);
+    setError('');
+    
+    try {
+      // Use appropriate user type based on route
+      const isSchoolRoute = window.location.pathname.startsWith('/school');
+      const userType = isSchoolRoute ? 'school' : 'staff';
+      
+      await APIService.delete(`${API_ENDPOINTS.STUDENTS}bulk_delete/`, userType);
+      
+      // Close modal
+      setShowBulkDeleteModal(false);
+      
+      // Refresh the list
+      await fetchStudents(1);
+      setCurrentPage(1);
+      
+      // Show success message
+      setSuccessMessage('All students deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete all students');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
@@ -758,6 +789,16 @@ export default function Students() {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                disabled={totalCount === 0}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete All
+              </button>
               <button
                 onClick={() => setShowDownloadModal(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
@@ -1250,6 +1291,54 @@ export default function Students() {
                     </>
                   ) : (
                     'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 6.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Delete All Students</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete{' '}
+                  <span className="font-semibold text-red-600">ALL {totalCount} students</span>?
+                </p>
+                <p className="text-sm text-red-500 mt-2 font-medium">
+                  ⚠️ This action cannot be undone!
+                </p>
+              </div>
+              <div className="flex justify-center space-x-4 px-4 py-3">
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  disabled={isBulkDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkDeleteStudents}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  disabled={isBulkDeleting}
+                >
+                  {isBulkDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting All...
+                    </>
+                  ) : (
+                    'Delete All Students'
                   )}
                 </button>
               </div>
