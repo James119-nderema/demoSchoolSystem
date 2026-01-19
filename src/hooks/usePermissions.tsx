@@ -83,6 +83,13 @@ export const usePermissions = () => {
   const canDownloadClassReports = (): boolean => hasPermission('download_class_reports');
   const canDownloadAllReports = (): boolean => hasPermission('download_all_reports');
   
+  // Full Results access - only Director of Studies and Class Teacher
+  const canViewFullResults = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'CLASS_TEACHER';
+  
+  // Full Results download - only Director of Studies
+  const canDownloadFullResults = (): boolean => role === 'DIRECTOR_OF_STUDIES';
+  
   // Report Cards access - only Director of Studies and Administrative Staff
   const canAccessReportCards = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
@@ -141,6 +148,8 @@ export const usePermissions = () => {
     canDownloadReports,
     canDownloadClassReports,
     canDownloadAllReports,
+    canViewFullResults,
+    canDownloadFullResults,
     canAccessReportCards,
     canManageFinance,
     canViewFinance,
