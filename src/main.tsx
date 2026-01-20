@@ -87,6 +87,9 @@ import Subjects from './pages/Subjects'
 import Results from './pages/Results'
 import Classes from './pages/Classes'
 import Staff from './pages/Staff'
+import FeaturesPage from './components/pages/FeaturesPage'
+import AboutPage from './components/pages/AboutPage'
+import ContactPage from './components/pages/ContactPage'
 // payment
 import Payment from './pages/Payment'
 import SchoolFinance from './components/finance/School_Finance'
@@ -100,6 +103,9 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <Home /> },
+      { path: 'features', element: <FeaturesPage /> },
+      { path: 'about', element: <AboutPage /> },
+      { path: 'contact', element: <ContactPage /> },
       { path: 'pricing', element: <Pricing /> },
       { path: 'subscription-payment', element: <SubscriptionPayment /> },
       { path: 'create-school', element: <SchoolRegistration /> },

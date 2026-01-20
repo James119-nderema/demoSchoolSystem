@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   GraduationCap, 
@@ -12,31 +12,99 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
-  Menu,
-  X,
-  ChevronDown
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
+// Image URLs for the carousel - can be replaced with local imports if images are added to assets/images
+const timetableImg = '/images/timetable.jpg';
+const reportsImg = '/images/reports.jpg';
+const feesImg = '/images/fees.jpg';
+
+// Fallback URLs in case local images are not available
+const fallbackImages = {
+  reports: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+  timetable: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+  fees: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+};
+
+interface SlideData {
+  image: string;
+  fallbackImage: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  color: string;
+}
+
 const Home: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [isLoginDropdownOpen, setIsLoginDropdownOpen] = React.useState(false);
-  const [isRegisterDropdownOpen, setIsRegisterDropdownOpen] = React.useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
 
-  // Close dropdowns when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container')) {
-        setIsLoginDropdownOpen(false);
-        setIsRegisterDropdownOpen(false);
-      }
-    };
+  const slides: SlideData[] = [
+    {
+      image: reportsImg,
+      fallbackImage: fallbackImages.reports,
+      title: "Academic Results & Reports",
+      subtitle: "Comprehensive Analytics",
+      description: "Track student performance with detailed analytics, customizable report cards, and insightful progress tracking.",
+      color: "from-blue-600 to-indigo-700"
+    },
+    {
+      image: timetableImg,
+      fallbackImage: fallbackImages.timetable,
+      title: "Smart Timetable Generation",
+      subtitle: "AI-Powered Scheduling",
+      description: "Create conflict-free timetables automatically with our intelligent scheduling system that optimizes resources.",
+      color: "from-purple-600 to-pink-600"
+    },
+    {
+      image: feesImg,
+      fallbackImage: fallbackImages.fees,
+      title: "Fee Management",
+      subtitle: "Seamless Payments",
+      description: "Streamlined fee collection with M-Pesa integration, automated receipts, and comprehensive financial reporting.",
+      color: "from-green-600 to-teal-600"
+    }
+  ];
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  const handleImageError = (index: number) => {
+    setImageErrors(prev => ({ ...prev, [index]: true }));
+  };
+
+  const nextSlide = useCallback(() => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setTimeout(() => setIsAnimating(false), 500);
+    }
+  }, [isAnimating, slides.length]);
+
+  const prevSlide = useCallback(() => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+      setTimeout(() => setIsAnimating(false), 500);
+    }
+  }, [isAnimating, slides.length]);
+
+  const goToSlide = (index: number) => {
+    if (!isAnimating && index !== currentSlide) {
+      setIsAnimating(true);
+      setCurrentSlide(index);
+      setTimeout(() => setIsAnimating(false), 500);
+    }
+  };
+
+  // Auto-advance slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      nextSlide();
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [nextSlide]);
 
   const features = [
     {
@@ -93,178 +161,139 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <GraduationCap className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">SchoolMaster Pro</span>
+    <div className="min-h-screen bg-white pt-16">
+      {/* Hero Section with Image Carousel */}
+      <section className="relative bg-gray-900 overflow-hidden">
+        {/* Background Gradient Overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-r ${slides[currentSlide].color} opacity-80 z-10 transition-all duration-700`} />
+        
+        {/* Image Carousel */}
+        <div className="relative h-[500px] sm:h-[600px] lg:h-[700px]">
+          {slides.map((slide, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
+                index === currentSlide 
+                  ? 'opacity-100 scale-100' 
+                  : 'opacity-0 scale-105'
+              }`}
+            >
+              <img
+                src={imageErrors[index] ? slide.fallbackImage : slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover"
+                onError={() => handleImageError(index)}
+              />
             </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#home" className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
-              <a href="#features" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Features</a>
-              <a href="#about" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
-              <a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
-              <Link to="/pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Pricing</Link>
-              
-              {/* Login Dropdown */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => {
-                    setIsLoginDropdownOpen(!isLoginDropdownOpen);
-                    setIsRegisterDropdownOpen(false);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-300 flex items-center"
-                >
-                  Login
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </button>
-                {isLoginDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                    <Link
-                      to="/login"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsLoginDropdownOpen(false)}
-                    >
-                      School Login
-                    </Link>
-                    <Link
-                      to="/staff/login"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsLoginDropdownOpen(false)}
-                    >
-                      Staff Login
-                    </Link>
-                    <Link
-                      to="/parent/login"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsLoginDropdownOpen(false)}
-                    >
-                      Parent Login
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {/* Register Dropdown */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => {
-                    setIsRegisterDropdownOpen(!isRegisterDropdownOpen);
-                    setIsLoginDropdownOpen(false);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition duration-300 flex items-center"
-                >
-                  Register
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </button>
-                {isRegisterDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                    <Link
-                      to="/create-school"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsRegisterDropdownOpen(false)}
-                    >
-                      School Register
-                    </Link>
-                    <Link
-                      to="/staff/register"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsRegisterDropdownOpen(false)}
-                    >
-                      Staff Register
-                    </Link>
-                    <Link
-                      to="/parent/register"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsRegisterDropdownOpen(false)}
-                    >
-                      Parent Register
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-700 hover:text-blue-600"
+          ))}
+          
+          {/* Content Overlay */}
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              {/* Animated Text Content */}
+              <div 
+                key={currentSlide}
+                className="animate-fadeInUp"
               >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+                <span className="inline-block px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
+                  {slides[currentSlide].subtitle}
+                </span>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+                  {slides[currentSlide].title}
+                </h1>
+                <p className="text-lg sm:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow">
+                  {slides[currentSlide].description}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    to="/create-school"
+                    className="bg-white text-gray-900 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-medium transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  >
+                    Get Started Free
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                  <Link
+                    to="/features"
+                    className="border-2 border-white text-white hover:bg-white/20 px-8 py-4 rounded-lg text-lg font-medium transition-all duration-300 backdrop-blur-sm"
+                  >
+                    Learn More
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden">
-              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-                <a href="#home" className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Home</a>
-                <a href="#features" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Features</a>
-                <a href="#about" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
-                <a href="#contact" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
-                <Link to="/pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Pricing</Link>
-                
-                {/* Mobile Login Links */}
-                <div className="pt-2 border-t border-gray-200">
-                  <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Login</p>
-                  <Link to="/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">School Login</Link>
-                  <Link to="/staff/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Staff Login</Link>
-                  <Link to="/parent/login" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Parent Login</Link>
-                </div>
-                
-                {/* Mobile Register Links */}
-                <div className="pt-2 border-t border-gray-200">
-                  <p className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Register</p>
-                  <Link to="/create-school" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">School Register</Link>
-                  <Link to="/staff/register" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Staff Register</Link>
-                  <Link to="/parent/register" className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Parent Register</Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-300 group"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-6 w-6 group-hover:scale-110 transition-transform" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-300 group"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-6 w-6 group-hover:scale-110 transition-transform" />
+          </button>
 
-      {/* Hero Section */}
-      <section id="home" className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
+          {/* Slide Indicators */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-3">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`transition-all duration-300 rounded-full ${
+                  index === currentSlide 
+                    ? 'w-10 h-3 bg-white' 
+                    : 'w-3 h-3 bg-white/50 hover:bg-white/70'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Progress Bar */}
+          <div className="absolute bottom-0 left-0 right-0 z-30 h-1 bg-white/20">
+            <div 
+              className="h-full bg-white transition-all duration-300 ease-linear"
+              style={{ 
+                width: `${((currentSlide + 1) / slides.length) * 100}%`,
+                animation: 'progress 5s linear infinite'
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Stats */}
+      <section className="py-12 bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Transform Your School with
-              <span className="text-blue-600 block">SchoolMaster Pro</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              The ultimate school management system featuring AI-powered tools, comprehensive result management, 
-              seamless fee collection, and intelligent timetable generation.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/create-school"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition duration-300 flex items-center justify-center"
-              >
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-              <a
-                href="#features"
-                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-lg text-lg font-medium transition duration-300"
-              >
-                Learn More
-              </a>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1">500+</div>
+              <div className="text-gray-600 text-sm md:text-base">Schools Trust Us</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1">100K+</div>
+              <div className="text-gray-600 text-sm md:text-base">Students Managed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1">99.9%</div>
+              <div className="text-gray-600 text-sm md:text-base">Uptime</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1">24/7</div>
+              <div className="text-gray-600 text-sm md:text-base">Support</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -277,18 +306,33 @@ const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300 border border-gray-100">
-                <div className="mb-4">{feature.icon}</div>
+              <div 
+                key={index} 
+                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group hover:-translate-y-1"
+              >
+                <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
           </div>
+
+          <div className="text-center mt-12">
+            <Link
+              to="/features"
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-lg group"
+            >
+              View All Features
+              <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -301,13 +345,16 @@ const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-lg">
+              <div 
+                key={index} 
+                className="bg-gray-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+              >
                 <div className="flex mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-4">"{testimonial.content}"</p>
+                <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
                 <div>
                   <p className="font-semibold text-gray-900">{testimonial.name}</p>
                   <p className="text-sm text-gray-500">{testimonial.role}</p>
@@ -318,8 +365,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section id="about" className="py-20 bg-white">
+      {/* About Section */}
+      <section id="about" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -333,22 +380,29 @@ const Home: React.FC = () => {
               </p>
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3" />
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                   <span className="text-gray-700">10+ years of education technology experience</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3" />
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                   <span className="text-gray-700">500+ schools trust our platform</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3" />
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                   <span className="text-gray-700">24/7 customer support</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3" />
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                   <span className="text-gray-700">Regular updates and new features</span>
                 </div>
               </div>
+              <Link
+                to="/about"
+                className="inline-flex items-center mt-8 text-blue-600 hover:text-blue-700 font-medium group"
+              >
+                Learn more about us
+                <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
             <div className="lg:text-center">
               <img
@@ -362,7 +416,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-gray-50">
+      <section id="contact" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -374,21 +428,21 @@ const Home: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
               <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BookOpen className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Us</h3>
               <p className="text-gray-600">info@schoolmaster.co.ke</p>
             </div>
-            <div className="text-center">
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
               <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
               <p className="text-gray-600">+254706394482</p>
             </div>
-            <div className="text-center">
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
               <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="h-8 w-8 text-purple-600" />
               </div>
@@ -396,11 +450,21 @@ const Home: React.FC = () => {
               <p className="text-gray-600">Book a free consultation</p>
             </div>
           </div>
+
+          <div className="text-center mt-12">
+            <Link
+              to="/contact"
+              className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-300"
+            >
+              Contact Us
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Get Started?
@@ -410,7 +474,7 @@ const Home: React.FC = () => {
           </p>
           <Link
             to="/create-school"
-            className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-medium transition duration-300 inline-flex items-center"
+            className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-medium transition duration-300 inline-flex items-center shadow-lg hover:shadow-xl"
           >
             Create Your School Today
             <ArrowRight className="ml-2 h-5 w-5" />
@@ -434,28 +498,28 @@ const Home: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Features</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>Result Management</li>
-                <li>Fee Payment</li>
-                <li>Timetable Generation</li>
-                <li>AI Library</li>
+                <li><Link to="/features" className="hover:text-white transition-colors">Result Management</Link></li>
+                <li><Link to="/features" className="hover:text-white transition-colors">Fee Payment</Link></li>
+                <li><Link to="/features" className="hover:text-white transition-colors">Timetable Generation</Link></li>
+                <li><Link to="/features" className="hover:text-white transition-colors">AI Library</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#about" className="hover:text-white">About Us</a></li>
-                <li><a href="#contact" className="hover:text-white">Contact</a></li>
-                <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white">Terms of Service</a></li>
+                <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
               </ul>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-                <li><a href="#" className="hover:text-white">API Reference</a></li>
-                <li><a href="#" className="hover:text-white">System Status</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API Reference</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">System Status</a></li>
               </ul>
             </div>
           </div>
@@ -464,6 +528,33 @@ const Home: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Custom Styles for Animations */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        @keyframes progress {
+          from {
+            width: 0%;
+          }
+          to {
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 };
