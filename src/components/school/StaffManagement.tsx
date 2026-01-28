@@ -6,16 +6,23 @@ import EditStaffModal from './modals/EditStaffModal';
 
 interface Staff {
   id: string;
-  email: string;
+  phone_number: string;
   role: string;
   full_name: string;
-  phone_number?: string;
+  assigned_class_id?: string;
+  assigned_class_name?: string;
   is_active: boolean;
   created_at: string;
 }
 
+interface ClassOption {
+  id: string;
+  class_name: string;
+}
+
 const StaffManagement: React.FC = () => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -36,7 +43,31 @@ const StaffManagement: React.FC = () => {
 
   useEffect(() => {
     fetchStaff();
+    fetchClasses();
   }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const response = await axios.get(`${API_BASE_URL}/api/classes/?show_all=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Handle paginated response
+      const classes = response.data.results || response.data;
+      setClassOptions(classes.map((c: any) => ({
+        id: c.id,
+        class_name: c.class_name
+      })));
+    } catch (error) {
+      console.error('Failed to fetch classes:', error);
+    }
+  };
 
   const fetchStaff = async () => {
     try {
@@ -76,7 +107,7 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleAddStaff = async (data: { email: string; role: string }) => {
+  const handleAddStaff = async (data: { phone_number: string; role: string; assigned_class?: string }) => {
     setIsSubmitting(true);
     setMessage(null);
 
@@ -128,14 +159,18 @@ const StaffManagement: React.FC = () => {
         if (error.response?.data) {
           if (error.response.data.error) {
             errorMessage = error.response.data.error;
-          } else if (error.response.data.email) {
-            errorMessage = Array.isArray(error.response.data.email) 
-              ? `Email: ${error.response.data.email[0]}` 
-              : `Email: ${error.response.data.email}`;
+          } else if (error.response.data.phone_number) {
+            errorMessage = Array.isArray(error.response.data.phone_number) 
+              ? `Phone: ${error.response.data.phone_number[0]}` 
+              : `Phone: ${error.response.data.phone_number}`;
           } else if (error.response.data.role) {
             errorMessage = Array.isArray(error.response.data.role)
               ? `Role: ${error.response.data.role[0]}`
               : `Role: ${error.response.data.role}`;
+          } else if (error.response.data.assigned_class) {
+            errorMessage = Array.isArray(error.response.data.assigned_class)
+              ? `Class: ${error.response.data.assigned_class[0]}`
+              : `Class: ${error.response.data.assigned_class}`;
           } else if (error.response.data.detail) {
             errorMessage = error.response.data.detail;
           } else if (typeof error.response.data === 'string') {
@@ -164,8 +199,9 @@ const StaffManagement: React.FC = () => {
   };
 
   const handleEditStaff = async (staffId: string, data: { 
-    email: string;
+    phone_number: string;
     role: string;
+    assigned_class?: string;
   }) => {
     setIsSubmitting(true);
     setMessage(null);
@@ -218,8 +254,8 @@ const StaffManagement: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (staffId: string, email: string) => {
-    if (!confirm(`Are you sure you want to remove ${email} from your staff?`)) {
+  const handleDelete = async (staffId: string, phoneNumber: string) => {
+    if (!confirm(`Are you sure you want to remove staff member ${phoneNumber}?`)) {
       return;
     }
 
@@ -303,13 +339,13 @@ const StaffManagement: React.FC = () => {
                     Staff Member
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Phone Number
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned Class
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Added On
@@ -328,20 +364,20 @@ const StaffManagement: React.FC = () => {
                           {staff.full_name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ID: {staff.id}
+                          ID: {staff.id.substring(0, 8)}...
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {staff.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {staff.phone_number || 'Not provided'}
+                      {staff.phone_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                         {staff.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {staff.assigned_class_name || (staff.role === 'CLASS_TEACHER' ? 'Not assigned' : '-')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(staff.created_at).toLocaleDateString()}
@@ -355,7 +391,7 @@ const StaffManagement: React.FC = () => {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(staff.id, staff.email)}
+                          onClick={() => handleDelete(staff.id, staff.phone_number)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                         >
                           Remove
@@ -376,6 +412,7 @@ const StaffManagement: React.FC = () => {
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddStaff}
         roleOptions={roleOptions}
+        classOptions={classOptions}
         isLoading={isSubmitting}
       />
 
@@ -389,6 +426,7 @@ const StaffManagement: React.FC = () => {
         }}
         onSubmit={handleEditStaff}
         roleOptions={roleOptions}
+        classOptions={classOptions}
         isLoading={isSubmitting}
       />
     </div>

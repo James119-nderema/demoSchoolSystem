@@ -49,7 +49,11 @@ const InputMarks: React.FC = () => {
   const [examType, setExamType] = useState<string>('');
   const [term, setTerm] = useState<string>('');
   const [totalMarks, setTotalMarks] = useState<number | ''>('');
-  const [academicYear, setAcademicYear] = useState<string>('2024-2025');
+  const [academicYear, setAcademicYear] = useState<string>('2026');
+
+  // Generate academic year options (current year and a few years back)
+  const currentYear = new Date().getFullYear();
+  const academicYearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   useEffect(() => {
     fetchDropdownData();
@@ -370,22 +374,26 @@ const InputMarks: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Academic Year
                 </label>
-                <input
-                  type="text"
+                <select
                   value={academicYear}
                   onChange={(e) => setAcademicYear(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="2024-2025"
-                />
+                >
+                  {academicYearOptions.map((year) => (
+                    <option key={year} value={year.toString()}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Students Marks Table */}
+          {/* Students Marks - Desktop Table / Mobile Cards */}
           {students.length > 0 && (
             <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Student Marks ({students.length} students)
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
@@ -393,7 +401,8 @@ const InputMarks: React.FC = () => {
                 </p>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -450,6 +459,70 @@ const InputMarks: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {students.map((student, index) => (
+                  <div key={student.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                    {/* Student Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <span className="text-indigo-600 font-semibold text-sm">
+                            {index + 1}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            {student.full_name}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {student.admission_number}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        {student.current_class}
+                      </span>
+                    </div>
+
+                    {/* Marks Input Section */}
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Marks Obtained
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max={totalMarks || undefined}
+                              value={studentMarks[student.id] || ''}
+                              onChange={(e) => handleMarkChange(student.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 px-3 py-2 text-center border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg font-medium"
+                              placeholder="0"
+                            />
+                            {totalMarks && (
+                              <span className="text-sm text-gray-500 font-medium">
+                                / {totalMarks}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Percentage
+                          </label>
+                          <span className="text-lg font-bold text-indigo-600">
+                            {calculatePercentage(studentMarks[student.id] || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
