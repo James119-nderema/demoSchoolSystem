@@ -570,7 +570,17 @@ export default function Students() {
         method: 'POST',
         body: formDataUpload,
       }, userType);
-      setUploadProgress(`Successfully uploaded ${result.created_count} students. ${result.error_count} errors.`);
+      
+      // Build success message with classes created info
+      let successMessage = `Successfully uploaded ${result.created_count} students.`;
+      if (result.classes_created_count && result.classes_created_count > 0) {
+        successMessage += ` ${result.classes_created_count} new class(es) created.`;
+      }
+      if (result.error_count > 0) {
+        successMessage += ` ${result.error_count} error(s).`;
+      }
+      
+      setUploadProgress(successMessage);
       setShowUploadModal(false);
       setUploadFile(null);
       fetchStudents();

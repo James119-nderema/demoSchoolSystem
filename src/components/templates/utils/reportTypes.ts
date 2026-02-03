@@ -33,7 +33,9 @@ export interface SubjectResult {
   grade: string;
   remarks?: string;
   percentage?: number;
+  points?: number;
   position?: number;
+  subject_position?: number; // Class rank for this subject
   teacher_initials?: string;
   exam_results?: ExamResult[];
   test_ratings?: CBCRating[];
@@ -60,8 +62,10 @@ export interface StudentReportData {
     out_of: number;
     class_average?: number;
     points?: number;
+    total_points?: number;
     stream_position?: number;
     vap?: string;
+    overall_remarks?: string;
   };
   school_info?: {
     name: string;
@@ -76,6 +80,7 @@ export interface StudentReportData {
     academic_year: string;
     exam_type: string;
   };
+  class_teacher_name?: string;
   class_teacher_remark?: string;
   principal_remark?: string;
   facilitator_remark?: string;
@@ -116,10 +121,13 @@ export interface TermOption {
 // Backend response interfaces
 export interface BackendSubjectData {
   subject: string;
+  subject_code?: string;
   marks_obtained: number;
   total_marks: number;
   percentage: number;
   grade: string;
+  points?: number;
+  remarks?: string;
 }
 
 export interface BackendStudentReport {
@@ -150,9 +158,12 @@ export interface BackendStudentReport {
     total_possible_marks: number;
     overall_percentage: number;
     overall_grade: string;
+    overall_remarks?: string;
     total_subjects: number;
+    total_points?: number;
     position: number;
     total_students?: number;
     class_average?: number;
   };
+  class_teacher_name?: string;
 }

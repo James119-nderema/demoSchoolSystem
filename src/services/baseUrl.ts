@@ -42,6 +42,8 @@ const API_CONFIG = {
       CLASS_ANALYTICS: '/api/input-marks/class-analytics/',
       SUBJECT_ANALYTICS: '/api/input-marks/subject-analytics/',
       UPDATE_RESULT: (id: string) => `/api/input-marks/results/${id}/`,
+      MARKS_TEMPLATE: '/api/input-marks/marks-template/',
+      AVAILABLE_TEACHERS: '/api/input-marks/available-teachers/',
     },
     
     // Parent endpoints
@@ -51,10 +53,10 @@ const API_CONFIG = {
       VERIFY_TOKEN: '/api/parents/verify_token/',
     },
     
-    // Reports endpoints
+    // Reports endpoints - using InputMarks app
     REPORTS: {
-      STUDENT_REPORT_DATA: '/api/reports/student-report-data/',
-      BULK_REPORT_DATA: '/api/reports/bulk-report-data/',
+      STUDENT_REPORT_DATA: '/api/input-marks/student-report-data/',
+      BULK_REPORT_DATA: '/api/input-marks/bulk-report-data/',
     },
   }
 };

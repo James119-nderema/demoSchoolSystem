@@ -91,6 +91,7 @@ import Staff from './pages/Staff'
 import FeaturesPage from './components/pages/FeaturesPage'
 import AboutPage from './components/pages/AboutPage'
 import ContactPage from './components/pages/ContactPage'
+import MessagingPage from './components/messaging/MessagingPage'
 // payment
 import Payment from './pages/Payment'
 import SchoolFinance from './components/finance/School_Finance'
@@ -214,6 +215,14 @@ const router = createBrowserRouter([
             element: (
               <AuthenticatedRoute userType="staff">
                 <TemplateFullPreview />
+              </AuthenticatedRoute>
+            ) 
+          },
+          { 
+            path: 'messaging', 
+            element: (
+              <AuthenticatedRoute userType="staff">
+                <MessagingPage />
               </AuthenticatedRoute>
             ) 
           },

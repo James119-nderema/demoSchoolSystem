@@ -206,7 +206,7 @@ const FullResults: React.FC = () => {
         // Build table headers
         const headers = ['Pos', 'Adm No', 'Student Name'];
         classData.subjects.forEach(subject => {
-          headers.push(subject.code || subject.name.substring(0, 8));
+          headers.push(subject.name.length > 10 ? subject.name.substring(0, 10) : subject.name);
         });
         headers.push('Total', 'Avg');
         
@@ -511,7 +511,7 @@ const FullResults: React.FC = () => {
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Student Name</th>
                         {classData.subjects.map((subject) => (
                           <th key={subject.id} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title={subject.name}>
-                            {subject.code || subject.name.substring(0, 8)}
+                            {subject.name.length > 10 ? subject.name.substring(0, 10) : subject.name}
                           </th>
                         ))}
                         <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-indigo-50">Total</th>
@@ -592,7 +592,7 @@ const FullResults: React.FC = () => {
                             return (
                               <div key={subject.id} className="bg-gray-50 rounded-lg p-2 text-center">
                                 <div className="text-xs text-gray-500 truncate" title={subject.name}>
-                                  {subject.code || subject.name.substring(0, 6)}
+                                  {subject.name.length > 8 ? subject.name.substring(0, 8) : subject.name}
                                 </div>
                                 <div className={`text-sm font-semibold ${
                                   mark 

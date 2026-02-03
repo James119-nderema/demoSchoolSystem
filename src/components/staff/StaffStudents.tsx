@@ -208,16 +208,25 @@ const StaffStudents: React.FC = () => {
       const formData = new FormData();
       formData.append('file', uploadFile);
       
-      await DataAPI.bulkUploadStudents(formData, (progress) => {
+      const result = await DataAPI.bulkUploadStudents(formData, (progress) => {
         setUploadProgress(`Uploading... ${progress}%`);
       });
       
-      setSuccessMessage('Students uploaded successfully!');
+      // Build success message with classes created info
+      let successMessage = `Successfully uploaded ${result.created_count || 0} students.`;
+      if (result.classes_created_count && result.classes_created_count > 0) {
+        successMessage += ` ${result.classes_created_count} new class(es) created.`;
+      }
+      if (result.error_count && result.error_count > 0) {
+        successMessage += ` ${result.error_count} error(s).`;
+      }
+      
+      setSuccessMessage(successMessage);
       setShowUploadModal(false);
       setUploadFile(null);
       setUploadProgress('');
       fetchStudents();
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err: any) {
       console.error('Error uploading students:', err);
       setError(err.message || 'Failed to upload students. Please check the file format.');
