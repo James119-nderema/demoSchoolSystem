@@ -307,7 +307,7 @@ export const generateTemplate1PDF = async ({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
 
-  studentData.results.forEach((result, index) => {
+  studentData.results.forEach((result, _index) => {
     if (y > pageHeight - 100) {
       doc.addPage();
       y = 15;
@@ -422,15 +422,8 @@ export const generateTemplate1PDF = async ({
       const availableForSubjects = tableWidth - examColWidth - fixedEndWidth;
       const subjectColWidth = Math.max(12, Math.floor(availableForSubjects / subjectNames.length));
       
-      // Calculate total points from all subjects (from grading app)
-      const totalPoints = studentData.results.reduce((sum, r) => sum + (r.points || 0), 0);
-      const avgMarks = studentData.overall?.average || 0;
-      const overallGrade = studentData.overall?.grade || '-'; // Mean Grade from grading app
       const position = studentData.overall?.position || 0;
       const outOf = studentData.overall?.out_of || 0;
-      // MPt = Mean Points = totalPoints / number of subjects with results
-      const subjectsWithResults = studentData.results.filter(r => r.marks_obtained !== undefined && r.marks_obtained !== null).length;
-      const meanPoints = subjectsWithResults > 0 ? totalPoints / subjectsWithResults : 0;
       
       // Build header row - Exam Type, Subject names..., CP, MG, MPt, OP
       const headers = ['EXAM', ...subjectNames.map(n => n.length > 6 ? n.substring(0, 5) + '.' : n), 'CP', 'MG', 'MPt', 'OP'];

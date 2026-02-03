@@ -64,9 +64,14 @@ export interface StudentReportData {
     points?: number;
     total_points?: number;
     stream_position?: number;
+    stream_out_of?: number;
     vap?: string;
     overall_remarks?: string;
   };
+  closing_date?: string;
+  opening_date?: string;
+  print_date?: string;
+  form_number?: string;
   school_info?: {
     name: string;
     address?: string;
@@ -106,6 +111,8 @@ export interface StudentOption {
   full_name: string;
   admission_number: string;
   current_class: string;
+  parent_guardian_phone?: string;
+  parent_guardian_name?: string;
 }
 
 export interface ExamTypeOption {
@@ -128,6 +135,7 @@ export interface BackendSubjectData {
   grade: string;
   points?: number;
   remarks?: string;
+  subject_position?: number;
 }
 
 export interface BackendStudentReport {

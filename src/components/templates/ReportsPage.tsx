@@ -8,7 +8,6 @@ import { getRemarks } from './utils/reportUtils';
 import { 
   sendBulkSms, 
   generateResultMessage, 
-  formatPhoneNumber, 
   saveSmsSettings, 
   getSmsSettings, 
   isSmsConfigured,
@@ -114,7 +113,7 @@ const combineReportsForStudent = (reports: StudentReportData[], examTypes: strin
   });
   
   // Calculate average marks across all exams for each subject
-  subjectMap.forEach((subject, name) => {
+  subjectMap.forEach((subject, _name) => {
     if (subject.exam_results && subject.exam_results.length > 0) {
       const totalMarks = subject.exam_results.reduce((sum, er) => sum + er.marks, 0);
       const avgPercentage = totalMarks / subject.exam_results.length;
@@ -177,7 +176,7 @@ const ReportsPage: React.FC = () => {
 
   // Messaging states
   const [showMessagingModal, setShowMessagingModal] = useState(false);
-  const [messagingMode, setMessagingMode] = useState<'individual' | 'class' | 'all'>('individual');
+  const [_messagingMode, _setMessagingMode] = useState<'individual' | 'class' | 'all'>('individual');
   const [selectedStudentsForSms, setSelectedStudentsForSms] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState('');
   const [isSendingSms, setIsSendingSms] = useState(false);
@@ -419,7 +418,7 @@ const ReportsPage: React.FC = () => {
       
       // Combine reports for each student
       const combinedReports: StudentReportData[] = [];
-      studentReportsMap.forEach((reports, admNo) => {
+      studentReportsMap.forEach((reports, _admNo) => {
         const combined = combineReportsForStudent(reports, selectedExamTypes);
         if (combined) {
           combinedReports.push(combined);
