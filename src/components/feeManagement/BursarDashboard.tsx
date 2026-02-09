@@ -184,7 +184,7 @@ const BursarDashboard: React.FC = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <button
-          onClick={() => navigate('/staff/finance/invoices')}
+          onClick={() => navigate('/finance/invoices')}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl shadow-md transition flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@ const BursarDashboard: React.FC = () => {
           Manage Invoices
         </button>
         <button
-          onClick={() => navigate('/staff/finance/invoices')}
+          onClick={() => navigate('/finance/invoices')}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl shadow-md transition flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

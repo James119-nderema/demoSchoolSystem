@@ -149,12 +149,17 @@ const InputMarks: React.FC = () => {
     }
   };
 
-  // Check if user is Director of Studies
+  // Check if user is Director of Studies or Administrative Staff (school admin)
   const checkUserRole = () => {
     const staffInfo = localStorage.getItem('staff_info');
     if (staffInfo) {
       const parsed = JSON.parse(staffInfo);
-      return parsed.role === 'DIRECTOR_OF_STUDIES';
+      return parsed.role === 'DIRECTOR_OF_STUDIES' || parsed.role === 'ADMINISTRATIVE_STAFF';
+    }
+    // School admin logged in via school login
+    const schoolInfo = localStorage.getItem('school_info');
+    if (schoolInfo) {
+      return true;
     }
     return false;
   };
@@ -483,7 +488,7 @@ const InputMarks: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/staff/results')}
+            onClick={() => navigate('/results')}
             className="mb-4 text-indigo-600 hover:text-indigo-500 flex items-center"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

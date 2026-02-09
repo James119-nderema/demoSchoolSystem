@@ -15,7 +15,7 @@ export const StudentAnalyticsWrapper: React.FC = () => {
   return (
     <StudentAnalytics 
       studentId={studentId} 
-      onBack={() => navigate('/staff/statistics')}
+      onBack={() => navigate('/statistics')}
     />
   );
 };
@@ -31,7 +31,7 @@ export const ClassAnalyticsWrapper: React.FC = () => {
   return (
     <ClassAnalytics 
       classId={classId} 
-      onBack={() => navigate('/staff/statistics')}
+      onBack={() => navigate('/statistics')}
       onStudentClick={(studentId) => navigate(`/staff/statistics/student/${studentId}`)}
     />
   );
@@ -48,7 +48,7 @@ export const SubjectAnalyticsWrapper: React.FC = () => {
   return (
     <SubjectAnalytics 
       subjectId={subjectId} 
-      onBack={() => navigate('/staff/statistics')}
+      onBack={() => navigate('/statistics')}
       onClassClick={(classId) => navigate(`/staff/statistics/class/${classId}`)}
     />
   );

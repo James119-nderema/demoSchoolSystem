@@ -153,7 +153,7 @@ const MessagingPage: React.FC = () => {
 
   const fetchClasses = async () => {
     try {
-      const response = await DataAPI.getClasses();
+      const response = await DataAPI.getClasses({ show_all: 'true' });
       const classesData = response.results || response || [];
       setClasses(classesData);
     } catch (err) {

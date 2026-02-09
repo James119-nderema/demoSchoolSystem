@@ -63,7 +63,7 @@ const StaffForgotPassword: React.FC = () => {
   };
 
   const goToLogin = () => {
-    navigate('/staff/login');
+    navigate('/login');
   };
 
   return (

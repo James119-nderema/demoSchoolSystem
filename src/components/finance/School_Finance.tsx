@@ -421,7 +421,7 @@ const SchoolFinance: React.FC = () => {
             </div>
           </button>
           <button
-            onClick={() => navigate('/staff/finance/payments')}
+            onClick={() => navigate('/finance/payments')}
             className="p-4 bg-green-50 hover:bg-green-100 rounded-xl flex items-center gap-3 transition-colors"
           >
             <div className="p-2 bg-green-600 rounded-lg">
@@ -435,7 +435,7 @@ const SchoolFinance: React.FC = () => {
             </div>
           </button>
           <button
-            onClick={() => navigate('/staff/finance/invoices')}
+            onClick={() => navigate('/finance/invoices')}
             className="p-4 bg-purple-50 hover:bg-purple-100 rounded-xl flex items-center gap-3 transition-colors"
           >
             <div className="p-2 bg-purple-600 rounded-lg">

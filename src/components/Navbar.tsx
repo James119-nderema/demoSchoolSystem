@@ -117,15 +117,7 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsLoginDropdownOpen(false)}
                 >
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                  School Login
-                </Link>
-                <Link
-                  to="/staff/login"
-                  className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                  onClick={() => setIsLoginDropdownOpen(false)}
-                >
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                  Staff Login
+                  School / Staff Login
                 </Link>
                 <Link
                   to="/parent/login"
@@ -160,20 +152,12 @@ const Navbar: React.FC = () => {
                 }`}
               >
                 <Link
-                  to="/create-school"
+                  to="/register"
                   className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
                   onClick={() => setIsRegisterDropdownOpen(false)}
                 >
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                  School Register
-                </Link>
-                <Link
-                  to="/staff/register"
-                  className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
-                  onClick={() => setIsRegisterDropdownOpen(false)}
-                >
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                  Staff Register
+                  School / Staff Register
                 </Link>
                 <Link
                   to="/parent/register"
@@ -224,10 +208,7 @@ const Navbar: React.FC = () => {
             <div className="pt-3 mt-3 border-t border-gray-200">
               <p className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Login</p>
               <Link to="/login" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
-                School Login
-              </Link>
-              <Link to="/staff/login" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
-                Staff Login
+                School / Staff Login
               </Link>
               <Link to="/parent/login" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
                 Parent Login
@@ -237,11 +218,8 @@ const Navbar: React.FC = () => {
             {/* Mobile Register Links */}
             <div className="pt-3 mt-3 border-t border-gray-200">
               <p className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Register</p>
-              <Link to="/create-school" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50">
-                School Register
-              </Link>
-              <Link to="/staff/register" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50">
-                Staff Register
+              <Link to="/register" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50">
+                School / Staff Register
               </Link>
               <Link to="/parent/register" className="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50">
                 Parent Register

@@ -80,12 +80,15 @@ export const generateTemplate1PDF = async ({
   doc.setLineWidth(0.5);
   doc.rect(logoX, logoY, logoWidth, logoHeight);
   
-  // Load and add logo
-  if (schoolInfo?.logo_url) {
+  // Load and add logo (supports JPG, PNG, JPEG)
+  const logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
+  if (logoUrl) {
     try {
-      const logoData = await loadImageAsBase64(schoolInfo.logo_url);
+      const logoData = await loadImageAsBase64(logoUrl);
       if (logoData) {
-        doc.addImage(logoData, 'JPEG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 8);
+        // Auto-detect image format from data URI
+        const format = logoData.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(logoData, format, logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 8);
       }
     } catch {
       // Logo failed to load - continue without it

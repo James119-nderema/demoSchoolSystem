@@ -11,22 +11,55 @@ interface StaffInfo {
   permissions: string[];
 }
 
+// Full permissions for school admin (ADMINISTRATIVE_STAFF)
+const ADMIN_STAFF_PERMISSIONS = [
+  'manage_students', 'view_students', 'view_all_students',
+  'manage_classes', 'view_classes', 'view_all_classes',
+  'manage_subjects', 'view_subjects',
+  'manage_staff', 'view_staff',
+  'manage_timetable', 'generate_timetable', 'view_timetable', 'view_all_timetables',
+  'input_marks', 'view_results', 'view_all_results', 'manage_grades',
+  'view_statistics', 'view_all_statistics',
+  'view_reports', 'download_reports', 'download_all_reports',
+  'manage_finance', 'view_finance',
+  'access_school_profile',
+  'view_national_results', 'manage_national_results'
+];
+
 export const usePermissions = () => {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [role, setRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // First check for staff_info
     const staffInfo = localStorage.getItem('staff_info');
     if (staffInfo) {
       try {
         const info: StaffInfo = JSON.parse(staffInfo);
         setPermissions(info.permissions || []);
         setRole(info.role || '');
+        setLoading(false);
+        return;
       } catch (error) {
         console.error('Error parsing staff info:', error);
       }
     }
+    
+    // Then check for school_info (school admin login)
+    const schoolInfo = localStorage.getItem('school_info');
+    if (schoolInfo) {
+      try {
+        // School admins get full ADMINISTRATIVE_STAFF permissions
+        setPermissions(ADMIN_STAFF_PERMISSIONS);
+        setRole('ADMINISTRATIVE_STAFF');
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.error('Error parsing school info:', error);
+      }
+    }
+    
     setLoading(false);
   }, []);
 
@@ -83,19 +116,21 @@ export const usePermissions = () => {
   const canDownloadClassReports = (): boolean => hasPermission('download_class_reports');
   const canDownloadAllReports = (): boolean => hasPermission('download_all_reports');
   
-  // Full Results access - only Director of Studies and Class Teacher
+  // Full Results access - only Director of Studies, Class Teacher, and Administrative Staff
   const canViewFullResults = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'CLASS_TEACHER';
+    role === 'DIRECTOR_OF_STUDIES' || role === 'CLASS_TEACHER' || role === 'ADMINISTRATIVE_STAFF';
   
-  // Full Results download - only Director of Studies
-  const canDownloadFullResults = (): boolean => role === 'DIRECTOR_OF_STUDIES';
+  // Full Results download - Director of Studies, Administrative Staff, and Class Teacher
+  const canDownloadFullResults = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF' || role === 'CLASS_TEACHER';
   
   // Report Cards access - only Director of Studies and Administrative Staff
   const canAccessReportCards = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
   
   const canManageFinance = (): boolean => hasPermission('manage_finance');
-  const canViewFinance = (): boolean => hasPermission('view_finance');
+  const canViewFinance = (): boolean => 
+    hasPermission('view_finance') || role === 'ADMINISTRATIVE_STAFF';
 
   // Role checks
   const isTeacher = (): boolean => role === 'TEACHER';
@@ -122,6 +157,14 @@ export const usePermissions = () => {
   // Director of Studies and Bursar can view ALL students (not filtered by assigned classes)
   const canViewAllStudents = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
+  
+  // Administrative Staff can manage staff members
+  const canManageStaffMembers = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+  
+  // Administrative Staff can access school profile
+  const canAccessSchoolProfile = (): boolean => 
+    role === 'ADMINISTRATIVE_STAFF';
 
   return {
     permissions,
@@ -153,12 +196,14 @@ export const usePermissions = () => {
     canAccessReportCards,
     canManageFinance,
     canViewFinance,
-    // Special permissions for DOS/Bursar
+    // Special permissions for DOS/Bursar/Admin Staff
     canAddStudents,
     canUploadStudents,
     canAddClasses,
     canAddSubjects,
     canViewAllStudents,
+    canManageStaffMembers,
+    canAccessSchoolProfile,
     // Role checks
     isTeacher,
     isClassTeacher,

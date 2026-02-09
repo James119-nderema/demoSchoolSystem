@@ -43,9 +43,9 @@ const StaffLogin: React.FC = () => {
         setTimeout(() => {
           // Bursar and Accountant go to finance dashboard
           if (result.role === 'BURSAR' || result.role === 'ACCOUNTANT') {
-            navigate('/staff/finance/dashboard');
+            navigate('/finance/dashboard');
           } else {
-            navigate('/staff/dashboard');
+            navigate('/dashboard');
           }
         }, 1000);
       } else {
@@ -72,7 +72,7 @@ const StaffLogin: React.FC = () => {
   };
 
   const goToForgotPassword = () => {
-    navigate('/staff/forgot-password');
+    navigate('/forgot-password');
   };
 
   return (

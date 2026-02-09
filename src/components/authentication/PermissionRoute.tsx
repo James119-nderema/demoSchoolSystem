@@ -15,7 +15,7 @@ const PermissionRoute: React.FC<PermissionRouteProps> = ({
   permissions = [],
   requireAll = false,
   children,
-  redirectTo = '/staff/dashboard',
+  redirectTo = '/dashboard',
 }) => {
   const { hasPermission, hasAnyPermission, hasAllPermissions, loading } = usePermissions();
 

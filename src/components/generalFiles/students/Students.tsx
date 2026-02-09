@@ -191,6 +191,12 @@ export default function Students() {
       if (classFilter) params.class = classFilter;
       if (admission) params.admission_number = admission;
       
+      // For staff users (including school admin routed to admin pages), pass view_all=true
+      // so the backend returns all students regardless of class assignments
+      if (userType === 'staff') {
+        params.view_all = 'true';
+      }
+      
       const data = await APIService.get(API_ENDPOINTS.STUDENTS, params, userType);
       
       // Handle different response formats

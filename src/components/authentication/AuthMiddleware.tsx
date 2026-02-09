@@ -22,20 +22,16 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
     '/forgot-password',
     '/reset-password',
     '/staff/register',
-    '/staff/login',
-    '/staff/forgot-password',
+    '/forgot-password',
     '/staff/reset-password',
-    '/parent/register',
-    '/parent/login',
     '/parent/register',
     '/parent/login',
     '/parent/forgot-password'
   ];
 
   // Define protected routes patterns
-  const schoolProtectedRoutes = ['/school'];
-  const staffProtectedRoutes = ['/staff/dashboard', '/staff/students', '/staff/classes', '/staff/subjects', '/staff/results', '/staff/profile'];
-  const parentProtectedRoutes = ['/parent/dashboard', '/parent/dashboard'];
+  const staffProtectedRoutes = ['/dashboard', '/students', '/classes', '/subjects', '/results', '/profile', '/statistics', '/reports', '/timetable', '/grading', '/finance', '/staff-management'];
+  const parentProtectedRoutes = ['/parent/dashboard'];
 
   const currentPath = location.pathname;
 
@@ -43,7 +39,6 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
   const isPublicRoute = publicRoutes.includes(currentPath);
 
   // Check if current route needs authentication
-  const isSchoolRoute = schoolProtectedRoutes.some(route => currentPath.startsWith(route));
   const isStaffRoute = staffProtectedRoutes.some(route => currentPath.startsWith(route));
   const isParentRoute = parentProtectedRoutes.some(route => currentPath.startsWith(route));
 
@@ -63,11 +58,11 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
   if (isPublicRoute) {
     // Still redirect authenticated users away from login pages to their dashboards
     if (isSchoolAuth && (currentPath === '/login' || currentPath === '/')) {
-      return <Navigate to="/school/dashboard" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
 
-    if (isStaffAuth && (currentPath === '/staff/login' || currentPath === '/staff/register')) {
-      return <Navigate to="/staff/dashboard" replace />;
+    if (isStaffAuth && (currentPath === '/login' || currentPath === '/')) {
+      return <Navigate to="/dashboard" replace />;
     }
 
     if (isParentAuth && (currentPath === '/parent/login' || currentPath === '/parent/login')) {
@@ -78,12 +73,8 @@ const AuthMiddleware: React.FC<AuthMiddlewareProps> = ({ children }) => {
   }
 
   // Handle protected route authentication
-  if (isSchoolRoute && !isSchoolAuth) {
+  if (isStaffRoute && !isStaffAuth && !isSchoolAuth) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (isStaffRoute && !isStaffAuth) {
-    return <Navigate to="/staff/login" replace />;
   }
 
   if (isParentRoute && !isParentAuth) {

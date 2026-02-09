@@ -174,6 +174,10 @@ const ReportsPage: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
 
+  // Closing and Opening date states for report card
+  const [closingDate, setClosingDate] = useState<string>('');
+  const [openingDate, setOpeningDate] = useState<string>('');
+
   // Messaging states
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [_messagingMode, _setMessagingMode] = useState<'individual' | 'class' | 'all'>('individual');
@@ -703,7 +707,12 @@ const ReportsPage: React.FC = () => {
       console.log('Using template:', isTemplate1 ? 'template1' : 'template2');
 
       for (let i = 0; i < studentsData.length; i++) {
-        const studentData = studentsData[i];
+        const studentData = {
+          ...studentsData[i],
+          // Inject closing and opening dates chosen by the user
+          closing_date: closingDate ? new Date(closingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+          opening_date: openingDate ? new Date(openingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+        };
         const isNewPage = i > 0;
         
         console.log(`Generating PDF for student ${i + 1}/${studentsData.length}:`, studentData.student.full_name);
@@ -1033,6 +1042,30 @@ const ReportsPage: React.FC = () => {
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Closing and Opening Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Closing Date</label>
+                  <input
+                    type="date"
+                    value={closingDate}
+                    onChange={(e) => setClosingDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Select closing date"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Opening Date</label>
+                  <input
+                    type="date"
+                    value={openingDate}
+                    onChange={(e) => setOpeningDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Select opening date"
+                  />
+                </div>
               </div>
 
               {error && (

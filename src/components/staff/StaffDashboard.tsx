@@ -76,7 +76,7 @@ const StaffDashboard: React.FC = () => {
     const storedStaffInfo = localStorage.getItem('staff_info');
 
     if (!token) {
-      navigate('/staff/login');
+      navigate('/login');
       return;
     }
 
@@ -207,7 +207,7 @@ const StaffDashboard: React.FC = () => {
     localStorage.removeItem('staff_access_token');
     localStorage.removeItem('staff_refresh_token');
     localStorage.removeItem('staff_info');
-    navigate('/staff/login');
+    navigate('/login');
   };
 
   const handleRefresh = () => {

@@ -301,7 +301,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center space-x-4">
           <Link 
-            to="/staff/statistics/subjects"
+            to="/statistics/subjects"
             className="text-blue-600 hover:text-blue-800"
           >
             ← Back to Subjects

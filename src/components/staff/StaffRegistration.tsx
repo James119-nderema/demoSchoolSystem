@@ -61,7 +61,7 @@ const StaffRegistration: React.FC = () => {
 
       // Redirect to staff login after 2 seconds
       setTimeout(() => {
-        navigate('/staff/login');
+        navigate('/login');
       }, 2000);
 
     } catch (error: any) {
@@ -92,7 +92,7 @@ const StaffRegistration: React.FC = () => {
   };
 
   const goToLogin = () => {
-    navigate('/staff/login');
+    navigate('/login');
   };
 
   return (

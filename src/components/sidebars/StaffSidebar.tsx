@@ -33,7 +33,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     if (permissions.isBursar()) {
       items.push({
         name: 'Dashboard',
-        path: '/staff/finance/dashboard',
+        path: '/finance/dashboard',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -43,7 +43,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     } else {
       items.push({
         name: 'Dashboard',
-        path: '/staff/dashboard',
+        path: '/dashboard',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -53,11 +53,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
-    // Students
+    // Students - Administrative Staff gets the full school admin view
     if (permissions.canViewStudents()) {
       items.push({
         name: 'Students',
-        path: '/staff/students',
+        path: permissions.isAdministrativeStaff() ? '/admin/students' : '/students',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -66,11 +66,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
-    // Classes
+    // Classes - Administrative Staff gets the full school admin view
     if (permissions.canViewClasses()) {
       items.push({
         name: 'Classes',
-        path: '/staff/classes',
+        path: permissions.isAdministrativeStaff() ? '/admin/classes' : '/classes',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -79,11 +79,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
-    // Subjects
+    // Subjects - Administrative Staff gets the full school admin view
     if (permissions.canViewSubjects()) {
       items.push({
         name: 'Subjects',
-        path: '/staff/subjects',
+        path: permissions.isAdministrativeStaff() ? '/admin/subjects' : '/subjects',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -101,7 +101,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         timetableSubItems.push(
 {
             name: 'Teachers',
-            path: '/staff/timetable/teachers',
+            path: '/timetable/teachers',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -111,7 +111,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
 
             {
             name: 'Teacher-Subject',
-            path: '/staff/timetable/teacher-subject',
+            path: '/timetable/teacher-subject',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -120,7 +120,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           },
           {
             name: 'Time Slots',
-            path: '/staff/timetable/time',
+            path: '/timetable/time',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -129,7 +129,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           },
           {
             name: 'Subject Frequency',
-            path: '/staff/timetable/subject-frequency',
+            path: '/timetable/subject-frequency',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -139,7 +139,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           
           {
             name: 'Class Schedules',
-            path: '/staff/timetable/class-schedules',
+            path: '/timetable/class-schedules',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -150,7 +150,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           
           {
             name: 'Priorities',
-            path: '/staff/timetable/priorities',
+            path: '/timetable/priorities',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -161,7 +161,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           
           {
             name: 'Block Subjects',
-            path: '/staff/timetable/block-subjects',
+            path: '/timetable/block-subjects',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -174,7 +174,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       // Everyone with view permission can see the timetable
       timetableSubItems.push({
         name: 'View Timetable',
-        path: '/staff/timetable/view',
+        path: '/timetable/view',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -187,7 +187,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       if (permissions.canGenerateTimetable()) {
         timetableSubItems.push({
           name: 'All Teachers Schedules',
-          path: '/staff/timetable/all-teachers',
+          path: '/timetable/all-teachers',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -197,7 +197,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         
         timetableSubItems.push({
           name: 'Manage Timetable',
-          path: '/staff/timetable/manage',
+          path: '/timetable/manage',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -208,7 +208,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         
         timetableSubItems.push({
           name: 'Failed Schedules',
-          path: '/staff/timetable/failed',
+          path: '/timetable/failed',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -220,7 +220,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       if (timetableSubItems.length > 0) {
         items.push({
           name: 'Timetable',
-          path: '/staff/timetable',
+          path: '/timetable',
           hasDropdown: true,
           subItems: timetableSubItems,
           icon: (
@@ -239,7 +239,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       if (permissions.canInputMarks()) {
         resultsSubItems.push({
           name: 'Input Marks',
-          path: '/staff/input-marks',
+          path: '/input-marks',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -251,7 +251,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       if (permissions.canViewResults()) {
         resultsSubItems.push({
           name: 'View Results',
-          path: '/staff/view-results',
+          path: '/view-results',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -260,11 +260,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         });
       }
 
-      // Full Results - only for Director of Studies and Class Teacher
-      if (permissions.isDirectorOfStudies() || permissions.isClassTeacher()) {
+      // Full Results - for Director of Studies, Class Teacher, and Administrative Staff (including school admin)
+      if (permissions.canViewFullResults()) {
         resultsSubItems.push({
           name: 'Full Results',
-          path: '/staff/full-results',
+          path: '/full-results',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
@@ -276,7 +276,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       if (resultsSubItems.length > 0) {
         items.push({
           name: 'Results',
-          path: '/staff/results',
+          path: '/results',
           hasDropdown: true,
           subItems: resultsSubItems,
           icon: (
@@ -288,11 +288,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       }
     }
 
-    // Grading - only for Director of Studies
-    if (permissions.isDirectorOfStudies()) {
+    // Grading - for Director of Studies and Administrative Staff (including school admin)
+    if (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff()) {
       items.push({
         name: 'Grading',
-        path: '/staff/grading',
+        path: '/grading',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -304,12 +304,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     // National Exams - visible to all staff with subtabs
     items.push({
       name: 'National Exams',
-      path: '/staff/national-exams',
+      path: '/national-exams',
       hasDropdown: true,
       subItems: [
         {
           name: 'Upload Results',
-          path: '/staff/national-exams/upload',
+          path: '/national-exams/upload',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -318,7 +318,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
         },
         {
           name: 'Statistics',
-          path: '/staff/national-exams/statistics',
+          path: '/national-exams/statistics',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -337,12 +337,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     if (permissions.canViewStatistics()) {
       items.push({
         name: 'Statistics',
-        path: '/staff/statistics',
+        path: '/statistics',
         hasDropdown: true,
         subItems: [
           {
             name: 'Student Statistics',
-            path: '/staff/statistics/students',
+            path: '/statistics/students',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -351,7 +351,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           },
           {
             name: 'Subject Analysis',
-            path: '/staff/statistics/subjects',
+            path: '/statistics/subjects',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -360,7 +360,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
           },
           {
             name: 'Class Statistics',
-            path: '/staff/statistics/classes',
+            path: '/statistics/classes',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -380,7 +380,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     if (permissions.canViewReports()) {
       items.push({
         name: 'Reports',
-        path: '/staff/reports',
+        path: '/reports',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -393,12 +393,12 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     if (permissions.canAccessReportCards()) {
       items.push({
         name: 'Report Cards',
-        path: '/staff/reports/pdf',
+        path: '/reports/pdf',
         hasDropdown: true,
         subItems: [
           {
             name: 'Student Report Cards',
-            path: '/staff/report-card/pdf',
+            path: '/report-card/pdf',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -414,11 +414,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
-    // Messaging - only for Director of Studies
-    if (permissions.isDirectorOfStudies()) {
+    // Messaging - for Director of Studies and Administrative Staff
+    if (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff()) {
       items.push({
         name: 'Messaging',
-        path: '/staff/messaging',
+        path: '/messaging',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -427,15 +427,15 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
-    // Finance - only for Bursar
+    // Finance - for Bursar and Administrative Staff
     if (permissions.canViewFinance()) {
       const financeSubItems = [];
       
-      // Dashboard is only for Bursar
-      if (permissions.isBursar()) {
+      // Dashboard for Bursar and Administrative Staff
+      if (permissions.isBursar() || permissions.isAdministrativeStaff()) {
         financeSubItems.push({
           name: 'Dashboard',
-          path: '/staff/finance/dashboard',
+          path: '/finance/dashboard',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -447,7 +447,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
  
       items.push({
         name: 'Payments',
-        path: '/staff/finance/payments',
+        path: '/finance/payments',
         subItems: financeSubItems,
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -459,7 +459,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
 
       items.push({
         name: 'Invoice',
-        path: '/staff/finance/invoices',
+        path: '/finance/invoices',
         subItems: financeSubItems,
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -471,7 +471,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       // Reconcile - for verifying payments
       items.push({
         name: 'Reconcile',
-        path: '/staff/finance/reconcile',
+        path: '/finance/reconcile',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -480,10 +480,36 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
       });
     }
 
+    // Staff Management - only for Administrative Staff
+    if (permissions.isAdministrativeStaff()) {
+      items.push({
+        name: 'Staff',
+        path: '/staff-management',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        )
+      });
+    }
+
+    // School Profile - only for Administrative Staff
+    if (permissions.isAdministrativeStaff()) {
+      items.push({
+        name: 'School Profile',
+        path: '/school-profile',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        )
+      });
+    }
+
     // Profile - everyone can see
     items.push({
       name: 'Profile',
-      path: '/staff/profile',
+      path: '/profile',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -501,30 +527,30 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   };
 
   const isResultsActive = () => {
-    return location.pathname === '/staff/results' || 
-           location.pathname === '/staff/input-marks' || 
-           location.pathname === '/staff/view-results';
+    return location.pathname === '/results' || 
+           location.pathname === '/input-marks' || 
+           location.pathname === '/view-results';
   };
 
   const isStatisticsActive = () => {
-    return location.pathname === '/staff/statistics' || 
-           location.pathname === '/staff/statistics/school' || 
-           location.pathname === '/staff/statistics/students' || 
-           location.pathname === '/staff/statistics/classes' ||
-           location.pathname === '/staff/statistics/subjects' ||
-           location.pathname.startsWith('/staff/statistics/');
+    return location.pathname === '/statistics' || 
+           location.pathname === '/statistics/school' || 
+           location.pathname === '/statistics/students' || 
+           location.pathname === '/statistics/classes' ||
+           location.pathname === '/statistics/subjects' ||
+           location.pathname.startsWith('/statistics/');
   };
 
   const isReportCardsActive = () => {
-    return location.pathname.startsWith('/staff/reports/pdf');
+    return location.pathname.startsWith('/reports/pdf');
   };
 
   const isTimetableActive = () => {
-    return location.pathname === '/staff/timetable' ||
-           location.pathname === '/staff/timetable/time' ||
-           location.pathname === '/staff/timetable/schedule' ||
-           location.pathname === '/staff/timetable/classes' ||
-           location.pathname.startsWith('/staff/timetable/');
+    return location.pathname === '/timetable' ||
+           location.pathname === '/timetable/time' ||
+           location.pathname === '/timetable/schedule' ||
+           location.pathname === '/timetable/classes' ||
+           location.pathname.startsWith('/timetable/');
   };
 
   const handleNavigation = (path: string) => {
@@ -578,7 +604,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   };
 
   // Check if on National Exams pages
-  const isNationalExamsActive = () => location.pathname.startsWith('/staff/national-exams');
+  const isNationalExamsActive = () => location.pathname.startsWith('/national-exams');
 
   // Auto-open dropdowns when on related pages
   useEffect(() => {

@@ -167,10 +167,10 @@ export default function Sidebar({ isOpen = false, onToggle }: SidebarProps) {
 						<span>📚</span>
 						<span>Subjects</span>
 					</NavLink>
-					{/*<NavLink to="/school/results" className={navLinkClass}>
+					<NavLink to="/school/results" className={navLinkClass}>
 						<span>📝</span>
 						<span>Results</span>
-					</NavLink>*/}
+					</NavLink>
 					<NavLink to="/school/reports" className={navLinkClass}>
 						<span>📋</span>
 						<span>Reports</span>

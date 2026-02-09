@@ -61,12 +61,14 @@ export const generateTemplate2PDF = async ({
   const logoX = pageWidth - margin - logoSize;
   const logoY = y;
   
-  // Load and add logo (JPG format supported)
-  if (schoolInfo?.logo_url) {
+  // Load and add logo (supports JPG, PNG, JPEG)
+  const logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
+  if (logoUrl) {
     try {
-      const logoData = await loadImageAsBase64(schoolInfo.logo_url);
+      const logoData = await loadImageAsBase64(logoUrl);
       if (logoData) {
-        doc.addImage(logoData, 'JPEG', logoX, logoY, logoSize, logoSize);
+        const format = logoData.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(logoData, format, logoX, logoY, logoSize, logoSize);
       }
     } catch {
       // Logo failed to load - continue without it

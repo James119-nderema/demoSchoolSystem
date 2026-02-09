@@ -47,13 +47,25 @@ export default function SchoolProfile() {
   const fetchSchoolProfile = async () => {
     setLoading(true);
     try {
-      const userInfo = localStorage.getItem('school_info');
-      if (!userInfo) {
-        throw new Error('User not authenticated');
+      // Check for school admin info first, then staff info
+      let userInfo = localStorage.getItem('school_info');
+      let schoolId: string | null = null;
+      
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        schoolId = user.id;
+      } else {
+        // Try staff info
+        userInfo = localStorage.getItem('staff_info');
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          schoolId = user.school_id;
+        }
       }
       
-      const user = JSON.parse(userInfo);
-      const schoolId = user.id;
+      if (!schoolId) {
+        throw new Error('User not authenticated');
+      }
       
       const response = await DataAPI.getSchool(schoolId.toString());
       setProfile(response);
@@ -104,11 +116,22 @@ export default function SchoolProfile() {
     setMessage('');
 
     try {
-      const userInfo = localStorage.getItem('school_info');
-      if (!userInfo) throw new Error('User not authenticated');
+      // Check for school admin info first, then staff info
+      let userInfo = localStorage.getItem('school_info');
+      let schoolId: string | null = null;
       
-      const user = JSON.parse(userInfo);
-      const schoolId = user.id;
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        schoolId = user.id;
+      } else {
+        userInfo = localStorage.getItem('staff_info');
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          schoolId = user.school_id;
+        }
+      }
+      
+      if (!schoolId) throw new Error('User not authenticated');
       
       const submitData = new FormData();
       submitData.append('school_name', formData.school_name);

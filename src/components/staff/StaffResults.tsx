@@ -8,10 +8,10 @@ const StaffResults: React.FC = () => {
   const handleResultsAction = (action: string) => {
     switch (action) {
       case 'input':
-        navigate('/staff/input-marks');
+        navigate('/input-marks');
         break;
       case 'view':
-        navigate('/staff/view-results');
+        navigate('/view-results');
         break;
       default:
         break;

@@ -54,6 +54,7 @@ interface FullResultsResponse {
     class_id: string;
   };
   user_role: string;
+  user_type?: string;
   can_download: boolean;
 }
 
@@ -275,8 +276,8 @@ const FullResults: React.FC = () => {
     }
   };
 
-  // Check access
-  if (!permissions.isDirectorOfStudies() && !permissions.isClassTeacher()) {
+  // Check access - Director of Studies, Class Teacher, or Administrative Staff (including school admin)
+  if (!permissions.canViewFullResults()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
@@ -284,7 +285,7 @@ const FullResults: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">Only Director of Studies and Class Teachers can access full results.</p>
+          <p className="text-gray-600">Only Director of Studies, Administrative Staff, and Class Teachers can access full results.</p>
         </div>
       </div>
     );
@@ -380,8 +381,8 @@ const FullResults: React.FC = () => {
               </select>
             </div>
 
-            {/* Class Filter - Only for Director of Studies */}
-            {data?.user_role === 'DIRECTOR_OF_STUDIES' && (
+            {/* Class Filter - For Director of Studies, Administrative Staff, or School Admin */}
+            {(data?.user_role === 'DIRECTOR_OF_STUDIES' || data?.user_role === 'ADMINISTRATIVE_STAFF' || data?.user_type === 'school_admin') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
                 <select

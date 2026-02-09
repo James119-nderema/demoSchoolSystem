@@ -78,7 +78,7 @@ export class APIService {
     // Redirect to appropriate login page based on current route
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/staff')) {
-      window.location.href = '/staff/login';
+      window.location.href = '/login';
     } else if (currentPath.startsWith('/parent')) {
       window.location.href = '/parent/login';
     } else {
@@ -105,10 +105,17 @@ export class APIService {
   
   // Get authentication headers
   static getAuthHeaders(userType: 'staff' | 'parent' | 'school' = 'staff'): HeadersInit {
-    const tokenKey = userType === 'staff' ? 'staff_access_token' : 
-                     userType === 'parent' ? 'parent_access_token' : 
-                     'access_token';
-    const token = localStorage.getItem(tokenKey);
+    let token: string | null = null;
+    
+    if (userType === 'school') {
+      // For school endpoints, try school token first, then staff token (for ADMINISTRATIVE_STAFF)
+      token = localStorage.getItem('access_token') || localStorage.getItem('staff_access_token');
+    } else if (userType === 'staff') {
+      // For staff endpoints, try staff token first, then school token (for school admin accessing staff features)
+      token = localStorage.getItem('staff_access_token') || localStorage.getItem('access_token');
+    } else if (userType === 'parent') {
+      token = localStorage.getItem('parent_access_token');
+    }
     
     return {
       'Content-Type': 'application/json',

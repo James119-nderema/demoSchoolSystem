@@ -178,10 +178,12 @@ const ParentReportCard: React.FC = () => {
           setSelectedYear(data.filter_options.academic_years[0].value);
         } else {
           setAvailableYears([
-            { value: '2024-2025', label: '2024-2025' },
-            { value: '2023-2024', label: '2023-2024' },
+            { value: '2024', label: '2024' },
+            { value: '2023', label: '2023' },
+            { value: '2025', label: '2025' },
+            { value: '2026', label: '2026' },
           ]);
-          setSelectedYear('2024-2025');
+          setSelectedYear('2026');
         }
       } else {
         // Use defaults
@@ -191,8 +193,10 @@ const ParentReportCard: React.FC = () => {
           { value: '3', label: 'Term 3' },
         ]);
         setAvailableYears([
-          { value: '2024-2025', label: '2024-2025' },
-          { value: '2023-2024', label: '2023-2024' },
+            { value: '2024', label: '2024' },
+            { value: '2023', label: '2023' },
+            { value: '2025', label: '2025' },
+            { value: '2026', label: '2026' },
         ]);
         setSelectedTerm('1');
         setSelectedYear('2024-2025');
@@ -206,8 +210,10 @@ const ParentReportCard: React.FC = () => {
         { value: '3', label: 'Term 3' },
       ]);
       setAvailableYears([
-        { value: '2024-2025', label: '2024-2025' },
-        { value: '2023-2024', label: '2023-2024' },
+            { value: '2024', label: '2024' },
+            { value: '2023', label: '2023' },
+            { value: '2025', label: '2025' },
+            { value: '2026', label: '2026' },
       ]);
       setSelectedTerm('1');
       setSelectedYear('2024-2025');

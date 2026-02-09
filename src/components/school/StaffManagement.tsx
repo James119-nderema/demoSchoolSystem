@@ -4,6 +4,17 @@ import { API_BASE_URL } from '../../config/environment';
 import AddStaffModal from './modals/AddStaffModal';
 import EditStaffModal from './modals/EditStaffModal';
 
+// Helper to get the active token (school admin or staff)
+const getAuthToken = (): string | null => {
+  // Check for school admin token first
+  const schoolToken = localStorage.getItem('access_token');
+  if (schoolToken) return schoolToken;
+  
+  // Fall back to staff token
+  const staffToken = localStorage.getItem('staff_access_token');
+  return staffToken;
+};
+
 interface Staff {
   id: string;
   phone_number: string;
@@ -48,7 +59,7 @@ const StaffManagement: React.FC = () => {
 
   const fetchClasses = async () => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (!token) return;
 
       const response = await axios.get(`${API_BASE_URL}/api/classes/?show_all=true`, {
@@ -71,7 +82,7 @@ const StaffManagement: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (!token) {
         setMessage({ type: 'error', text: 'No authentication token found. Please login again.' });
         return;
@@ -94,9 +105,11 @@ const StaffManagement: React.FC = () => {
           type: 'error',
           text: 'Authentication failed. Please login again.'
         });
-        // Clear invalid token
+        // Clear invalid tokens
         localStorage.removeItem('access_token');
         localStorage.removeItem('school_info');
+        localStorage.removeItem('staff_access_token');
+        localStorage.removeItem('staff_info');
       } else {
         setMessage({
           type: 'error',
@@ -111,7 +124,7 @@ const StaffManagement: React.FC = () => {
     setIsSubmitting(true);
     setMessage(null);
 
-    const token = localStorage.getItem('access_token');
+    const token = getAuthToken();
     
     try {
       if (!token) {
@@ -152,6 +165,8 @@ const StaffManagement: React.FC = () => {
         });
         localStorage.removeItem('access_token');
         localStorage.removeItem('school_info');
+        localStorage.removeItem('staff_access_token');
+        localStorage.removeItem('staff_info');
       } else {
         // Better error message extraction
         let errorMessage = 'Failed to add staff member';
@@ -207,7 +222,7 @@ const StaffManagement: React.FC = () => {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (!token) {
         setMessage({ type: 'error', text: 'No authentication token found. Please login again.' });
         return;
@@ -237,6 +252,8 @@ const StaffManagement: React.FC = () => {
         });
         localStorage.removeItem('access_token');
         localStorage.removeItem('school_info');
+        localStorage.removeItem('staff_access_token');
+        localStorage.removeItem('staff_info');
       } else {
         setMessage({
           type: 'error',
@@ -260,7 +277,7 @@ const StaffManagement: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const response = await axios.delete(`${API_BASE_URL}/api/schools/staff/${staffId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,

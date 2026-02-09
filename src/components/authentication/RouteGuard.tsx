@@ -35,7 +35,7 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children, requiredAuth }) => {
         break;
       case 'staff':
         isAuthorized = isStaffAuth;
-        redirectPath = '/staff/login';
+        redirectPath = '/login';
         break;
       case 'parent':
         isAuthorized = isParentAuth;

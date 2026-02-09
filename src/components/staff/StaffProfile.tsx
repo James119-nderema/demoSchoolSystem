@@ -159,12 +159,6 @@ const StaffProfile: React.FC = () => {
     setClassSubjectAssignments(updated);
   };
 
-  const handleClassTeacherChange = (index: number, isClassTeacher: boolean) => {
-    const updated = [...classSubjectAssignments];
-    updated[index] = { ...updated[index], is_class_teacher: isClassTeacher };
-    setClassSubjectAssignments(updated);
-  };
-
   const handleSaveAssignments = async () => {
     try {
       setSaving(true);
@@ -413,13 +407,13 @@ const StaffProfile: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Class Teacher Checkbox */}
+                    {/* Class Teacher Checkbox 
                     <div className="mb-4">
                       <label className="flex items-center space-x-2">
                         <input
                           type="checkbox"
                           checked={assignment.is_class_teacher}
-                          onChange={(e) => handleClassTeacherChange(index, e.target.checked)}
+                          onChange={(e) => _handleClassTeacherChange(index, e.target.checked)}
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <span className="text-sm font-medium text-gray-700">
@@ -427,6 +421,7 @@ const StaffProfile: React.FC = () => {
                         </span>
                       </label>
                     </div>
+                    */}
                   </div>
                 ))}
 

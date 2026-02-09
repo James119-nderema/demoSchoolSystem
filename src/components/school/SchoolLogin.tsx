@@ -56,9 +56,9 @@ const SchoolLogin: React.FC = () => {
         text: 'Login successful! Redirecting...'
       });
       
-      // Redirect to dashboard after 1 second
+      // Redirect to dashboard (school admins use staff interface)
       setTimeout(() => {
-        navigate('/school/dashboard');
+        navigate('/dashboard');
       }, 1000);
     } else {
       setMessage({

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import StaffSidebar from '../components/sidebars/StaffSidebar';
-import { useAuthValidation } from '../hooks/useAuthValidation';
 import { clearAuthData } from '../utils/authUtils';
 
 interface StaffInfo {
@@ -11,36 +10,77 @@ interface StaffInfo {
   school_id: number;
   school_name: string;
   phone_number: string;
+  role?: string;
 }
 
 const StaffMainLayout: React.FC = () => {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
+  const [userType, setUserType] = useState<'staff' | 'school' | null>(null);
   const navigate = useNavigate();
-  
-  // Use authentication validation hook
-  useAuthValidation('staff');
 
   useEffect(() => {
-    // Check if staff is logged in
-    const token = localStorage.getItem('staff_access_token');
-    const info = localStorage.getItem('staff_info');
+    // Check for staff login first
+    const staffToken = localStorage.getItem('staff_access_token');
+    const staffInfoData = localStorage.getItem('staff_info');
 
-    if (!token || !info) {
-      navigate('/staff/login');
-      return;
+    if (staffToken && staffInfoData) {
+      try {
+        const parsed = JSON.parse(staffInfoData);
+        setStaffInfo({
+          id: parsed.id,
+          email: parsed.email,
+          full_name: parsed.full_name,
+          school_id: parsed.school_id,
+          school_name: parsed.school_name,
+          phone_number: parsed.phone_number || '',
+          role: parsed.role
+        });
+        setUserType('staff');
+        return;
+      } catch (error) {
+        console.error('Error parsing staff info:', error);
+      }
     }
 
-    try {
-      setStaffInfo(JSON.parse(info));
-    } catch (error) {
-      console.error('Error parsing staff info:', error);
-      navigate('/staff/login');
+    // Check for school admin login
+    const schoolToken = localStorage.getItem('access_token');
+    const schoolInfoData = localStorage.getItem('school_info');
+
+    if (schoolToken && schoolInfoData) {
+      try {
+        const parsed = JSON.parse(schoolInfoData);
+        setStaffInfo({
+          id: String(parsed.id),
+          email: parsed.email,
+          full_name: parsed.principal_name || parsed.name || 'School Administrator',
+          school_id: parsed.id,
+          school_name: parsed.name,
+          phone_number: '',
+          role: 'ADMINISTRATIVE_STAFF'
+        });
+        setUserType('school');
+        return;
+      } catch (error) {
+        console.error('Error parsing school info:', error);
+      }
     }
+
+    // No valid login found
+    navigate('/login');
   }, [navigate]);
 
   const handleLogout = () => {
-    clearAuthData('staff');
-    navigate('/staff/login');
+    if (userType === 'staff') {
+      clearAuthData('staff');
+    } else if (userType === 'school') {
+      clearAuthData('school');
+    }
+    // Clear both just to be safe
+    localStorage.removeItem('staff_access_token');
+    localStorage.removeItem('staff_info');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('school_info');
+    navigate('/login');
   };
 
   if (!staffInfo) {

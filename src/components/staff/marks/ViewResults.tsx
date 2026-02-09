@@ -284,7 +284,7 @@ const ViewResults: React.FC = () => {
                 {showStatistics ? 'Hide Statistics' : 'Show Statistics'}
               </button>
               <button
-                onClick={() => navigate('/staff/input-marks')}
+                onClick={() => navigate('/input-marks')}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Input Marks

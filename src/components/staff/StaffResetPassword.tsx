@@ -68,7 +68,7 @@ const StaffResetPassword: React.FC = () => {
 
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate('/staff/login');
+        navigate('/login');
       }, 3000);
 
     } catch (error: any) {
@@ -98,7 +98,7 @@ const StaffResetPassword: React.FC = () => {
   };
 
   const goToLogin = () => {
-    navigate('/staff/login');
+    navigate('/login');
   };
 
   if (!formData.token) {

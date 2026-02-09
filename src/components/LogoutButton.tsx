@@ -35,7 +35,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
         navigate('/login', { replace: true });
         break;
       case 'staff':
-        navigate('/staff/login', { replace: true });
+        navigate('/login', { replace: true });
         break;
       case 'parent':
         navigate('/parent/login', { replace: true });

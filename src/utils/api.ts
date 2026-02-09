@@ -58,7 +58,7 @@ staffAPI.interceptors.response.use(
       // Token expired or invalid
       localStorage.removeItem('staff_access_token');
       localStorage.removeItem('staff_info');
-      window.location.href = '/staff/login';
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

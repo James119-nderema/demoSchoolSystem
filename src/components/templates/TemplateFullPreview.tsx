@@ -33,7 +33,7 @@ const TemplateFullPreview: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/staff/report-card/pdf');
+    navigate('/report-card/pdf');
   };
 
   if (loading) {
