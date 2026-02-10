@@ -19,8 +19,6 @@ import LandingLayout from './layout/LandingLayout'
 import StaffMainLayout from './layout/StaffMainLayout'
 import SchoolRegistration from './components/school/SchoolRegistration'
 import SchoolProfile from './components/school/profile'
-import ForgotPassword from './components/ForgotPassword'
-import ResetPassword from './components/ResetPassword'
 import StaffRegistration from './components/staff/StaffRegistration'
 import StaffForgotPassword from './components/staff/StaffForgotPassword'
 import UnifiedLogin from './components/authentication/UnifiedLogin'
@@ -109,8 +107,8 @@ const router = createBrowserRouter([
       { path: 'register-school', element: <SchoolRegistration /> },
       { path: 'register', element: <UnifiedRegister /> },
       { path: 'login', element: <UnifiedLogin /> },
-      { path: 'forgot-password', element: <ForgotPassword /> },
-      { path: 'reset-password', element: <ResetPassword /> },
+      { path: 'forgot-password', element: <StaffForgotPassword /> },
+      { path: 'reset-password', element: <StaffResetPassword /> },
       { path: 'staff/register', element: <StaffRegistration /> },
       { path: 'staff/forgot-password', element: <StaffForgotPassword /> },
       { path: 'staff/reset-password', element: <StaffResetPassword /> },
