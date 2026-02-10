@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScrollReveal } from '../ui/ScrollReveal';
 import { 
   Mail, 
   Phone, 
@@ -105,9 +106,9 @@ const ContactPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {contactInfo.map((info, index) => (
+              <ScrollReveal key={index} delay={index * 100}>
               <div 
-                key={index}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center"
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center h-full"
               >
                 <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-50 rounded-full mb-4">
                   {info.icon}
@@ -118,6 +119,7 @@ const ContactPage: React.FC = () => {
                 ))}
                 <p className="text-gray-500 text-sm mt-2">{info.description}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -128,6 +130,7 @@ const ContactPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
+            <ScrollReveal>
             <div className="bg-white p-8 rounded-2xl shadow-lg">
               <div className="flex items-center mb-6">
                 <MessageCircle className="h-8 w-8 text-blue-600 mr-3" />
@@ -250,8 +253,10 @@ const ContactPage: React.FC = () => {
                 </button>
               </form>
             </div>
+            </ScrollReveal>
 
             {/* Map & FAQ */}
+            <ScrollReveal delay={200}>
             <div className="space-y-8">
               {/* Map placeholder */}
               <div className="bg-white p-4 rounded-2xl shadow-lg">
@@ -280,6 +285,7 @@ const ContactPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>

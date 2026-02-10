@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ScrollReveal, CountUpNumber } from '../ui/ScrollReveal';
 import { 
   GraduationCap,
   Target,
@@ -35,12 +36,7 @@ const AboutPage: React.FC = () => {
     }
   ];
 
-  const stats = [
-    { number: "500+", label: "Schools Trust Us" },
-    { number: "100K+", label: "Students Managed" },
-    { number: "10+", label: "Years Experience" },
-    { number: "99.9%", label: "Uptime" }
-  ];
+
 
   const team = [
     {
@@ -87,7 +83,8 @@ const AboutPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Mission */}
-            <div className="bg-blue-50 p-8 rounded-2xl">
+            <ScrollReveal delay={0}>
+            <div className="bg-blue-50 p-8 rounded-2xl h-full">
               <div className="flex items-center mb-4">
                 <div className="bg-blue-600 p-3 rounded-lg">
                   <Target className="h-8 w-8 text-white" />
@@ -100,9 +97,11 @@ const AboutPage: React.FC = () => {
                 collaborative educational environment.
               </p>
             </div>
+            </ScrollReveal>
 
             {/* Vision */}
-            <div className="bg-purple-50 p-8 rounded-2xl">
+            <ScrollReveal delay={200}>
+            <div className="bg-purple-50 p-8 rounded-2xl h-full">
               <div className="flex items-center mb-4">
                 <div className="bg-purple-600 p-3 rounded-lg">
                   <Eye className="h-8 w-8 text-white" />
@@ -115,6 +114,7 @@ const AboutPage: React.FC = () => {
                 accessibility, and innovation in education technology.
               </p>
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -123,12 +123,30 @@ const AboutPage: React.FC = () => {
       <section className="py-16 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-gray-400 text-sm md:text-base">{stat.label}</div>
+            <ScrollReveal className="text-center" delay={0}>
+              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
+                <CountUpNumber end={500} suffix="+" duration={2000} />
               </div>
-            ))}
+              <div className="text-gray-400 text-sm md:text-base">Schools Trust Us</div>
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={100}>
+              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
+                <CountUpNumber end={100} suffix="K+" duration={2000} />
+              </div>
+              <div className="text-gray-400 text-sm md:text-base">Students Managed</div>
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={200}>
+              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
+                <CountUpNumber end={10} suffix="+" duration={1500} />
+              </div>
+              <div className="text-gray-400 text-sm md:text-base">Years Experience</div>
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={300}>
+              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
+                <CountUpNumber end={99} suffix=".9%" duration={2000} />
+              </div>
+              <div className="text-gray-400 text-sm md:text-base">Uptime</div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -136,16 +154,16 @@ const AboutPage: React.FC = () => {
       {/* Our Values */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Core Values</h2>
             <p className="text-xl text-gray-600">The principles that guide everything we do</p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
+              <ScrollReveal key={index} delay={index * 100}>
               <div 
-                key={index}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center group hover:-translate-y-1"
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center group hover:-translate-y-1 h-full"
               >
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
                   {value.icon}
@@ -153,6 +171,7 @@ const AboutPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{value.title}</h3>
                 <p className="text-gray-600">{value.description}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -162,6 +181,7 @@ const AboutPage: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <ScrollReveal>
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-lg text-gray-600 mb-6">
@@ -189,6 +209,8 @@ const AboutPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </ScrollReveal>
+            <ScrollReveal delay={200}>
             <div>
               <img
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
@@ -196,6 +218,7 @@ const AboutPage: React.FC = () => {
                 className="rounded-2xl shadow-lg"
               />
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -203,16 +226,16 @@ const AboutPage: React.FC = () => {
       {/* Team Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
             <p className="text-xl text-gray-600">The passionate people behind SchoolMaster Pro</p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {team.map((member, index) => (
+              <ScrollReveal key={index} delay={index * 100}>
               <div 
-                key={index}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center group"
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-center group h-full"
               >
                 <img
                   src={member.image}
@@ -222,6 +245,7 @@ const AboutPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900">{member.name}</h3>
                 <p className="text-gray-600">{member.role}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -229,6 +253,7 @@ const AboutPage: React.FC = () => {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
+        <ScrollReveal>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <GraduationCap className="h-16 w-16 text-white mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -245,6 +270,7 @@ const AboutPage: React.FC = () => {
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
         </div>
+        </ScrollReveal>
       </section>
     </div>
   );

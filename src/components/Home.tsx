@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { ScrollReveal, CountUpNumber } from './ui/ScrollReveal';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -272,22 +273,28 @@ const Home: React.FC = () => {
       <section className="py-12 bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1">500+</div>
+            <ScrollReveal className="text-center" delay={0}>
+              <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1">
+                <CountUpNumber end={500} suffix="+" duration={2000} />
+              </div>
               <div className="text-gray-600 text-sm md:text-base">Schools Trust Us</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1">100K+</div>
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={100}>
+              <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1">
+                <CountUpNumber end={100} suffix="K+" duration={2000} />
+              </div>
               <div className="text-gray-600 text-sm md:text-base">Students Managed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1">99.9%</div>
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={200}>
+              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1">
+                <CountUpNumber end={99} suffix=".9%" duration={2000} />
+              </div>
               <div className="text-gray-600 text-sm md:text-base">Uptime</div>
-            </div>
-            <div className="text-center">
+            </ScrollReveal>
+            <ScrollReveal className="text-center" delay={300}>
               <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1">24/7</div>
               <div className="text-gray-600 text-sm md:text-base">Support</div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -295,27 +302,28 @@ const Home: React.FC = () => {
       {/* Features Section */}
       <section id="features" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Powerful Features for Modern Schools
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Everything you need to manage your educational institution efficiently and effectively.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <div 
-                key={index} 
-                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group hover:-translate-y-1"
-              >
-                <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+              <ScrollReveal key={index} delay={index * 100}>
+                <div 
+                  className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group hover:-translate-y-1 h-full"
+                >
+                  <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
 
@@ -334,32 +342,33 @@ const Home: React.FC = () => {
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Trusted by Schools Worldwide
             </h2>
             <p className="text-xl text-gray-600">
               See what educators are saying about SchoolMaster Pro
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div 
-                key={index} 
-                className="bg-gray-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
+              <ScrollReveal key={index} delay={index * 150}>
+                <div 
+                  className="bg-gray-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 h-full"
+                >
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
+                  <div>
+                    <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
-                <div>
-                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
-                </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -369,6 +378,7 @@ const Home: React.FC = () => {
       <section id="about" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <ScrollReveal>
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
                 About SchoolMaster Pro
@@ -404,6 +414,8 @@ const Home: React.FC = () => {
                 <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
+            </ScrollReveal>
+            <ScrollReveal delay={200}>
             <div className="lg:text-center">
               <img
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
@@ -411,6 +423,7 @@ const Home: React.FC = () => {
                 className="rounded-xl shadow-lg"
               />
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -418,37 +431,43 @@ const Home: React.FC = () => {
       {/* Contact Section */}
       <section id="contact" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Get in Touch
             </h2>
             <p className="text-xl text-gray-600">
               Ready to transform your school? Contact us today!
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-gray-50 rounded-xl">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="h-8 w-8 text-blue-600" />
+            <ScrollReveal delay={0}>
+              <div className="text-center p-6 bg-gray-50 rounded-xl h-full">
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Us</h3>
+                <p className="text-gray-600">info@schoolmaster.co.ke</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Us</h3>
-              <p className="text-gray-600">info@schoolmaster.co.ke</p>
-            </div>
-            <div className="text-center p-6 bg-gray-50 rounded-xl">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-green-600" />
+            </ScrollReveal>
+            <ScrollReveal delay={150}>
+              <div className="text-center p-6 bg-gray-50 rounded-xl h-full">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
+                <p className="text-gray-600">+254706394482</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
-              <p className="text-gray-600">+254706394482</p>
-            </div>
-            <div className="text-center p-6 bg-gray-50 rounded-xl">
-              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-8 w-8 text-purple-600" />
+            </ScrollReveal>
+            <ScrollReveal delay={300}>
+              <div className="text-center p-6 bg-gray-50 rounded-xl h-full">
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule Demo</h3>
+                <p className="text-gray-600">Book a free consultation</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule Demo</h3>
-              <p className="text-gray-600">Book a free consultation</p>
-            </div>
+            </ScrollReveal>
           </div>
 
           <div className="text-center mt-12">
@@ -465,21 +484,23 @@ const Home: React.FC = () => {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of schools already using SchoolMaster Pro to streamline their operations.
-          </p>
-          <Link
-            to="/create-school"
-            className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-medium transition duration-300 inline-flex items-center shadow-lg hover:shadow-xl"
-          >
-            Create Your School Today
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-        </div>
+        <ScrollReveal>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of schools already using SchoolMaster Pro to streamline their operations.
+            </p>
+            <Link
+              to="/create-school"
+              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-medium transition duration-300 inline-flex items-center shadow-lg hover:shadow-xl"
+            >
+              Create Your School Today
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* Footer */}

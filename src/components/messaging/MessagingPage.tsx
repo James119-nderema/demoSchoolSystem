@@ -16,7 +16,7 @@ import {
   isSmsConfigured,
   type SmsMessage
 } from '../../services/smsService';
-import { APIService, API_ENDPOINTS, DataAPI, MarksAPI } from '../../services/baseUrl';
+import { DataAPI, MarksAPI, ReportsAPI } from '../../services/baseUrl';
 
 interface StudentOption {
   id: number | string;
@@ -32,6 +32,7 @@ interface StudentOption {
 interface ClassOption {
   id: number | string;
   name: string;
+  class_name?: string;
 }
 
 interface ExamType {
@@ -74,7 +75,7 @@ type MessageTemplateType = 'custom' | 'individual_exam' | 'term_summary';
 const MessagingPage: React.FC = () => {
   // State for classes and students
   const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('all');
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -134,9 +135,18 @@ const MessagingPage: React.FC = () => {
     fetchDropdownData();
   }, []);
 
+  // Once classes are loaded, fetch all students if "All Classes" is selected
+  useEffect(() => {
+    if (classes.length > 0 && selectedClass === 'all') {
+      fetchAllStudents();
+    }
+  }, [classes]);
+
   // Fetch students when class changes
   useEffect(() => {
-    if (selectedClass) {
+    if (selectedClass === 'all') {
+      fetchAllStudents();
+    } else if (selectedClass) {
       fetchStudentsWithParentInfo(selectedClass);
     } else {
       setStudents([]);
@@ -146,7 +156,7 @@ const MessagingPage: React.FC = () => {
 
   // Fetch results when exam parameters change
   useEffect(() => {
-    if (selectedClass && selectedTerm && selectedYear && messageTemplate !== 'custom') {
+    if (selectedClass && selectedClass !== 'all' && selectedTerm && selectedYear && messageTemplate !== 'custom') {
       fetchStudentResults();
     }
   }, [selectedClass, selectedTerm, selectedYear, selectedExamType, messageTemplate]);
@@ -154,7 +164,12 @@ const MessagingPage: React.FC = () => {
   const fetchClasses = async () => {
     try {
       const response = await DataAPI.getClasses({ show_all: 'true' });
-      const classesData = response.results || response || [];
+      const raw = response.results || response || [];
+      const classesData: ClassOption[] = raw.map((c: any) => ({
+        id: c.id,
+        name: c.class_name || c.name || 'Unknown',
+        class_name: c.class_name,
+      }));
       setClasses(classesData);
     } catch (err) {
       console.error('Error fetching classes:', err);
@@ -183,28 +198,55 @@ const MessagingPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await MarksAPI.getClassStudents(classId);
-      const studentsData: StudentOption[] = response.students || [];
-      
-      // Fetch full details for each student to get parent phone and assessment number
-      const studentsWithPhone: StudentOption[] = [];
-      
-      for (const student of studentsData) {
-        try {
-          const details = await APIService.get(`/api/students/${student.id}/`, undefined, 'staff');
-          studentsWithPhone.push({
-            ...student,
-            assessment_no: details.assessment_no || '',
-            parent_guardian_phone: details.parent_guardian_phone || '',
-            parent_guardian_name: details.parent_guardian_name || ''
-          });
-        } catch {
-          studentsWithPhone.push(student);
-        }
-      }
-      
-      setStudents(studentsWithPhone);
+      const studentsData: StudentOption[] = (response.students || []).map((s: any) => ({
+        id: s.id,
+        full_name: s.full_name,
+        admission_number: s.admission_number,
+        current_class: s.current_class,
+        assessment_no: s.assessment_no || '',
+        parent_guardian_phone: s.parent_guardian_phone || '',
+        parent_guardian_name: s.parent_guardian_name || '',
+      }));
+      setStudents(studentsData);
     } catch (err) {
       console.error('Error fetching students:', err);
+      setError('Failed to fetch students');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllStudents = async () => {
+    try {
+      setLoading(true);
+      // Fetch students from every class in parallel
+      const promises = classes.map(cls =>
+        MarksAPI.getClassStudents(cls.id.toString()).catch(() => ({ students: [] }))
+      );
+      const responses = await Promise.all(promises);
+      const allStudents: StudentOption[] = [];
+      const seen = new Set<string>();
+      for (const response of responses) {
+        for (const s of (response.students || [])) {
+          const key = s.id?.toString();
+          if (key && !seen.has(key)) {
+            seen.add(key);
+            allStudents.push({
+              id: s.id,
+              full_name: s.full_name,
+              admission_number: s.admission_number,
+              current_class: s.current_class,
+              assessment_no: s.assessment_no || '',
+              parent_guardian_phone: s.parent_guardian_phone || '',
+              parent_guardian_name: s.parent_guardian_name || '',
+            });
+          }
+        }
+      }
+      allStudents.sort((a, b) => a.full_name.localeCompare(b.full_name));
+      setStudents(allStudents);
+    } catch (err) {
+      console.error('Error fetching all students:', err);
       setError('Failed to fetch students');
     } finally {
       setLoading(false);
@@ -230,86 +272,73 @@ const MessagingPage: React.FC = () => {
         return;
       }
 
-      for (const student of students) {
+      // Use bulk-report-data endpoint: ONE request per exam type instead of per-student
+      for (const examType of examsToFetch) {
         try {
-          const allResults: SubjectResult[] = [];
-          let studentSchoolInfo: SchoolInfo | null = null;
-          let overallGrade = '';
-          let overallRemarks = '';
-          let studentPosition = 0;
-          let totalStudentsInClass = 0;
-          
-          for (const examType of examsToFetch) {
-            const params = {
-              student_id: student.id.toString(),
-              term: selectedTerm,
-              academic_year: selectedYear,
-              exam_type: examType
-            };
-            
-            try {
-              const response = await APIService.get(
-                API_ENDPOINTS.REPORTS.STUDENT_REPORT_DATA, 
-                params, 
-                'staff'
-              );
-              
-              // Store school info from response
-              if (response && response.school_info && !studentSchoolInfo) {
-                studentSchoolInfo = {
-                  name: response.school_info.name,
-                  phone: response.school_info.phone || '',
-                  email: response.school_info.email || '',
-                  motto: response.school_info.motto || '',
-                  principal_name: response.school_info.principal_name || ''
-                };
-                setSchoolInfo(studentSchoolInfo);
-              }
-              
-              // Get summary data including grade from Grading app
-              if (response && response.summary) {
-                overallGrade = response.summary.overall_grade || '';
-                overallRemarks = response.summary.overall_remarks || '';
-                studentPosition = response.summary.position || 0;
-                totalStudentsInClass = response.summary.total_students || students.length;
-              }
-              
-              // Backend returns 'subjects' field with grades from Grading app
-              if (response && response.subjects) {
-                allResults.push(...response.subjects.map((r: any) => ({
-                  subject_name: r.subject || r.subject_name,
-                  marks_obtained: r.marks_obtained,
-                  total_marks: r.total_marks || 100,
-                  percentage: r.percentage || 0,
-                  grade: r.grade,  // Grade from Grading app
-                  points: r.points || 0,
-                  remarks: r.remarks || ''
-                })));
-              }
-            } catch {
-              // Continue if no results for this exam type
+          const response = await ReportsAPI.getBulkReportData({
+            class_id: selectedClass,
+            term: selectedTerm,
+            academic_year: selectedYear,
+            exam_type: examType,
+          });
+
+          if (!response || !response.reports) continue;
+
+          // Store school info from first report
+          if (response.reports.length > 0 && !schoolInfo) {
+            const info = response.reports[0].school_info;
+            if (info) {
+              setSchoolInfo({
+                name: info.name,
+                phone: info.phone || '',
+                email: info.email || '',
+                motto: info.motto || '',
+                principal_name: '',
+              });
             }
           }
-          
-          if (allResults.length > 0) {
+
+          for (const report of response.reports) {
+            // Match report to a student from our loaded list by admission number
+            const matchedStudent = students.find(
+              s => s.full_name === report.student_info?.name ||
+                   s.admission_number === report.student_info?.admission_number
+            );
+            if (!matchedStudent) continue;
+
+            const studentId = matchedStudent.id.toString();
+            const subjectResults: SubjectResult[] = (report.subjects || []).map((r: any) => ({
+              subject_name: r.subject || r.subject_name,
+              marks_obtained: r.marks_obtained,
+              total_marks: r.total_marks || 100,
+              percentage: r.percentage || 0,
+              grade: r.grade,
+              points: r.points || 0,
+              remarks: r.remarks || '',
+            }));
+
+            if (subjectResults.length === 0) continue;
+
+            const existing = resultsMap.get(studentId);
+            const allResults = existing ? [...existing.results, ...subjectResults] : subjectResults;
             const totalMarks = allResults.reduce((sum, r) => sum + r.marks_obtained, 0);
             const totalPossible = allResults.reduce((sum, r) => sum + r.total_marks, 0);
-            const average = (totalMarks / totalPossible) * 100;
-            
-            resultsMap.set(student.id.toString(), {
-              student,
+            const average = totalPossible > 0 ? (totalMarks / totalPossible) * 100 : 0;
+
+            resultsMap.set(studentId, {
+              student: matchedStudent,
               results: allResults,
               average,
-              grade: overallGrade || getGradeFromAverage(average),  // Use backend grade first
-              position: studentPosition,
-              totalStudents: totalStudentsInClass,
+              grade: report.summary?.overall_grade || getGradeFromAverage(average),
+              position: report.summary?.position || 0,
+              totalStudents: report.summary?.total_students || students.length,
               examType: messageTemplate === 'term_summary' ? 'Term Summary' : selectedExamType,
               totalMarks,
-              overallRemarks
+              overallRemarks: report.summary?.overall_remarks || '',
             });
           }
-        } catch (err) {
-          console.warn(`Could not fetch results for student ${student.id}`);
+        } catch {
+          // Continue if no results for this exam type
         }
       }
       
@@ -612,9 +641,9 @@ ${school?.motto || ''}`;
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full text-gray-700 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select Class</option>
+                    <option value="all">All Classes</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id.toString()}>
                         {cls.name}
