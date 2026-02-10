@@ -68,8 +68,9 @@ const SchoolDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('access_token') || localStorage.getItem('staff_access_token');
     const storedSchoolInfo = localStorage.getItem('school_info');
+    const storedStaffInfo = localStorage.getItem('staff_info');
 
     if (!token) {
       navigate('/login');
@@ -78,6 +79,13 @@ const SchoolDashboard: React.FC = () => {
 
     if (storedSchoolInfo) {
       setSchoolInfo(JSON.parse(storedSchoolInfo));
+    } else if (storedStaffInfo) {
+      const staffData = JSON.parse(storedStaffInfo);
+      setSchoolInfo({
+        id: staffData.school_id,
+        name: staffData.school_name,
+        email: staffData.email
+      });
     }
 
     fetchDashboardData();
@@ -291,6 +299,8 @@ const SchoolDashboard: React.FC = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('school_info');
+    localStorage.removeItem('staff_access_token');
+    localStorage.removeItem('staff_info');
     navigate('/login');
   };
 

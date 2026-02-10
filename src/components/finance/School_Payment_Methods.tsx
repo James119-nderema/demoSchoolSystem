@@ -65,6 +65,16 @@ export default function SchoolFinance(): React.ReactElement {
       } catch (error) {
         console.error("Error parsing school_info:", error);
       }
+    } else {
+      const staffInfo = localStorage.getItem("staff_info");
+      if (staffInfo) {
+        try {
+          const parsedInfo = JSON.parse(staffInfo);
+          setSchoolId(parsedInfo.school_id);
+        } catch (error) {
+          console.error("Error parsing staff_info:", error);
+        }
+      }
     }
   }, []);
 

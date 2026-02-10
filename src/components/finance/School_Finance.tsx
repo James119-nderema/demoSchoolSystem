@@ -66,7 +66,17 @@ const SchoolFinance: React.FC = () => {
         console.error("Error parsing school_info:", error);
       }
     } else {
-      console.error("School info not found in local storage.");
+      const staffInfo = localStorage.getItem("staff_info");
+      if (staffInfo) {
+        try {
+          const parsedInfo = JSON.parse(staffInfo);
+          setSchoolId(parsedInfo.school_id);
+        } catch (error) {
+          console.error("Error parsing staff_info:", error);
+        }
+      } else {
+        console.error("School info not found in local storage.");
+      }
     }
   }, []);
 

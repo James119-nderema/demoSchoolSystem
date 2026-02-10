@@ -156,11 +156,6 @@ const InputMarks: React.FC = () => {
       const parsed = JSON.parse(staffInfo);
       return parsed.role === 'DIRECTOR_OF_STUDIES' || parsed.role === 'ADMINISTRATIVE_STAFF';
     }
-    // School admin logged in via school login
-    const schoolInfo = localStorage.getItem('school_info');
-    if (schoolInfo) {
-      return true;
-    }
     return false;
   };
 

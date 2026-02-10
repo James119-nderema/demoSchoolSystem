@@ -421,7 +421,7 @@ export const DataAPI = {
   getSchool: (id: string) =>
     APIService.get(`/api/schools/${id}/`, undefined, 'school'),
   updateSchool: (id: string, data: any) =>
-    APIService.put(`/api/schools/${id}/`, data, 'school'),
+    APIService.patch(`/api/schools/${id}/`, data, 'school'),
   getSchoolStaff: () => 
     APIService.get('/api/schools/staff/', undefined, 'school'),
   createSchoolStaff: (data: any) => 
