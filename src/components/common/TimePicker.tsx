@@ -89,7 +89,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
     ? Array.from({ length: 24 }, (_, i) => i)
     : Array.from({ length: 12 }, (_, i) => i + 1), [use24Hour]);
 
-  const minutes = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
+  const minutes = useMemo(() => Array.from({ length: 12 }, (_, i) => i * 5), []);
 
   const handleHourChange = (hour: number) => {
     setTimeState(prev => ({ ...prev, hour }));
@@ -121,72 +121,75 @@ const TimePicker: React.FC<TimePickerProps> = ({
       )}
       
       <div className="relative">
-        <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-lg bg-white focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-          <Clock className="w-4 h-4 text-gray-400" />
+        <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-xl bg-gradient-to-r from-white to-gray-50 hover:border-indigo-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition-all duration-200 shadow-sm">
+          <div className="bg-indigo-100 p-2 rounded-lg">
+            <Clock className="w-5 h-5 text-indigo-600" />
+          </div>
           
-          {/* Hour Selector */}
-          <div className="relative">
-            <select
-              id={id}
-              value={timeState.hour}
-              onChange={(e) => handleHourChange(parseInt(e.target.value, 10))}
-              disabled={disabled}
-              className="appearance-none bg-transparent border-none text-sm font-medium text-gray-900 focus:outline-none focus:ring-0 pr-6"
-              style={{ backgroundImage: 'none' }}
-            >
-              {hours.map((hour) => (
-                <option key={hour} value={hour}>
-                  {use24Hour ? hour.toString().padStart(2, '0') : hour}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+          <div className="flex items-center space-x-2 flex-1">
+            {/* Hour Selector */}
+            <div className="relative">
+              <select
+                id={id}
+                value={timeState.hour}
+                onChange={(e) => handleHourChange(parseInt(e.target.value, 10))}
+                disabled={disabled}
+                className="appearance-none bg-white border border-gray-200 rounded-lg px-3 py-2 text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-8 hover:bg-gray-50 transition-colors cursor-pointer"
+                style={{ backgroundImage: 'none' }}
+              >
+                {hours.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {use24Hour ? hour.toString().padStart(2, '0') : hour}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            <span className="text-gray-400 font-bold text-lg">:</span>
+
+            {/* Minute Selector */}
+            <div className="relative">
+              <select
+                id={id ? `${id}-minute` : undefined}
+                value={timeState.minute}
+                onChange={(e) => handleMinuteChange(parseInt(e.target.value, 10))}
+                disabled={disabled}
+                className="appearance-none bg-white border border-gray-200 rounded-lg px-3 py-2 text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-8 hover:bg-gray-50 transition-colors cursor-pointer"
+                style={{ backgroundImage: 'none' }}
+              >
+                {minutes.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute.toString().padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Period Selector (12-hour format only) */}
+            {!use24Hour && (
+              <>
+                <div className="relative">
+                  <select
+                    id={id ? `${id}-period` : undefined}
+                    value={timeState.period}
+                    onChange={(e) => handlePeriodChange(e.target.value as 'AM' | 'PM')}
+                    disabled={disabled}
+                    className="appearance-none bg-indigo-600 text-white border-none rounded-lg px-4 py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 pr-8 hover:bg-indigo-700 transition-colors cursor-pointer"
+                    style={{ backgroundImage: 'none' }}
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
+                </div>
+              </>
+            )}
           </div>
-
-          <span className="text-gray-500 font-medium">:</span>
-
-          {/* Minute Selector */}
-          <div className="relative">
-            <select
-              id={id ? `${id}-minute` : undefined}
-              value={timeState.minute}
-              onChange={(e) => handleMinuteChange(parseInt(e.target.value, 10))}
-              disabled={disabled}
-              className="appearance-none bg-transparent border-none text-sm font-medium text-gray-900 focus:outline-none focus:ring-0 pr-6"
-              style={{ backgroundImage: 'none' }}
-            >
-              {minutes.map((minute) => (
-                <option key={minute} value={minute}>
-                  {minute.toString().padStart(2, '0')}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-
-          {/* Period Selector (12-hour format only) */}
-          {!use24Hour && (
-            <>
-              <span className="text-gray-300">|</span>
-              <div className="relative">
-                <select
-                  id={id ? `${id}-period` : undefined}
-                  value={timeState.period}
-                  onChange={(e) => handlePeriodChange(e.target.value as 'AM' | 'PM')}
-                  disabled={disabled}
-                  className="appearance-none bg-transparent border-none text-sm font-medium text-gray-900 focus:outline-none focus:ring-0 pr-6"
-                  style={{ backgroundImage: 'none' }}
-                >
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-                <ChevronDown className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-              </div>
-            </>
-          )}
 
           {/* Display Selected Time */}
-          <div className="ml-auto text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border">
+          <div className="ml-auto text-sm font-semibold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg border-2 border-indigo-100">
             {formatDisplayTime()}
           </div>
         </div>

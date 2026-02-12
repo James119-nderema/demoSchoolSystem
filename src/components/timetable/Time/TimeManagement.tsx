@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, Clock, Users, AlertCircle, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, Users, AlertCircle } from 'lucide-react';
 import { timeSlotApi } from '../../../api/timeSlotApi';
 import type { TimeSlot, TimeSlotCreate, TimeSlotUpdate } from '../../../types/timeSlot';
 import TimePicker from '../../common/TimePicker';
@@ -35,7 +35,6 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
   const [selectedEndTime, setSelectedEndTime] = useState('09:00');
   const [selectedClassLevel, setSelectedClassLevel] = useState<'Primary' | 'Junior Secondary' | 'Senior Secondary'>('Primary');
   const [isActive, setIsActive] = useState(true);
-  const [use24Hour, setUse24Hour] = useState(true);
 
   // Load time slots on component mount
   useEffect(() => {
@@ -103,12 +102,21 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
       return;
     }
     
-    // Check for overlapping timeslots
+    // Normalize time to HH:MM for consistent comparison (backend may return HH:MM:SS)
+    const normalizeTime = (t: string) => t.substring(0, 5);
+
+    // Check for overlapping timeslots (allow adjacent slots that share a boundary)
+    const newStart = normalizeTime(selectedStartTime);
+    const newEnd = normalizeTime(selectedEndTime);
     const overlapping = existingSlots.find(slot => {
-      const existingStart = slot.start_time;
-      const existingEnd = slot.end_time;
-      // Overlap occurs if: start < existingEnd AND end > existingStart
-      return selectedStartTime < existingEnd && selectedEndTime > existingStart;
+      const existingStart = normalizeTime(slot.start_time);
+      const existingEnd = normalizeTime(slot.end_time);
+      // Adjacent slots (e.g. 8:20-9:00 and 9:00-9:40) are allowed
+      if (newStart === existingEnd || newEnd === existingStart) {
+        return false;
+      }
+      // True overlap: start < existingEnd AND end > existingStart
+      return newStart < existingEnd && newEnd > existingStart;
     });
     if (overlapping) {
       setError(`Time slot overlaps with existing slot: ${overlapping.start_time} - ${overlapping.end_time} for ${selectedClassLevel}`);
@@ -270,30 +278,6 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
             )}
           </div>
           <div className="flex items-center gap-3">
-            {/* Time Format Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setUse24Hour(true)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  use24Hour 
-                    ? 'bg-white text-indigo-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                24h
-              </button>
-              <button
-                onClick={() => setUse24Hour(false)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  !use24Hour 
-                    ? 'bg-white text-indigo-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                12h
-              </button>
-            </div>
-            
             <button
               onClick={openAddModal}
               disabled={isLoading}
@@ -494,47 +478,13 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Time Format Setting */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Time Format</span>
-                  </div>
-                  <div className="flex items-center bg-white rounded-md p-1 border">
-                    <button
-                      type="button"
-                      onClick={() => setUse24Hour(true)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        use24Hour 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'text-gray-600 hover:text-gray-800'
-                      }`}
-                    >
-                      24 Hour
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUse24Hour(false)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        !use24Hour 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'text-gray-600 hover:text-gray-800'
-                      }`}
-                    >
-                      12 Hour
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               {/* Start Time Picker */}
               <TimePicker
                 value={selectedStartTime}
                 onChange={handleStartTimeChange}
                 label="Start Time"
                 id="startTime"
-                use24Hour={use24Hour}
+                use24Hour={false}
                 required
               />
 
@@ -544,7 +494,7 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
                 onChange={handleEndTimeChange}
                 label="End Time"
                 id="endTime"
-                use24Hour={use24Hour}
+                use24Hour={false}
                 required
               />
 
