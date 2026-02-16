@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles, Download } from 'lucide-react';
+import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles, Download, RefreshCw } from 'lucide-react';
 import timetableGenerationService from '../../../services/timetableGenerationService';
 import { generateAllClassesPDF } from '../../../utils/classTimetablePdfGenerator';
 import type { TimetableByClass, TimetableStats, TeacherIndexInfo } from '../../../types/generatedTimetable';
@@ -12,6 +12,7 @@ const TimetableView: React.FC = () => {
   const [stats, setStats] = useState<TimetableStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatingClass, setGeneratingClass] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -80,6 +81,44 @@ const TimetableView: React.FC = () => {
       setError(err.message || err.response?.data?.error || 'Failed to generate timetable');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateClass = async (classId: string, className: string) => {
+    if (!confirm(`This will regenerate the timetable for ${className} only. Teachers' schedules from other classes will be respected. Continue?`)) {
+      return;
+    }
+
+    setGeneratingClass(prev => ({ ...prev, [classId]: true }));
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const result = await timetableGenerationService.generateClassTimetableWithPolling(
+        classId,
+        (status) => {
+          if (status.elapsed_seconds) {
+            console.log(`Class generation in progress... ${status.elapsed_seconds}s elapsed`);
+          }
+        },
+        2000,
+        600000
+      );
+
+      setSuccessMessage(
+        result.data
+          ? `Timetable regenerated for ${className}! ${result.data.filled} of ${result.data.total_slots} slots filled.`
+          : `Timetable regenerated for ${className} successfully!`
+      );
+
+      // Refresh data
+      await fetchTimetables();
+      await fetchStats();
+    } catch (err: any) {
+      console.error('Error generating class timetable:', err);
+      setError(err.message || err.response?.data?.error || `Failed to generate timetable for ${className}`);
+    } finally {
+      setGeneratingClass(prev => ({ ...prev, [classId]: false }));
     }
   };
 
@@ -241,8 +280,25 @@ const TimetableView: React.FC = () => {
             return (
               <div key={classData.class_id} className="bg-white rounded-lg shadow-lg overflow-hidden">
                 {/* Class Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-white">{classData.class_name}</h2>
+                  <button
+                    onClick={() => handleGenerateClass(classData.class_id, classData.class_name)}
+                    disabled={generating || generatingClass[classData.class_id]}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold transition-all duration-200 backdrop-blur-sm border border-white/30"
+                  >
+                    {generatingClass[classData.class_id] ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={16} />
+                        Regenerate
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 {/* Timetable Grid */}

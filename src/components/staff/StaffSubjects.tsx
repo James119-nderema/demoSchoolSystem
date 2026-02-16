@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { APIService, DataAPI } from '../../services/baseUrl';
-import { BookOpen, Search, Calendar, Plus } from 'lucide-react';
+import { BookOpen, Search, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddSubjectModal from '../generalFiles/subjects/AddSubjectModal';
 import type { SubjectCreateData } from '../../types/subjects';
 
 interface Subject {
-  id: number;
+  id: string;
   subject_name: string;
   subject_code: string;
   description: string;
   date_created: string | null;
+  is_double: boolean;
   is_active: boolean;
 }
 
@@ -24,12 +25,16 @@ const StaffSubjects: React.FC = () => {
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
   
   // Permissions
-  const { canAddSubjects } = usePermissions();
+  const { canAddSubjects, canEditSubjects, canDeleteSubjects } = usePermissions();
 
   useEffect(() => {
     fetchSubjects();
@@ -66,17 +71,54 @@ const StaffSubjects: React.FC = () => {
     setError('');
     
     try {
-      await DataAPI.createSubject(data);
-      setSuccessMessage('Subject added successfully!');
+      if (editingSubject) {
+        await DataAPI.updateSubject(editingSubject.id, data);
+        setSuccessMessage('Subject updated successfully!');
+      } else {
+        await DataAPI.createSubject(data);
+        setSuccessMessage('Subject added successfully!');
+      }
       setShowAddModal(false);
+      setEditingSubject(null);
       fetchSubjects();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      console.error('Error adding subject:', err);
-      setError(err.message || 'Failed to add subject. Please try again.');
-      throw err; // Re-throw to show error in modal
+      console.error('Error saving subject:', err);
+      setError(err.message || 'Failed to save subject. Please try again.');
+      throw err;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditSubject = (subject: Subject) => {
+    setEditingSubject(subject);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteClick = (subject: Subject) => {
+    setDeletingSubject(subject);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingSubject) return;
+    
+    setIsDeleting(true);
+    setError('');
+    
+    try {
+      await DataAPI.deleteSubject(deletingSubject.id);
+      setSuccessMessage('Subject deleted successfully!');
+      setShowDeleteConfirm(false);
+      setDeletingSubject(null);
+      fetchSubjects();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error deleting subject:', err);
+      setError(err.message || 'Failed to delete subject. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -194,11 +236,19 @@ const StaffSubjects: React.FC = () => {
                         Description
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Double Period
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date Created
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
+                      {(canEditSubjects() || canDeleteSubjects()) && (
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -227,6 +277,15 @@ const StaffSubjects: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            subject.is_double 
+                              ? 'bg-indigo-100 text-indigo-800' 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {subject.is_double ? 'Yes' : 'No'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="h-4 w-4 mr-1" />
                             {formatDate(subject.date_created)}
@@ -241,6 +300,32 @@ const StaffSubjects: React.FC = () => {
                             {subject.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
+                        {(canEditSubjects() || canDeleteSubjects()) && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center space-x-2">
+                              {canEditSubjects() && (
+                                <button
+                                  onClick={() => handleEditSubject(subject)}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                  title="Edit subject"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5 mr-1" />
+                                  Edit
+                                </button>
+                              )}
+                              {canDeleteSubjects() && (
+                                <button
+                                  onClick={() => handleDeleteClick(subject)}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                  title="Delete subject"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -309,13 +394,69 @@ const StaffSubjects: React.FC = () => {
         </div>
       </div>
       
-      {/* Add Subject Modal */}
+      {/* Add/Edit Subject Modal */}
       <AddSubjectModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingSubject(null);
+        }}
         onSubmit={handleAddSubject}
+        editingSubject={editingSubject ? {
+          id: editingSubject.id,
+          school_id: '',
+          school_name: '',
+          subject_name: editingSubject.subject_name,
+          subject_code: editingSubject.subject_code,
+          description: editingSubject.description,
+          is_double: editingSubject.is_double ?? false,
+          is_active: editingSubject.is_active,
+          created_at: '',
+          updated_at: ''
+        } : undefined}
         isLoading={isSubmitting}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && deletingSubject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-100">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Delete Subject</h3>
+              <p className="text-sm text-gray-600 text-center mb-1">
+                Are you sure you want to delete <span className="font-semibold">{deletingSubject.subject_name}</span>?
+              </p>
+              <p className="text-xs text-red-500 text-center mb-6">
+                This action cannot be undone. All associated data (timetable entries, marks, etc.) may also be affected.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingSubject(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Subject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

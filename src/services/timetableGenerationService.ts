@@ -126,6 +126,72 @@ const timetableGenerationService = {
     const authType = getAuthType();
     const response = await APIService.delete('/api/timetable/clear/', authType);
     return response;
+  },
+
+  // Start single-class timetable generation (async - returns immediately)
+  generateClassTimetable: async (classId: string): Promise<{ message: string; status: string; class_id: string; class_name: string }> => {
+    const authType = getAuthType();
+    const response = await APIService.post(
+      `/api/timetable/generate/class/${classId}/`,
+      {},
+      authType
+    );
+    return response;
+  },
+
+  // Get single-class generation status (for polling)
+  getClassGenerationStatus: async (classId: string): Promise<GenerationStatus> => {
+    const authType = getAuthType();
+    const response = await APIService.get(`/api/timetable/generate/class/${classId}/status/`, {}, authType);
+    return response;
+  },
+
+  // Generate single class with polling - waits for completion
+  generateClassTimetableWithPolling: async (
+    classId: string,
+    onProgress?: (status: GenerationStatus) => void,
+    pollInterval: number = 2000,
+    maxWaitTime: number = 300000 // 5 minutes max
+  ): Promise<GenerateResponse> => {
+    // Start generation
+    await timetableGenerationService.generateClassTimetable(classId);
+
+    // Poll for status
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+      const status = await timetableGenerationService.getClassGenerationStatus(classId);
+
+      if (onProgress) {
+        onProgress(status);
+      }
+
+      if (status.status === 'completed') {
+        const defaultData = {
+          success: true,
+          generation_batch: '',
+          total_slots: 0,
+          filled: 0,
+          failed: 0
+        };
+        return {
+          message: status.message || 'Class timetable generation completed',
+          data: status.result ? status.result : defaultData
+        };
+      }
+
+      if (status.status === 'failed') {
+        throw new Error(status.error || 'Class timetable generation failed');
+      }
+
+      if (status.status === 'idle') {
+        break;
+      }
+    }
+
+    throw new Error('Class timetable generation timed out');
   }
 };
 

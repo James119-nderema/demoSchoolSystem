@@ -5,6 +5,7 @@ export interface Subject {
   subject_name: string;
   subject_code?: string;  // Made optional
   description?: string;
+  is_double: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -14,6 +15,7 @@ export interface SubjectCreateData {
   subject_name: string;
   subject_code?: string;  // Made optional
   description?: string;
+  is_double: boolean;
   is_active: boolean;
 }
 

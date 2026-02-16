@@ -20,6 +20,7 @@ export default function AddSubjectModal({
     subject_name: '',
     subject_code: '',
     description: '',
+    is_double: false,
     is_active: true
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,6 +31,7 @@ export default function AddSubjectModal({
         subject_name: editingSubject.subject_name,
         subject_code: editingSubject.subject_code || '',
         description: editingSubject.description || '',
+        is_double: editingSubject.is_double ?? false,
         is_active: editingSubject.is_active
       });
     } else {
@@ -37,6 +39,7 @@ export default function AddSubjectModal({
         subject_name: '',
         subject_code: '',
         description: '',
+        is_double: false,
         is_active: true
       });
     }
@@ -169,6 +172,22 @@ export default function AddSubjectModal({
                 placeholder="Enter subject description (optional)"
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_double"
+                name="is_double"
+                checked={formData.is_double}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                disabled={isLoading}
+              />
+              <label htmlFor="is_double" className="ml-2 block text-sm text-gray-700">
+                Double Period
+              </label>
+              <span className="ml-2 text-xs text-gray-500">(Schedule in consecutive time slots)</span>
             </div>
 
             <div className="flex items-center">

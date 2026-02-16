@@ -154,6 +154,12 @@ export const usePermissions = () => {
   const canAddSubjects = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
   
+  const canEditSubjects = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES';
+  
+  const canDeleteSubjects = (): boolean => 
+    role === 'DIRECTOR_OF_STUDIES';
+  
   // Director of Studies and Bursar can view ALL students (not filtered by assigned classes)
   const canViewAllStudents = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
@@ -201,6 +207,8 @@ export const usePermissions = () => {
     canUploadStudents,
     canAddClasses,
     canAddSubjects,
+    canEditSubjects,
+    canDeleteSubjects,
     canViewAllStudents,
     canManageStaffMembers,
     canAccessSchoolProfile,
