@@ -189,9 +189,8 @@ const ReportsPage: React.FC = () => {
   const [showSmsResults, setShowSmsResults] = useState(false);
   const [showSmsSettings, setShowSmsSettings] = useState(false);
   const [smsSettingsForm, setSmsSettingsForm] = useState({
-    userId: '',
-    apiKey: '',
-    senderId: 'SchoolMaster'
+    apiToken: '',
+    senderId: ''
   });
   const [studentsWithResults, setStudentsWithResults] = useState<Array<{
     student: StudentOption;
@@ -597,14 +596,14 @@ const ReportsPage: React.FC = () => {
       }
 
       // Send bulk SMS
-      const result = await sendBulkSms(messages, (current, total) => {
+      const result = await sendBulkSms(messages, (current: number, total: number) => {
         setSmsProgress(Math.round((current / total) * 100));
       });
 
       setSmsResults({
         success: result.totalSent,
         failed: result.totalFailed,
-        errors: result.results.filter(r => !r.success).map(r => `${r.recipient.studentName}: ${r.error}`)
+        errors: result.results.filter((r: {success: boolean}) => !r.success).map((r: {success: boolean; recipient: {studentName: string}; error?: string}) => `${r.recipient.studentName}: ${r.error}`)
       });
       setShowSmsResults(true);
       
@@ -1442,7 +1441,7 @@ const ReportsPage: React.FC = () => {
                   <div>
                     <p className="font-medium text-yellow-800">SMS Not Configured</p>
                     <p className="text-sm text-yellow-700">
-                      Please configure your Hostpinnacles SMS API credentials to send messages.
+                      Please configure your Ping Africa SMS API credentials to send messages.
                     </p>
                     <button
                       onClick={() => setShowSmsSettings(true)}
@@ -1650,29 +1649,20 @@ const ReportsPage: React.FC = () => {
 
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-600 mb-4">
-                Configure your Hostpinnacles SMS API credentials to enable SMS notifications.
+                Configure your <strong>Ping Africa</strong> Bulk SMS API credentials. Get your token from{' '}
+                <a href="https://bulk.ping.africa" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">bulk.ping.africa</a>.
               </p>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">User ID</label>
-                <input
-                  type="text"
-                  value={smsSettingsForm.userId}
-                  onChange={(e) => setSmsSettingsForm(prev => ({ ...prev, userId: e.target.value }))}
-                  placeholder="Enter your Hostpinnacles User ID"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">API Key / Password</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">API Token (Bearer)</label>
                 <input
                   type="password"
-                  value={smsSettingsForm.apiKey}
-                  onChange={(e) => setSmsSettingsForm(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder="Enter your API Key"
+                  value={smsSettingsForm.apiToken}
+                  onChange={(e) => setSmsSettingsForm(prev => ({ ...prev, apiToken: e.target.value }))}
+                  placeholder="Paste your Ping Africa API token"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">Found in your Ping Africa dashboard under API settings</p>
               </div>
 
               <div>
@@ -1680,11 +1670,12 @@ const ReportsPage: React.FC = () => {
                 <input
                   type="text"
                   value={smsSettingsForm.senderId}
-                  onChange={(e) => setSmsSettingsForm(prev => ({ ...prev, senderId: e.target.value }))}
-                  placeholder="e.g., SchoolMaster"
+                  onChange={(e) => setSmsSettingsForm(prev => ({ ...prev, senderId: e.target.value.slice(0, 11) }))}
+                  placeholder="e.g., SchoolSMS"
+                  maxLength={11}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Must be registered with Hostpinnacles</p>
+                <p className="text-xs text-gray-500 mt-1">Max 11 characters. Must be registered with Ping Africa.</p>
               </div>
 
               <button

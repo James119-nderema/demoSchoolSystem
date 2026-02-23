@@ -524,6 +524,36 @@ export const ReportsAPI = {
     APIService.get(API_ENDPOINTS.REPORTS.BULK_REPORT_DATA, params, 'staff'),
 };
 
+export const SmsCreditsAPI = {
+  // SMS credit balance + stats
+  getBalance: () =>
+    APIService.get('/api/sms-credits/balance/', undefined, 'staff'),
+  // Record SMS usage after sending
+  recordUsage: (data: { recipient_count: number; successful_count: number; failed_count: number; message_type?: string; batch_id?: string }) =>
+    APIService.post('/api/sms-credits/record-usage/', data, 'staff'),
+  // Transaction history
+  getTransactions: (params?: Record<string, string>) =>
+    APIService.get('/api/sms-credits/transactions/', params, 'staff'),
+  // Top-up packages
+  getPackages: () =>
+    APIService.get('/api/sms-credits/packages/', undefined, 'staff'),
+  // Initiate top-up
+  initiateTopUp: (data: { sms_count: number; amount: number; payment_method: string; mpesa_phone?: string; bank_name?: string }) =>
+    APIService.post('/api/sms-credits/topup/', data, 'staff'),
+  // Check top-up status
+  checkTopUpStatus: (topupId: string) =>
+    APIService.get(`/api/sms-credits/topup/${topupId}/status/`, undefined, 'staff'),
+  // Top-up history
+  getTopUpHistory: (params?: Record<string, string>) =>
+    APIService.get('/api/sms-credits/topup/history/', params, 'staff'),
+  // Verify bank transfer
+  verifyBankTransfer: (data: { topup_id: string; bank_transaction_id: string }) =>
+    APIService.post('/api/sms-credits/topup/verify-bank/', data, 'staff'),
+  // Get bank details
+  getBankDetails: () =>
+    APIService.get('/api/sms-credits/banks/', undefined, 'staff'),
+};
+
 // Environment configuration
 export const setApiBaseUrl = (url: string) => {
   APIService['baseUrl'] = url;

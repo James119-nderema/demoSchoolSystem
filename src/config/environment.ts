@@ -72,10 +72,10 @@ export const API_BASE_URL = ENV.getCurrentApiConfig().BASE_URL;
 export const API_TIMEOUT = ENV.getCurrentApiConfig().TIMEOUT;
 export const API_UPLOAD_TIMEOUT = ENV.getCurrentApiConfig().UPLOAD_TIMEOUT;
 
-// SMS Configuration (Hostpinnacles)
+// SMS Configuration (Ping Africa Bulk SMS)
 export const SMS_CONFIG = {
-  API_URL: import.meta.env.VITE_SMS_API_URL || 'https://sms.hostpinnacle.co.ke/api/sms/send',
-  USER_ID: import.meta.env.VITE_SMS_USER_ID || '',
-  API_KEY: import.meta.env.VITE_SMS_API_KEY || '',
-  SENDER_ID: import.meta.env.VITE_SMS_SENDER_ID || 'SchoolMaster',
+  API_URL: import.meta.env.VITE_SMS_API_URL || 'https://bulk.ping.africa/api/sms/send-bulk',
+  API_TOKEN: import.meta.env.VITE_SMS_API_TOKEN || '',
+  SENDER_ID: import.meta.env.VITE_SMS_SENDER_ID || '',
+  IS_INTERNATIONAL: import.meta.env.VITE_SMS_IS_INTERNATIONAL === 'true',
 };

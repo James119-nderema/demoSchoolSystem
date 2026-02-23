@@ -1,56 +1,64 @@
 /**
- * SMS Service for Hostpinnacles Bulk SMS API Integration
+ * SMS Service for Ping Africa Bulk SMS API Integration
  * 
  * This service handles sending SMS notifications to parents about student results
- * using the Hostpinnacles Bulk SMS API.
+ * using the Ping Africa Bulk SMS API.
  * 
- * API Documentation: https://hostpinnacle.co.ke/
+ * API Endpoint: POST https://bulk.ping.africa/api/sms/send-bulk
+ * Auth: Bearer Token
  * 
  * Environment Variables Required:
- * - VITE_SMS_API_URL: API endpoint (default: https://sms.hostpinnacle.co.ke/api/sms/send)
- * - VITE_SMS_USER_ID: Hostpinnacles User ID
- * - VITE_SMS_API_KEY: Hostpinnacles API Key
- * - VITE_SMS_SENDER_ID: Sender ID (default: SchoolMaster)
+ * - VITE_SMS_API_URL: API endpoint (default: https://bulk.ping.africa/api/sms/send-bulk)
+ * - VITE_SMS_API_TOKEN: Ping Africa Bearer Token
+ * - VITE_SMS_SENDER_ID: Sender ID (max 11 characters)
+ * - VITE_SMS_IS_INTERNATIONAL: Whether recipients are international (default: false)
  */
 
 import { SMS_CONFIG as ENV_SMS_CONFIG } from '../config/environment';
 
-// SMS API Configuration - Uses environment variables
+// Maximum recipients per API call (Ping Africa limit)
+const MAX_RECIPIENTS_PER_BATCH = 1000;
+
+// SMS API Configuration
 const SMS_CONFIG = {
-  // Hostpinnacles API endpoint from environment
   API_URL: ENV_SMS_CONFIG.API_URL,
-  
-  // Default sender ID from environment
   DEFAULT_SENDER_ID: ENV_SMS_CONFIG.SENDER_ID,
-  
-  // API credentials - Uses environment variables with localStorage fallback
-  getCredentials: () => {
+  IS_INTERNATIONAL: ENV_SMS_CONFIG.IS_INTERNATIONAL,
+
+  // Get API token from env or localStorage fallback
+  getCredentials: (): { apiToken: string; senderId: string } | null => {
     // First check environment variables
-    if (ENV_SMS_CONFIG.USER_ID && ENV_SMS_CONFIG.API_KEY) {
+    if (ENV_SMS_CONFIG.API_TOKEN) {
       return {
-        userId: ENV_SMS_CONFIG.USER_ID,
-        apiKey: ENV_SMS_CONFIG.API_KEY,
-        senderId: ENV_SMS_CONFIG.SENDER_ID
+        apiToken: ENV_SMS_CONFIG.API_TOKEN,
+        senderId: ENV_SMS_CONFIG.SENDER_ID,
       };
     }
-    
-    // Fallback to localStorage for backward compatibility
+
+    // Fallback to localStorage
     const smsSettings = localStorage.getItem('sms_settings');
     if (smsSettings) {
       try {
-        return JSON.parse(smsSettings);
+        const parsed = JSON.parse(smsSettings);
+        if (parsed.apiToken) {
+          return {
+            apiToken: parsed.apiToken,
+            senderId: parsed.senderId || '',
+          };
+        }
       } catch {
         return null;
       }
     }
     return null;
   },
-  
-  // Check if using environment variables
-  isUsingEnvCredentials: () => {
-    return !!(ENV_SMS_CONFIG.USER_ID && ENV_SMS_CONFIG.API_KEY);
-  }
+
+  isUsingEnvCredentials: (): boolean => {
+    return !!ENV_SMS_CONFIG.API_TOKEN;
+  },
 };
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface SmsRecipient {
   phoneNumber: string;
@@ -67,7 +75,6 @@ export interface SmsMessage {
 export interface SmsSendResult {
   success: boolean;
   recipient: SmsRecipient;
-  messageId?: string;
   error?: string;
 }
 
@@ -110,44 +117,57 @@ export interface TermSummaryData {
   topSubjects?: { name: string; marks: number; grade: string }[];
 }
 
+/** Ping Africa API request body */
+interface PingAfricaBulkRequest {
+  message: string;
+  sender_id: string | null;
+  is_international: boolean;
+  sms_provider_id: number | null;
+  batch_name: string | null;
+  recipients: string[];
+}
+
+// ─── Utility Functions ───────────────────────────────────────────────────────
+
 /**
- * Format phone number to required format (254XXXXXXXXX)
+ * Format phone number to required format (254XXXXXXXXX for Kenya)
  */
 export const formatPhoneNumber = (phone: string): string => {
   if (!phone) return '';
-  
+
   // Remove any spaces, dashes, or special characters
   let cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
-  
+
   // Remove any leading + sign
   if (cleaned.startsWith('+')) {
     cleaned = cleaned.substring(1);
   }
-  
+
   // If starts with 0, replace with 254
   if (cleaned.startsWith('0')) {
     cleaned = '254' + cleaned.substring(1);
   }
-  
+
   // If doesn't start with 254, add it
   if (!cleaned.startsWith('254')) {
     cleaned = '254' + cleaned;
   }
-  
+
   // Validate length (should be 12 digits for Kenya)
   if (cleaned.length !== 12) {
     console.warn(`Phone number ${phone} formatted to ${cleaned} may be invalid`);
   }
-  
+
   return cleaned;
 };
+
+// ─── Message Generators ──────────────────────────────────────────────────────
 
 /**
  * Generate a result summary message for a student
  */
 export const generateResultMessage = (data: StudentResultData, customTemplate?: string): string => {
   if (customTemplate) {
-    // Replace placeholders in custom template
     return customTemplate
       .replace(/{studentName}/g, data.studentName)
       .replace(/{admissionNumber}/g, data.admissionNumber)
@@ -161,8 +181,7 @@ export const generateResultMessage = (data: StudentResultData, customTemplate?: 
       .replace(/{position}/g, data.position.toString())
       .replace(/{totalStudents}/g, data.totalStudents.toString());
   }
-  
-  // Default message template
+
   return `Dear Parent,
 
 ${data.studentName} (${data.admissionNumber}) has completed ${data.examType} for Term ${data.term} ${data.year}.
@@ -183,7 +202,6 @@ For detailed report, please visit the school or parent portal.
  */
 export const generateTermSummaryMessage = (data: TermSummaryData, customTemplate?: string): string => {
   if (customTemplate) {
-    // Replace placeholders in custom template
     return customTemplate
       .replace(/{studentName}/g, data.studentName)
       .replace(/{admissionNumber}/g, data.admissionNumber)
@@ -195,13 +213,11 @@ export const generateTermSummaryMessage = (data: TermSummaryData, customTemplate
       .replace(/{position}/g, data.position.toString())
       .replace(/{totalStudents}/g, data.totalStudents.toString());
   }
-  
-  // Build exam breakdown
+
   const examBreakdown = data.examResults
     .map(e => `  - ${e.examType}: ${e.average.toFixed(1)}% (${e.grade})`)
     .join('\n');
-  
-  // Build top subjects if available
+
   let subjectsSummary = '';
   if (data.topSubjects && data.topSubjects.length > 0) {
     subjectsSummary = '\n\nTop Subjects:\n' + data.topSubjects
@@ -209,8 +225,7 @@ export const generateTermSummaryMessage = (data: TermSummaryData, customTemplate
       .map(s => `  - ${s.name}: ${s.marks} (${s.grade})`)
       .join('\n');
   }
-  
-  // Default message template
+
   return `Dear Parent,
 
 Term ${data.term} ${data.year} Summary for ${data.studentName} (${data.admissionNumber})
@@ -230,82 +245,103 @@ For detailed report, visit the parent portal.
 - SchoolMaster Pro`;
 };
 
+// ─── Ping Africa API Functions ───────────────────────────────────────────────
+
 /**
- * Send a single SMS via Hostpinnacles API
+ * Send a single bulk SMS request to Ping Africa.
+ * All recipients in the array receive the SAME message.
+ * Max 1000 recipients per call.
  */
-export const sendSingleSms = async (
-  phoneNumber: string,
+const sendPingAfricaBulk = async (
   message: string,
-  senderId?: string
-): Promise<SmsSendResult> => {
+  recipients: string[],
+  options?: { senderId?: string; batchName?: string }
+): Promise<{ success: boolean; error?: string }> => {
   const credentials = SMS_CONFIG.getCredentials();
-  
-  if (!credentials || !credentials.apiKey || !credentials.userId) {
+
+  if (!credentials || !credentials.apiToken) {
     return {
       success: false,
-      recipient: { phoneNumber, studentName: '', studentId: '' },
-      error: 'SMS credentials not configured. Please configure SMS settings first.'
+      error: 'SMS credentials not configured. Please configure your Ping Africa API token first.',
     };
   }
-  
-  const formattedPhone = formatPhoneNumber(phoneNumber);
-  
-  if (!formattedPhone || formattedPhone.length !== 12) {
+
+  if (recipients.length === 0) {
+    return { success: false, error: 'No recipients provided' };
+  }
+
+  if (recipients.length > MAX_RECIPIENTS_PER_BATCH) {
     return {
       success: false,
-      recipient: { phoneNumber, studentName: '', studentId: '' },
-      error: `Invalid phone number: ${phoneNumber}`
+      error: `Too many recipients (${recipients.length}). Maximum is ${MAX_RECIPIENTS_PER_BATCH} per batch.`,
     };
   }
-  
+
+  if (message.length > 1600) {
+    return {
+      success: false,
+      error: `Message too long (${message.length} chars). Maximum is 1600 characters.`,
+    };
+  }
+
+  const body: PingAfricaBulkRequest = {
+    message,
+    sender_id: options?.senderId || credentials.senderId || SMS_CONFIG.DEFAULT_SENDER_ID || null,
+    is_international: SMS_CONFIG.IS_INTERNATIONAL,
+    sms_provider_id: null,
+    batch_name: options?.batchName || null,
+    recipients,
+  };
+
   try {
-    // Hostpinnacles API request
     const response = await fetch(SMS_CONFIG.API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${credentials.apiToken}`,
       },
-      body: JSON.stringify({
-        userid: credentials.userId,
-        password: credentials.apiKey,
-        mobile: formattedPhone,
-        msg: message,
-        senderid: senderId || credentials.senderId || SMS_CONFIG.DEFAULT_SENDER_ID,
-        msgType: 'text',
-        duplicatecheck: 'true',
-        output: 'json'
-      })
+      body: JSON.stringify(body),
     });
-    
-    const result = await response.json();
-    
-    // Check response status (Hostpinnacles returns specific status codes)
-    if (result.status === 'success' || result.status === '000') {
-      return {
-        success: true,
-        recipient: { phoneNumber: formattedPhone, studentName: '', studentId: '' },
-        messageId: result.messageid || result.msgid
-      };
-    } else {
-      return {
-        success: false,
-        recipient: { phoneNumber: formattedPhone, studentName: '', studentId: '' },
-        error: result.message || result.reason || 'Failed to send SMS'
-      };
+
+    if (response.ok) {
+      const result = await response.json();
+      // Ping Africa returns { success: true, batch_id, status: "processing", ... }
+      if (result?.success === true || result?.status === 'processing') {
+        return { success: true };
+      }
+      // Also accept plain 201 integer response (per docs)
+      if (result === 201) {
+        return { success: true };
+      }
+      return { success: false, error: `Unexpected response: ${JSON.stringify(result)}` };
     }
-  } catch (error) {
-    console.error('SMS sending error:', error);
+
+    if (response.status === 401) {
+      return { success: false, error: 'Authentication failed. Please check your API token.' };
+    }
+
+    const errorBody = await response.text();
     return {
       success: false,
-      recipient: { phoneNumber: formattedPhone, studentName: '', studentId: '' },
-      error: error instanceof Error ? error.message : 'Network error sending SMS'
+      error: `API error (${response.status}): ${errorBody}`,
+    };
+  } catch (error) {
+    console.error('Ping Africa SMS error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Network error sending SMS',
     };
   }
 };
 
 /**
- * Send bulk SMS to multiple recipients
+ * Send bulk SMS to multiple recipients.
+ *
+ * Smart batching strategy:
+ * - Groups messages with identical content → sends as one bulk API call (up to 1000 recipients)
+ * - Personalized (unique per student) messages → sends each individually
+ * - Reports progress throughout
  */
 export const sendBulkSms = async (
   messages: SmsMessage[],
@@ -314,59 +350,112 @@ export const sendBulkSms = async (
   const results: SmsSendResult[] = [];
   let successCount = 0;
   let failedCount = 0;
-  
-  for (let i = 0; i < messages.length; i++) {
-    const { recipient, message } = messages[i];
-    
-    // Report progress
-    if (onProgress) {
-      onProgress(i + 1, messages.length);
-    }
-    
-    const result = await sendSingleSms(recipient.phoneNumber, message);
-    result.recipient = recipient;
-    
-    results.push(result);
-    
-    if (result.success) {
-      successCount++;
-    } else {
+
+  // Group messages by identical content for efficient batching
+  const messageGroups = new Map<string, { recipients: SmsRecipient[]; phones: string[] }>();
+
+  for (const msg of messages) {
+    const formattedPhone = formatPhoneNumber(msg.recipient.phoneNumber);
+    if (!formattedPhone || formattedPhone.length < 10) {
+      results.push({
+        success: false,
+        recipient: msg.recipient,
+        error: `Invalid phone number: ${msg.recipient.phoneNumber}`,
+      });
       failedCount++;
+      continue;
     }
-    
-    // Add a small delay to avoid rate limiting
-    if (i < messages.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+    const existing = messageGroups.get(msg.message);
+    if (existing) {
+      existing.recipients.push(msg.recipient);
+      existing.phones.push(formattedPhone);
+    } else {
+      messageGroups.set(msg.message, {
+        recipients: [msg.recipient],
+        phones: [formattedPhone],
+      });
     }
   }
-  
+
+  // Calculate total API calls needed for progress tracking
+  let totalCalls = 0;
+  for (const [, group] of messageGroups) {
+    totalCalls += Math.ceil(group.phones.length / MAX_RECIPIENTS_PER_BATCH);
+  }
+
+  let completedCalls = 0;
+
+  for (const [message, group] of messageGroups) {
+    // Chunk recipients into batches of MAX_RECIPIENTS_PER_BATCH
+    for (let i = 0; i < group.phones.length; i += MAX_RECIPIENTS_PER_BATCH) {
+      const batchPhones = group.phones.slice(i, i + MAX_RECIPIENTS_PER_BATCH);
+      const batchRecipients = group.recipients.slice(i, i + MAX_RECIPIENTS_PER_BATCH);
+
+      const batchName = `SMS Batch - ${new Date().toISOString().slice(0, 16)}`;
+      const result = await sendPingAfricaBulk(message, batchPhones, { batchName });
+
+      if (result.success) {
+        for (const recipient of batchRecipients) {
+          results.push({ success: true, recipient });
+          successCount++;
+        }
+      } else {
+        for (const recipient of batchRecipients) {
+          results.push({ success: false, recipient, error: result.error });
+          failedCount++;
+        }
+      }
+
+      completedCalls++;
+      if (onProgress) {
+        onProgress(completedCalls, totalCalls);
+      }
+
+      // Small delay between batch calls to avoid rate limiting
+      if (i + MAX_RECIPIENTS_PER_BATCH < group.phones.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+  }
+
+  // Ensure final progress update
+  if (onProgress) {
+    onProgress(totalCalls, totalCalls);
+  }
+
   return {
     totalSent: successCount,
     totalFailed: failedCount,
-    results
+    results,
   };
 };
 
+// ─── Settings Management ─────────────────────────────────────────────────────
+
 /**
- * Save SMS settings to localStorage
+ * Save SMS settings (Ping Africa credentials) to localStorage
  */
 export const saveSmsSettings = (settings: {
-  userId: string;
-  apiKey: string;
+  apiToken: string;
   senderId: string;
 }): void => {
   localStorage.setItem('sms_settings', JSON.stringify(settings));
 };
 
 /**
- * Get SMS settings from localStorage
+ * Get SMS settings from environment or localStorage
  */
 export const getSmsSettings = (): {
-  userId: string;
-  apiKey: string;
+  apiToken: string;
   senderId: string;
 } | null => {
-  return SMS_CONFIG.getCredentials();
+  const credentials = SMS_CONFIG.getCredentials();
+  if (!credentials) return null;
+  return {
+    apiToken: credentials.apiToken,
+    senderId: credentials.senderId,
+  };
 };
 
 /**
@@ -374,7 +463,7 @@ export const getSmsSettings = (): {
  */
 export const isSmsConfigured = (): boolean => {
   const credentials = SMS_CONFIG.getCredentials();
-  return !!(credentials && credentials.apiKey && credentials.userId);
+  return !!(credentials && credentials.apiToken);
 };
 
 /**
@@ -385,7 +474,6 @@ export const isUsingEnvCredentials = (): boolean => {
 };
 
 export default {
-  sendSingleSms,
   sendBulkSms,
   formatPhoneNumber,
   generateResultMessage,
@@ -393,5 +481,5 @@ export default {
   saveSmsSettings,
   getSmsSettings,
   isSmsConfigured,
-  isUsingEnvCredentials
+  isUsingEnvCredentials,
 };
