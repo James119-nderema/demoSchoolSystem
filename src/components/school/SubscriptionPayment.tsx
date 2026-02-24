@@ -187,7 +187,23 @@ export default function SubscriptionPayment() {
   };
 
   const startPolling = (checkoutId: string) => {
+    let pollCount = 0;
+    const maxPolls = 24; // 24 polls × 5s = 2 minutes
+
     const interval = setInterval(async () => {
+      pollCount++;
+
+      // Stop polling after max attempts
+      if (pollCount >= maxPolls) {
+        clearInterval(interval);
+        setPollingInterval(null);
+        setPaymentStatus('failed');
+        setStatusMessage(
+          'Payment verification timed out. If you completed the payment, please click "Check Payment Status" or contact support with your M-Pesa confirmation message.'
+        );
+        return;
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/api/subscriptions/check-status/`, {
           method: 'POST',
@@ -235,7 +251,7 @@ export default function SubscriptionPayment() {
           clearInterval(interval);
           setPollingInterval(null);
           setPaymentStatus('failed');
-          setStatusMessage('Payment failed. Please try again.');
+          setStatusMessage(data.message || 'Payment failed. Please try again.');
         }
       } catch (err) {
         console.error('Status check failed:', err);
@@ -243,14 +259,6 @@ export default function SubscriptionPayment() {
     }, 5000); // Poll every 5 seconds
 
     setPollingInterval(interval);
-
-    // Stop polling after 2 minutes
-    setTimeout(() => {
-      clearInterval(interval);
-      if (paymentStatus === 'pending') {
-        setStatusMessage('Payment verification timeout. Please check your M-Pesa statement.');
-      }
-    }, 120000);
   };
 
   const handleCheckStatus = async () => {
@@ -507,16 +515,34 @@ export default function SubscriptionPayment() {
                 </h3>
                 <p className="text-gray-600 mb-6">{statusMessage}</p>
                 
-                <button
-                  onClick={() => {
-                    setPaymentStatus('idle');
-                    setError('');
-                    setCheckoutRequestId(null);
-                  }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Try Again
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {checkoutRequestId && (
+                    <button
+                      onClick={handleCheckStatus}
+                      disabled={loading}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="animate-spin" size={18} />
+                          Checking...
+                        </>
+                      ) : (
+                        'Check Payment Status'
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setPaymentStatus('idle');
+                      setError('');
+                      setCheckoutRequestId(null);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
               </div>
             )}
           </div>
