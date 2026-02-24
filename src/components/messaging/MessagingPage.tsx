@@ -234,34 +234,44 @@ const MessagingPage: React.FC = () => {
   };
 
   const fetchStudentResults = async () => {
-    if (!selectedClass || !selectedTerm || !selectedYear) return;
+    if (!selectedTerm || !selectedYear) return;
     setLoading(true);
     const resultsMap = new Map<string, StudentResult>();
     try {
       const examsToFetch = messageTemplate === 'term_summary' ? examTypes.map(e => e.value) : selectedExamType ? [selectedExamType] : [];
-      if (examsToFetch.length === 0) { setStudentResults(resultsMap); return; }
-      for (const examType of examsToFetch) {
-        try {
-          const response = await ReportsAPI.getBulkReportData({ class_id: selectedClass, term: selectedTerm, academic_year: selectedYear, exam_type: examType });
-          if (!response?.reports) continue;
-          if (response.reports.length > 0 && !schoolInfo) {
-            const info = response.reports[0].school_info;
-            if (info) setSchoolInfo({ name: info.name, phone: info.phone || '', email: info.email || '', motto: info.motto || '', principal_name: '' });
-          }
-          for (const report of response.reports) {
-            const matched = students.find(s => s.full_name === report.student_info?.name || s.admission_number === report.student_info?.admission_number);
-            if (!matched) continue;
-            const sid = matched.id.toString();
-            const subRes: SubjectResult[] = (report.subjects || []).map((r: any) => ({ subject_name: r.subject || r.subject_name, marks_obtained: r.marks_obtained, total_marks: r.total_marks || 100, percentage: r.percentage || 0, grade: r.grade, points: r.points || 0, remarks: r.remarks || '' }));
-            if (subRes.length === 0) continue;
-            const existing = resultsMap.get(sid);
-            const allR = existing ? [...existing.results, ...subRes] : subRes;
-            const totalM = allR.reduce((s, r) => s + r.marks_obtained, 0);
-            const totalP = allR.reduce((s, r) => s + r.total_marks, 0);
-            const avg = totalP > 0 ? (totalM / totalP) * 100 : 0;
-            resultsMap.set(sid, { student: matched, results: allR, average: avg, grade: report.summary?.overall_grade || gradeFromAvg(avg), position: report.summary?.position || 0, totalStudents: report.summary?.total_students || students.length, examType: messageTemplate === 'term_summary' ? 'Term Summary' : selectedExamType, totalMarks: totalM, overallRemarks: report.summary?.overall_remarks || '' });
-          }
-        } catch { /* continue */ }
+      if (examsToFetch.length === 0) { setStudentResults(resultsMap); setLoading(false); return; }
+
+      // When 'all' is selected, iterate over each class; otherwise use the single selected class
+      const classIdsToFetch = selectedClass === 'all'
+        ? classes.map(c => c.id.toString())
+        : selectedClass ? [selectedClass] : [];
+
+      if (classIdsToFetch.length === 0) { setStudentResults(resultsMap); setLoading(false); return; }
+
+      for (const classId of classIdsToFetch) {
+        for (const examType of examsToFetch) {
+          try {
+            const response = await ReportsAPI.getBulkReportData({ class_id: classId, term: selectedTerm, academic_year: selectedYear, exam_type: examType });
+            if (!response?.reports) continue;
+            if (response.reports.length > 0 && !schoolInfo) {
+              const info = response.reports[0].school_info;
+              if (info) setSchoolInfo({ name: info.name, phone: info.phone || '', email: info.email || '', motto: info.motto || '', principal_name: '' });
+            }
+            for (const report of response.reports) {
+              const matched = students.find(s => s.full_name === report.student_info?.name || s.admission_number === report.student_info?.admission_number);
+              if (!matched) continue;
+              const sid = matched.id.toString();
+              const subRes: SubjectResult[] = (report.subjects || []).map((r: any) => ({ subject_name: r.subject || r.subject_name, marks_obtained: r.marks_obtained, total_marks: r.total_marks || 100, percentage: r.percentage || 0, grade: r.grade, points: r.points || 0, remarks: r.remarks || '' }));
+              if (subRes.length === 0) continue;
+              const existing = resultsMap.get(sid);
+              const allR = existing ? [...existing.results, ...subRes] : subRes;
+              const totalM = allR.reduce((s, r) => s + r.marks_obtained, 0);
+              const totalP = allR.reduce((s, r) => s + r.total_marks, 0);
+              const avg = totalP > 0 ? (totalM / totalP) * 100 : 0;
+              resultsMap.set(sid, { student: matched, results: allR, average: avg, grade: report.summary?.overall_grade || gradeFromAvg(avg), position: report.summary?.position || 0, totalStudents: report.summary?.total_students || students.length, examType: messageTemplate === 'term_summary' ? 'Term Summary' : selectedExamType, totalMarks: totalM, overallRemarks: report.summary?.overall_remarks || '' });
+            }
+          } catch { /* continue to next class/exam */ }
+        }
       }
       const sorted = Array.from(resultsMap.entries()).sort((a, b) => b[1].average - a[1].average);
       sorted.forEach(([id, r], i) => { if (r.position === 0) r.position = i + 1; resultsMap.set(id, r); });
@@ -290,7 +300,12 @@ const MessagingPage: React.FC = () => {
   useEffect(() => { fetchBalance(); fetchClasses(); fetchDropdownData(); const saved = getSmsSettings(); if (saved) setSmsSettingsForm(saved); }, []);
   useEffect(() => { if (classes.length > 0 && selectedClass === 'all') fetchAllStudents(); }, [classes]);
   useEffect(() => { if (selectedClass === 'all') fetchAllStudents(); else if (selectedClass) fetchStudentsForClass(selectedClass); else { setStudents([]); setSelectedStudents([]); } }, [selectedClass]);
-  useEffect(() => { if (selectedClass && selectedClass !== 'all' && selectedTerm && selectedYear && messageTemplate !== 'custom') fetchStudentResults(); }, [selectedClass, selectedTerm, selectedYear, selectedExamType, messageTemplate]);
+  useEffect(() => {
+    if (selectedTerm && selectedYear && messageTemplate !== 'custom') {
+      if (selectedClass === 'all' && classes.length > 0) fetchStudentResults();
+      else if (selectedClass && selectedClass !== 'all') fetchStudentResults();
+    }
+  }, [selectedClass, selectedTerm, selectedYear, selectedExamType, messageTemplate, classes]);
   useEffect(() => { if (activeTab === 'history') { fetchTransactions(); fetchTopUpHistory(); } }, [activeTab]);
 
   // ═══════════════════════════════════════════════════════════════════════════
