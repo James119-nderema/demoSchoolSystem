@@ -14,7 +14,7 @@
  * - VITE_SMS_IS_INTERNATIONAL: Whether recipients are international (default: false)
  */
 
-import { SMS_CONFIG as ENV_SMS_CONFIG } from '../config/environment';
+import { SMS_CONFIG as ENV_SMS_CONFIG, API_BASE_URL } from '../config/environment';
 
 // Maximum recipients per API call (Ping Africa limit)
 const MAX_RECIPIENTS_PER_BATCH = 1000;
@@ -284,7 +284,7 @@ const sendPingAfricaBulk = async (
     };
   }
 
-  const body: PingAfricaBulkRequest = {
+  const pingAfricaPayload: PingAfricaBulkRequest = {
     message,
     sender_id: options?.senderId || credentials.senderId || SMS_CONFIG.DEFAULT_SENDER_ID || null,
     is_international: SMS_CONFIG.IS_INTERNATIONAL,
@@ -293,15 +293,22 @@ const sendPingAfricaBulk = async (
     recipients,
   };
 
+  // Get staff auth token for the backend proxy
+  const staffToken = localStorage.getItem('staff_access_token') || localStorage.getItem('access_token');
+
   try {
-    const response = await fetch(SMS_CONFIG.API_URL, {
+    // Route through Django backend proxy to avoid CORS issues
+    const response = await fetch(`${API_BASE_URL}/api/sms-credits/send-sms/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${credentials.apiToken}`,
+        ...(staffToken ? { 'Authorization': `Bearer ${staffToken}` } : {}),
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        api_token: credentials.apiToken,
+        payload: pingAfricaPayload,
+      }),
     });
 
     if (response.ok) {
