@@ -81,7 +81,11 @@ export const generateTemplate1PDF = async ({
   doc.rect(logoX, logoY, logoWidth, logoHeight);
   
   // Load and add logo (supports JPG, PNG, JPEG)
-  const logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
+  let logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
+  // Proxy PythonAnywhere logo through Vercel to bypass CORS
+  if (logoUrl && logoUrl.includes('pythonanywhere.com/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png')) {
+    logoUrl = '/api/proxy-logo';
+  }
   if (logoUrl) {
     try {
       const logoData = await loadImageAsBase64(logoUrl);

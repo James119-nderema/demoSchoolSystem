@@ -5,6 +5,10 @@
       "destination": "https://bulk.ping.africa/api/:path*"
     },
     {
+      "source": "/api/proxy-logo",
+      "destination": "https://techhubai.pythonanywhere.com/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
