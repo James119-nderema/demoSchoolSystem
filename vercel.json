@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/ping-africa/:path*",
+      "destination": "https://bulk.ping.africa/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

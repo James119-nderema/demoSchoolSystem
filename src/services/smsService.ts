@@ -14,7 +14,7 @@
  * - VITE_SMS_IS_INTERNATIONAL: Whether recipients are international (default: false)
  */
 
-import { SMS_CONFIG as ENV_SMS_CONFIG, API_BASE_URL } from '../config/environment';
+import { SMS_CONFIG as ENV_SMS_CONFIG } from '../config/environment';
 
 // Maximum recipients per API call (Ping Africa limit)
 const MAX_RECIPIENTS_PER_BATCH = 1000;
@@ -284,7 +284,7 @@ const sendPingAfricaBulk = async (
     };
   }
 
-  const pingAfricaPayload: PingAfricaBulkRequest = {
+  const body: PingAfricaBulkRequest = {
     message,
     sender_id: options?.senderId || credentials.senderId || SMS_CONFIG.DEFAULT_SENDER_ID || null,
     is_international: SMS_CONFIG.IS_INTERNATIONAL,
@@ -293,22 +293,26 @@ const sendPingAfricaBulk = async (
     recipients,
   };
 
-  // Get staff auth token for the backend proxy
-  const staffToken = localStorage.getItem('staff_access_token') || localStorage.getItem('access_token');
-
   try {
-    // Route through Django backend proxy to avoid CORS issues
-    const response = await fetch(`${API_BASE_URL}/api/sms-credits/send-sms/`, {
+    // Route through Vercel rewrite proxy (same origin → no CORS).
+    // In production: /api/ping-africa/sms/send-bulk → https://bulk.ping.africa/api/sms/send-bulk
+    // In development: fall back to direct URL from SMS_CONFIG.
+    const isVercelProd = typeof window !== 'undefined' && (
+      window.location.hostname.includes('schoolmaster.co.ke') ||
+      window.location.hostname.includes('vercel.app')
+    );
+    const smsUrl = isVercelProd
+      ? '/api/ping-africa/sms/send-bulk'
+      : SMS_CONFIG.API_URL;
+
+    const response = await fetch(smsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        ...(staffToken ? { 'Authorization': `Bearer ${staffToken}` } : {}),
+        'Authorization': `Bearer ${credentials.apiToken}`,
       },
-      body: JSON.stringify({
-        api_token: credentials.apiToken,
-        payload: pingAfricaPayload,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (response.ok) {
