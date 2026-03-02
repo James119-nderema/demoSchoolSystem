@@ -32,6 +32,7 @@ import StaffResults from './components/staff/StaffResults'
 import StaffProfile from './components/staff/StaffProfile'
 import InputMarks from './components/staff/marks/InputMarks'
 import ViewResults from './components/staff/marks/ViewResults'
+import EditMarks from './components/staff/marks/EditMarks'
 import FullResults from './components/staff/marks/FullResults'
 import StatisticsDashboard from './pages/StatisticsDashboard'
 import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper } from './components/staff/AnalyticsWrappers'
@@ -169,6 +170,7 @@ const router = createBrowserRouter([
       { path: 'results', element: <StaffResults /> },
       { path: 'input-marks', element: <InputMarks /> },
       { path: 'view-results', element: <ViewResults /> },
+      { path: 'edit-marks', element: <EditMarks /> },
       { path: 'full-results', element: <FullResults /> },
       { 
         path: 'statistics', 

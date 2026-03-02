@@ -284,6 +284,26 @@ const ViewResults: React.FC = () => {
                 {showStatistics ? 'Hide Statistics' : 'Show Statistics'}
               </button>
               <button
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (selectedClass) {
+                    const cls = classes.find(c => c.class_name === selectedClass);
+                    if (cls) params.set('class_id', cls.id.toString());
+                  }
+                  if (selectedSubject) {
+                    const subj = subjects.find(s => s.subject_name === selectedSubject);
+                    if (subj) params.set('subject_id', subj.id.toString());
+                  }
+                  if (selectedExamType) params.set('exam_type', selectedExamType);
+                  if (selectedTerm) params.set('term', selectedTerm);
+                  if (selectedAcademicYear) params.set('academic_year', selectedAcademicYear);
+                  navigate(`/edit-marks?${params.toString()}`);
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Edit Marks
+              </button>
+              <button
                 onClick={() => navigate('/input-marks')}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
