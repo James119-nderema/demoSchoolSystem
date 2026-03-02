@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import StaffSidebar from '../components/sidebars/StaffSidebar';
+import TopNavbar from '../components/layout/TopNavbar';
 import { clearAuthData } from '../utils/authUtils';
 
 interface StaffInfo {
@@ -98,6 +99,9 @@ const StaffMainLayout: React.FC = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Navbar with profile dropdown */}
+        <TopNavbar staffInfo={staffInfo} onLogout={handleLogout} />
+
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

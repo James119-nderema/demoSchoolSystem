@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { APIService, DataAPI } from '../../services/baseUrl';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddStudentModal from '../generalFiles/students/modals/AddStudentModal';
@@ -42,6 +43,7 @@ interface AddStudentFormData {
 }
 
 const StaffStudents: React.FC = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -540,7 +542,7 @@ const StaffStudents: React.FC = () => {
                   </tr>
                 ) : (
                   filteredStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
+                    <tr key={student.id} onClick={() => navigate(`/students/${student.id}`)} className="hover:bg-indigo-50/50 cursor-pointer transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">

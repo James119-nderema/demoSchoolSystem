@@ -43,6 +43,7 @@ import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard
 import AdminStudents from './components/generalFiles/students/Students'
 import AdminClasses from './components/generalFiles/classes/Classes'
 import AdminSubjects from './components/generalFiles/subjects/Subjects'
+import StudentProfile from './components/students/StudentProfile'
 import ReportsPage from './components/templates/ReportsPage'
 import TemplateFullPreview from './components/templates/TemplateFullPreview'
 import TimetableDashboard from './components/timetable/TimetableDashboard'
@@ -129,6 +130,7 @@ const router = createBrowserRouter([
     children: [
       { path: 'dashboard', element: <StaffDashboard /> },
       { path: 'students', element: <StaffStudents /> },
+      { path: 'students/:studentId', element: <StudentProfile /> },
       { path: 'classes', element: <StaffClasses /> },
       { path: 'subjects', element: <StaffSubjects /> },
       // Admin routes for Administrative Staff (uses school admin pages)
@@ -137,6 +139,14 @@ const router = createBrowserRouter([
         element: (
           <AuthenticatedRoute userType="staff">
             <AdminStudents />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'admin/students/:studentId', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <StudentProfile />
           </AuthenticatedRoute>
         ) 
       },

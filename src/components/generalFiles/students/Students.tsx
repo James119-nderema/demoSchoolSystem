@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { APIService, API_ENDPOINTS } from '../../../services/baseUrl';
 import AddStudentModal from './modals/AddStudentModal';
 import UploadStudentModal from './modals/UploadStudentModal';
@@ -54,6 +54,7 @@ interface AddStudentFormData {
 
 export default function Students() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1048,7 +1049,7 @@ export default function Students() {
                   </tr>
                 ) : (
                   students.map((student) => (
-                    <tr key={student.id}>
+                    <tr key={student.id} onClick={() => navigate(`/admin/students/${student.id}`)} className="hover:bg-indigo-50/50 cursor-pointer transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
@@ -1099,7 +1100,7 @@ export default function Students() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(student.date_added).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleEditStudent(student)}
