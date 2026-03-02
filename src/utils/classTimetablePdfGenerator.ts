@@ -223,7 +223,7 @@ export const generateSingleClassPDF = (
       if (entry) {
         const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
         teachersInClass.add(entry.teacher_id);
-        rowData.push(`${entry.subject_name}\n(T${teacherIndex})`);
+        rowData.push(`${entry.subject_abbreviation || entry.subject_name}\n(T${teacherIndex})`);
       } else {
         rowData.push('-');
       }
@@ -429,7 +429,7 @@ export const generateAllClassesPDF = (
         if (entry) {
           const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
           teachersInClass.add(entry.teacher_id);
-          rowData.push(`${entry.subject_name}\n(T${teacherIndex})`);
+          rowData.push(`${entry.subject_abbreviation || entry.subject_name}\n(T${teacherIndex})`);
         } else {
           rowData.push('-');
         }

@@ -79,13 +79,6 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
     setIsLoading(true);
     setError(null);
 
-    // Validate that end time is after start time
-    if (selectedStartTime >= selectedEndTime) {
-      setError('End time must be after start time');
-      setIsLoading(false);
-      return;
-    }
-
     // Check for duplicate or overlapping timeslots in the same class level
     const existingSlots = timeSlots.filter(slot => 
       slot.class_level === selectedClassLevel && 

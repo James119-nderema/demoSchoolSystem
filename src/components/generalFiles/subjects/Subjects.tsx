@@ -157,6 +157,7 @@ export default function Subjects() {
 
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (subject.abbreviation && subject.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (subject.subject_code && subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && subject.is_active) ||
@@ -306,6 +307,9 @@ export default function Subjects() {
                       Subject
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Abbreviation
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Code
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -336,6 +340,9 @@ export default function Subjects() {
                             </div>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                        {subject.abbreviation || <span className="text-gray-400 italic">—</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
                         {subject.subject_code || <span className="text-gray-400 italic">No code</span>}

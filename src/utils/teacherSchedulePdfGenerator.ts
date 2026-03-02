@@ -5,6 +5,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 interface ScheduleEntry {
   subject: string;
+  subject_abbreviation?: string;
   subject_id: number;
   class: string;
   class_id: number;
@@ -246,10 +247,10 @@ export const generateSingleTeacherPDF = (
       if (entries.length === 0) {
         rowData.push('-');
       } else if (entries.length === 1) {
-        rowData.push(`${entries[0].subject}\n(${entries[0].class})`);
+        rowData.push(`${entries[0].subject_abbreviation || entries[0].subject}\n(${entries[0].class})`);
       } else {
         // Multiple entries (block subjects)
-        const text = entries.map(e => `${e.subject} (${e.class})`).join('\n');
+        const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
         rowData.push(text);
       }
       
@@ -409,9 +410,9 @@ export const generateAllTeachersPDF = (
         if (entries.length === 0) {
           rowData.push('-');
         } else if (entries.length === 1) {
-          rowData.push(`${entries[0].subject}\n(${entries[0].class})`);
+          rowData.push(`${entries[0].subject_abbreviation || entries[0].subject}\n(${entries[0].class})`);
         } else {
-          const text = entries.map(e => `${e.subject} (${e.class})`).join('\n');
+          const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
           rowData.push(text);
         }
         

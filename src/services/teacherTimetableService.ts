@@ -3,6 +3,7 @@ import { APIService } from './baseUrl';
 // Use the same structure as AllTeachersSchedule
 interface TimetableEntry {
   subject: string;
+  subject_abbreviation?: string;
   subject_id: number;
   class: string;
   class_id: number;

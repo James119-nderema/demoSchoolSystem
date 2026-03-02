@@ -3,6 +3,7 @@ export interface Subject {
   school_id: string;  // Changed to string for UUID
   school_name: string;
   subject_name: string;
+  abbreviation?: string;
   subject_code?: string;  // Made optional
   description?: string;
   is_double: boolean;
@@ -13,6 +14,7 @@ export interface Subject {
 
 export interface SubjectCreateData {
   subject_name: string;
+  abbreviation?: string;
   subject_code?: string;  // Made optional
   description?: string;
   is_double: boolean;

@@ -18,6 +18,7 @@ export default function AddSubjectModal({
 }: AddSubjectModalProps) {
   const [formData, setFormData] = useState<SubjectCreateData>({
     subject_name: '',
+    abbreviation: '',
     subject_code: '',
     description: '',
     is_double: false,
@@ -29,6 +30,7 @@ export default function AddSubjectModal({
     if (editingSubject) {
       setFormData({
         subject_name: editingSubject.subject_name,
+        abbreviation: editingSubject.abbreviation || '',
         subject_code: editingSubject.subject_code || '',
         description: editingSubject.description || '',
         is_double: editingSubject.is_double ?? false,
@@ -37,6 +39,7 @@ export default function AddSubjectModal({
     } else {
       setFormData({
         subject_name: '',
+        abbreviation: '',
         subject_code: '',
         description: '',
         is_double: false,
@@ -69,6 +72,10 @@ export default function AddSubjectModal({
     // Subject code is now optional but validate if provided
     if (formData.subject_code && formData.subject_code.trim() && formData.subject_code.length > 20) {
       newErrors.subject_code = 'Subject code must be 20 characters or less';
+    }
+
+    if (formData.abbreviation && formData.abbreviation.trim() && formData.abbreviation.length > 10) {
+      newErrors.abbreviation = 'Abbreviation must be 10 characters or less';
     }
 
     if (formData.subject_name.length > 100) {
@@ -134,6 +141,28 @@ export default function AddSubjectModal({
               />
               {errors.subject_name && (
                 <p className="mt-1 text-sm text-red-600">{errors.subject_name}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="abbreviation" className="block text-sm font-medium text-gray-700 mb-1">
+                Abbreviation <span className="text-gray-500">(Optional - used in timetable)</span>
+              </label>
+              <input
+                type="text"
+                id="abbreviation"
+                name="abbreviation"
+                value={formData.abbreviation || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.abbreviation ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="e.g., MATH, ENG, SCI"
+                maxLength={10}
+                disabled={isLoading}
+              />
+              {errors.abbreviation && (
+                <p className="mt-1 text-sm text-red-600">{errors.abbreviation}</p>
               )}
             </div>
 

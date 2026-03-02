@@ -22,6 +22,7 @@ export interface TimetableByClass {
       [timeslot: string]: {
         subject_id: string;
         subject_name: string;
+        subject_abbreviation?: string;
         teacher_id: string;
         teacher_name: string;
         teacher_index?: number;

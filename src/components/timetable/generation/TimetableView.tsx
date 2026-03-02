@@ -338,7 +338,7 @@ const TimetableView: React.FC = () => {
                                     <div className="flex items-start gap-2 mb-1">
                                       <BookOpen size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                                       <span className="font-bold text-blue-900 text-sm leading-tight">
-                                        {entry.subject_name}
+                                        {entry.subject_abbreviation || entry.subject_name}
                                       </span>
                                     </div>
                                     <div className="flex items-start gap-2 ml-6">

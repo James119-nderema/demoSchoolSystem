@@ -2,6 +2,7 @@ import { APIService } from './baseUrl';
 
 interface ScheduleEntry {
   subject: string;
+  subject_abbreviation?: string;
   subject_id: number;
   class: string;
   class_id: number;

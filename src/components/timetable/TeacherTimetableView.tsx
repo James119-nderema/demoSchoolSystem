@@ -199,7 +199,7 @@ const TeacherTimetableView: React.FC = () => {
           
           if (entries.length > 0) {
             const cellContent = entries
-              .map(entry => `${entry.subject}\n(${entry.class})`)
+              .map(entry => `${entry.subject_abbreviation || entry.subject}\n(${entry.class})`)
               .join('\n\n');
             row.push(cellContent);
           } else {
@@ -446,7 +446,7 @@ const TeacherTimetableView: React.FC = () => {
                         ) : entries.length === 1 ? (
                           <div className="space-y-1">
                             <div className="font-semibold text-gray-900 text-sm">
-                              {entries[0].subject}
+                              {entries[0].subject_abbreviation || entries[0].subject}
                             </div>
                             <div className="text-xs text-gray-600">
                               {entries[0].class}
@@ -462,7 +462,7 @@ const TeacherTimetableView: React.FC = () => {
                             {entries.map((entry, idx) => (
                               <div key={idx} className="border-b border-gray-200 pb-1 last:border-0">
                                 <div className="font-semibold text-gray-900 text-sm">
-                                  {entry.subject}
+                                  {entry.subject_abbreviation || entry.subject}
                                 </div>
                                 <div className="text-xs text-gray-600">
                                   {entry.class}
