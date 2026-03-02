@@ -64,17 +64,101 @@ export interface ReportsData {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+interface DropdownData {
+  classes: { id: string; class_name: string; class_code: string }[];
+  subjects: { id: string; subject_name: string; subject_code: string }[];
+  exam_types: DropdownOption[];
+  terms: DropdownOption[];
+  years?: string[];
+}
+
 const ReportsDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [reportsData, setReportsData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noDataResponse, setNoDataResponse] = useState(false);
+  const [dropdownData, setDropdownData] = useState<DropdownData | null>(null);
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
 
   // Filter states
   const [term, setTerm] = useState(searchParams.get('term') || '');
   const [academicYear, setAcademicYear] = useState(searchParams.get('academic_year') || '');
   const [examType, setExamType] = useState(searchParams.get('exam_type') || '');
+
+  // Fetch dropdown data on mount
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const response = await authFetch('/api/input-marks/dropdown-data/');
+        if (response.ok) {
+          const data = await response.json();
+          setDropdownData(data);
+        }
+      } catch (err) {
+        console.error('Error fetching dropdown data:', err);
+      }
+    };
+
+    const fetchAvailableYears = async () => {
+      try {
+        // Get distinct academic years from actual results
+        const response = await authFetch('/api/input-marks/results/?page_size=1');
+        if (response.ok) {
+          const data = await response.json();
+          // Extract unique years from results if available
+          const yearsSet = new Set<string>();
+          const results = data.results || data;
+          if (Array.isArray(results)) {
+            results.forEach((r: any) => {
+              if (r.academic_year) yearsSet.add(r.academic_year);
+            });
+          }
+          // Also try a larger fetch to get more years
+          const allResponse = await authFetch('/api/input-marks/results/?page_size=100');
+          if (allResponse.ok) {
+            const allData = await allResponse.json();
+            const allResults = allData.results || allData;
+            if (Array.isArray(allResults)) {
+              allResults.forEach((r: any) => {
+                if (r.academic_year) yearsSet.add(r.academic_year);
+              });
+            }
+          }
+          if (yearsSet.size > 0) {
+            setAvailableYears(Array.from(yearsSet).sort().reverse());
+          } else {
+            // Fallback: generate reasonable year ranges
+            const currentYear = new Date().getFullYear();
+            const fallbackYears = [];
+            for (let y = currentYear; y >= currentYear - 5; y--) {
+              fallbackYears.push(`${y}-${y + 1}`);
+              fallbackYears.push(`${y}`);
+            }
+            setAvailableYears(fallbackYears);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching available years:', err);
+        // Fallback years
+        const currentYear = new Date().getFullYear();
+        const fallbackYears = [];
+        for (let y = currentYear; y >= currentYear - 5; y--) {
+          fallbackYears.push(`${y}-${y + 1}`);
+          fallbackYears.push(`${y}`);
+        }
+        setAvailableYears(fallbackYears);
+      }
+    };
+
+    fetchDropdownData();
+    fetchAvailableYears();
+  }, []);
 
   const fetchReportsData = async () => {
     try {
@@ -212,9 +296,9 @@ const ReportsDashboard: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Terms</option>
-                <option value="1">Term 1</option>
-                <option value="2">Term 2</option>
-                <option value="3">Term 3</option>
+                {dropdownData?.terms?.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -225,10 +309,9 @@ const ReportsDashboard: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Years</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
+                {availableYears.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -239,9 +322,9 @@ const ReportsDashboard: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Exam Types</option>
-                <option value="exam_1">Exam 1</option>
-                <option value="exam_2">Exam 2</option>
-                <option value="exam_3">Exam 3</option>
+                {dropdownData?.exam_types?.map((e) => (
+                  <option key={e.value} value={e.value}>{e.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -326,9 +409,9 @@ const ReportsDashboard: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Terms</option>
-              <option value="1">Term 1</option>
-              <option value="2">Term 2</option>
-              <option value="3">Term 3</option>
+              {dropdownData?.terms?.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -339,10 +422,9 @@ const ReportsDashboard: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
+              {availableYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -353,9 +435,9 @@ const ReportsDashboard: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Exam Types</option>
-              <option value="exam_1">Exam 1</option>
-              <option value="exam_2">Exam 2</option>
-              <option value="exam_3">Exam 3</option>
+              {dropdownData?.exam_types?.map((e) => (
+                <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
             </select>
           </div>
         </div>
