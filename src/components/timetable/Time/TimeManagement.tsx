@@ -299,7 +299,68 @@ const TimeManagement: React.FC<TimeManagementProps> = ({
 
       {/* Time Slots Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="md:hidden">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : timeSlots.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <Clock className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p>No time slots found</p>
+              <p className="text-sm">Click "Add Time Slot" to create your first time slot</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {timeSlots.map((slot, index) => (
+                <div key={slot.id || `slot-${index}`} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-indigo-500" />
+                      <span className="text-sm font-medium text-gray-900">{formatTimeRange(slot)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEdit(slot)}
+                        disabled={isLoading}
+                        className="text-indigo-600 hover:text-indigo-900 p-1.5"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(slot.id)}
+                        disabled={isLoading}
+                        className="text-red-600 hover:text-red-900 p-1.5"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-xs text-gray-500">Duration: {formatDuration(slot.duration_minutes)}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getClassLevelColor(slot.class_level)}`}>
+                      {slot.class_level}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      slot.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {slot.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Created: {new Date(slot.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

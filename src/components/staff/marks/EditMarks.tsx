@@ -221,10 +221,6 @@ const EditMarks: React.FC = () => {
 
     if (successCount > 0) {
       setSuccess(`Successfully updated ${successCount} result${successCount > 1 ? 's' : ''}`);
-      // Update originals so they're no longer "changed"
-      setOriginalMarks({ ...editedMarks });
-      // Re-fetch to get updated percentages & grades
-      await fetchResults();
     }
     if (failCount > 0) {
       setError(errors.join('. '));
@@ -232,7 +228,8 @@ const EditMarks: React.FC = () => {
 
     setSaving(false);
     if (successCount > 0 && failCount === 0) {
-      setTimeout(() => setSuccess(''), 4000);
+      // Redirect to view results after successful save
+      setTimeout(() => navigate('/view-results'), 1500);
     }
   };
 

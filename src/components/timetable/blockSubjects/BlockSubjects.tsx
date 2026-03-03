@@ -161,7 +161,58 @@ const BlockSubjects: React.FC = () => {
       ) : (
         <>
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {blocks.map((block, index) => (
+                <div key={block.identifier} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 rounded-full font-semibold text-xs">
+                        {(currentPage - 1) * 20 + index + 1}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{block.block_name || 'Unnamed Block'}</p>
+                        <p className="text-xs text-gray-400 font-mono">ID: {block.identifier.substring(0, 13)}...</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(block.identifier)}
+                      disabled={deletingId === block.identifier}
+                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                      title="Delete block"
+                    >
+                      {deletingId === block.identifier ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {block.subjects.map((subject, idx) => (
+                      <React.Fragment key={subject.id}>
+                        <span className="inline-block px-3 py-1.5 bg-white border-2 border-blue-500 text-blue-900 text-xs font-bold rounded-lg shadow-sm">
+                          {subject.subject}
+                        </span>
+                        {idx < block.subjects.length - 1 && (
+                          <span className="text-gray-400 font-bold self-center">|</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center font-bold text-xs">{block.subject_count}</span>
+                      subjects
+                    </span>
+                    <span>Created: {formatDate(block.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                   <tr>

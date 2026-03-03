@@ -213,6 +213,50 @@ export default function ClassSchedules() {
                   )}
                 </div>
               ) : (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="md:hidden divide-y divide-gray-200">
+                    {schedules.map((schedule) => (
+                      <div key={schedule.id} className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm font-medium text-gray-900">{schedule.day_of_week}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openEditModal(schedule)}
+                              className="text-blue-600 hover:text-blue-900 p-1"
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSchedule(schedule.id)}
+                              className="text-red-600 hover:text-red-900 p-1"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap text-xs">
+                          <span className="text-gray-700 font-medium">{schedule.class_name_display}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                            {schedule.time_slot_display}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatTime(schedule.start_time)}</span>
+                          <span>→</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatTime(schedule.end_time)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -289,6 +333,8 @@ export default function ClassSchedules() {
                     ))}
                   </tbody>
                 </table>
+                  </div>
+                </>
               )}
             </div>
 

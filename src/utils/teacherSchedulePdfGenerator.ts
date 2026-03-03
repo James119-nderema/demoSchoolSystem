@@ -13,6 +13,7 @@ interface ScheduleEntry {
   end_time: string;
   time_slot: string;
   block_identifier: string | null;
+  block_name?: string;
   is_block: boolean;
 }
 
@@ -247,11 +248,17 @@ export const generateSingleTeacherPDF = (
       if (entries.length === 0) {
         rowData.push('-');
       } else if (entries.length === 1) {
-        rowData.push(`${entries[0].subject_abbreviation || entries[0].subject}\n(${entries[0].class})`);
+        const displayName = (entries[0].is_block && entries[0].block_name) ? entries[0].block_name : (entries[0].subject_abbreviation || entries[0].subject);
+        rowData.push(`${displayName}\n(${entries[0].class})`);
       } else {
-        // Multiple entries (block subjects)
-        const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
-        rowData.push(text);
+        // Multiple entries (block subjects) - show block name header if available
+        if (entries[0].is_block && entries[0].block_name) {
+          const text = `${entries[0].block_name}\n${entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n')}`;
+          rowData.push(text);
+        } else {
+          const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
+          rowData.push(text);
+        }
       }
       
       // Add break cell if needed
@@ -410,10 +417,16 @@ export const generateAllTeachersPDF = (
         if (entries.length === 0) {
           rowData.push('-');
         } else if (entries.length === 1) {
-          rowData.push(`${entries[0].subject_abbreviation || entries[0].subject}\n(${entries[0].class})`);
+          const displayName = (entries[0].is_block && entries[0].block_name) ? entries[0].block_name : (entries[0].subject_abbreviation || entries[0].subject);
+          rowData.push(`${displayName}\n(${entries[0].class})`);
         } else {
-          const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
-          rowData.push(text);
+          if (entries[0].is_block && entries[0].block_name) {
+            const text = `${entries[0].block_name}\n${entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n')}`;
+            rowData.push(text);
+          } else {
+            const text = entries.map(e => `${e.subject_abbreviation || e.subject} (${e.class})`).join('\n');
+            rowData.push(text);
+          }
         }
         
         // Add break cell if needed

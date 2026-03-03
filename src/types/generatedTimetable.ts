@@ -28,6 +28,9 @@ export interface TimetableByClass {
         teacher_index?: number;
         start_time: string;
         end_time: string;
+        block_identifier?: string | null;
+        block_name?: string;
+        is_block?: boolean;
       };
     };
   };
@@ -38,6 +41,16 @@ export interface TeacherIndexInfo {
   index: number;
   name: string;
   email: string;
+}
+
+export interface BlockInfo {
+  identifier: string;
+  block_name: string;
+  subjects: {
+    id: string;
+    name: string;
+    abbreviation: string;
+  }[];
 }
 
 export interface FailedSchedule {
@@ -87,6 +100,7 @@ export interface TimetableByClassResponse {
   count: number;
   results: TimetableByClass[];
   teachers?: TeacherIndexInfo[];
+  blocks?: BlockInfo[];
 }
 
 export interface FailedScheduleResponse {

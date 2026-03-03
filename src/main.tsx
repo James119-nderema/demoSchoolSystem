@@ -53,6 +53,7 @@ import TeacherSubjectAssignment from './components/timetable/TeacherSubjectAssig
 import Priorities from './components/timetable/priorities/Priorities'
 import ClassSchedules from './components/timetable/classSchedule/ClassSchedules'
 import Teachers from './components/timetable/teachers/Teachers'
+import TeacherProfile from './components/timetable/teachers/TeacherProfile'
 import BlockSubjects from './components/timetable/blockSubjects/BlockSubjects'
 import TimetableView from './components/timetable/generation/TimetableView'
 import TeacherTimetableView from './components/timetable/TeacherTimetableView'
@@ -86,7 +87,12 @@ import Staff from './pages/Staff'
 import FeaturesPage from './components/pages/FeaturesPage'
 import AboutPage from './components/pages/AboutPage'
 import ContactPage from './components/pages/ContactPage'
-import MessagingPage from './components/messaging/MessagingPage'
+import MessagingHub from './components/messaging/MessagingHub'
+import StaffMessage from './components/messaging/StaffMessage'
+import ParentMessageType from './components/messaging/ParentMessageType'
+import ParentCustomMessage from './components/messaging/ParentCustomMessage'
+import ParentExamResults from './components/messaging/ParentExamResults'
+import ParentTermSummary from './components/messaging/ParentTermSummary'
 // payment
 import Payment from './pages/Payment'
 import SchoolFinance from './components/finance/School_Finance'
@@ -250,7 +256,47 @@ const router = createBrowserRouter([
         path: 'messaging', 
         element: (
           <AuthenticatedRoute userType="staff">
-            <MessagingPage />
+            <MessagingHub />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'messaging/staff', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <StaffMessage />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'messaging/parent', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ParentMessageType />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'messaging/parent/custom', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ParentCustomMessage />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'messaging/parent/exam-results', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ParentExamResults />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'messaging/parent/term-summary', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ParentTermSummary />
           </AuthenticatedRoute>
         ) 
       },
@@ -323,6 +369,14 @@ const router = createBrowserRouter([
         element: (
           <AuthenticatedRoute userType="staff">
             <Teachers />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'timetable/teachers/:id', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <TeacherProfile />
           </AuthenticatedRoute>
         ) 
       },

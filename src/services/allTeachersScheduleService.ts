@@ -10,6 +10,7 @@ interface ScheduleEntry {
   end_time: string;
   time_slot: string;
   block_identifier: string | null;
+  block_name?: string;
   is_block: boolean;
 }
 

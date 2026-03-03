@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { APIService, DataAPI } from '../../services/baseUrl';
-import { School, Search, Users, Calendar, Plus } from 'lucide-react';
+import { School, Search, Users, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddClassModal from '../generalFiles/classes/AddClassModal';
 import type { CreateClassData } from '../../types/class';
@@ -8,9 +8,13 @@ import type { CreateClassData } from '../../types/class';
 interface ClassItem {
   id: number;
   class_name: string;
-  student_count: number;
-  date_created: string | null;
+  class_code: string;
+  student_count?: number;
+  date_created?: string | null;
+  created_at?: string | null;
   is_active: boolean;
+  description?: string;
+  capacity?: number;
 }
 
 const StaffClasses: React.FC = () => {
@@ -23,12 +27,16 @@ const StaffClasses: React.FC = () => {
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingClass, setDeletingClass] = useState<ClassItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
   
   // Permissions
-  const { canAddClasses } = usePermissions();
+  const { canAddClasses, canEditClasses, canDeleteClasses } = usePermissions();
 
   useEffect(() => {
     fetchClasses();
@@ -65,16 +73,70 @@ const StaffClasses: React.FC = () => {
     setError('');
     
     try {
-      await DataAPI.createClass(data);
-      setSuccessMessage('Class added successfully!');
+      if (editingClass) {
+        await DataAPI.updateClass(editingClass.id, data);
+        setSuccessMessage('Class updated successfully!');
+      } else {
+        await DataAPI.createClass(data);
+        setSuccessMessage('Class added successfully!');
+      }
       setShowAddModal(false);
+      setEditingClass(null);
       fetchClasses();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      console.error('Error adding class:', err);
-      setError(err.message || 'Failed to add class. Please try again.');
+      console.error('Error saving class:', err);
+      setError(err.message || 'Failed to save class. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClass = async (cls: ClassItem) => {
+    try {
+      setError('');
+      // Fetch full class details from API to get all saved fields
+      const classDetail = await DataAPI.getClass(cls.id);
+      setEditingClass({
+        ...cls,
+        class_name: classDetail.class_name || cls.class_name,
+        class_code: classDetail.class_code || cls.class_code || '',
+        description: classDetail.description || '',
+        capacity: classDetail.capacity || 30,
+        is_active: classDetail.is_active ?? cls.is_active,
+      });
+      setShowAddModal(true);
+    } catch (err: any) {
+      console.error('Error fetching class details:', err);
+      // Fallback to using list data if detail fetch fails
+      setEditingClass(cls);
+      setShowAddModal(true);
+    }
+  };
+
+  const handleDeleteClick = (cls: ClassItem) => {
+    setDeletingClass(cls);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingClass) return;
+    
+    setIsDeleting(true);
+    setError('');
+    
+    try {
+      await DataAPI.deleteClass(deletingClass.id);
+      setSuccessMessage('Class deleted successfully!');
+      setShowDeleteConfirm(false);
+      setDeletingClass(null);
+      fetchClasses();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error deleting class:', err);
+      setError(err.message || 'Failed to delete class. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -83,7 +145,7 @@ const StaffClasses: React.FC = () => {
     setCurrentPage(1); // Reset to first page when searching
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
   };
@@ -164,8 +226,8 @@ const StaffClasses: React.FC = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Table - Desktop */}
+            <div className="hidden md:block overflow-x-auto">
               {loading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -186,6 +248,9 @@ const StaffClasses: React.FC = () => {
                         Class Name
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Level
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Students
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -194,6 +259,11 @@ const StaffClasses: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
+                      {(canEditClasses() || canDeleteClasses()) && (
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -214,15 +284,20 @@ const StaffClasses: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {classItem.class_code || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-900">
                             <Users className="h-4 w-4 mr-1 text-gray-400" />
-                            {classItem.student_count} student{classItem.student_count !== 1 ? 's' : ''}
+                            {classItem.student_count ?? 0} student{(classItem.student_count ?? 0) !== 1 ? 's' : ''}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {formatDate(classItem.date_created)}
+                            {formatDate(classItem.date_created || classItem.created_at)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -234,10 +309,112 @@ const StaffClasses: React.FC = () => {
                             {classItem.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
+                        {(canEditClasses() || canDeleteClasses()) && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center space-x-2">
+                              {canEditClasses() && (
+                                <button
+                                  onClick={() => handleEditClass(classItem)}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                  title="Edit class"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5 mr-1" />
+                                  Edit
+                                </button>
+                              )}
+                              {canDeleteClasses() && (
+                                <button
+                                  onClick={() => handleDeleteClick(classItem)}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                  title="Delete class"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : classes.length === 0 ? (
+                <div className="text-center py-12">
+                  <School className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No classes found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm ? 'Try adjusting your search criteria.' : 'No classes have been added yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {classes.map((classItem) => (
+                    <div key={classItem.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <School className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900">{classItem.class_name}</h3>
+                            <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                              {classItem.class_code || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          classItem.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {classItem.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1 text-gray-400" />
+                          {classItem.student_count ?? 0} student{(classItem.student_count ?? 0) !== 1 ? 's' : ''}
+                        </div>
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                          {formatDate(classItem.date_created || classItem.created_at)}
+                        </div>
+                      </div>
+                      {(canEditClasses() || canDeleteClasses()) && (
+                        <div className="mt-3 flex items-center space-x-2 pt-2 border-t border-gray-100">
+                          {canEditClasses() && (
+                            <button
+                              onClick={() => handleEditClass(classItem)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                              <Edit2 className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </button>
+                          )}
+                          {canDeleteClasses() && (
+                            <button
+                              onClick={() => handleDeleteClick(classItem)}
+                              className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -302,14 +479,65 @@ const StaffClasses: React.FC = () => {
         </div>
       </div>
       
-      {/* Add Class Modal */}
+      {/* Add/Edit Class Modal */}
       <AddClassModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingClass(null);
+        }}
         onSubmit={handleAddClass}
         isLoading={isSubmitting}
-        title="Add New Class"
+        initialData={editingClass ? {
+          class_name: editingClass.class_name,
+          class_code: editingClass.class_code || '',
+          description: editingClass.description || '',
+          capacity: editingClass.capacity || 0,
+          is_active: editingClass.is_active,
+        } : undefined}
+        title={editingClass ? 'Edit Class' : 'Add New Class'}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && deletingClass && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-100">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Delete Class</h3>
+              <p className="text-sm text-gray-600 text-center mb-1">
+                Are you sure you want to delete <span className="font-semibold">{deletingClass.class_name}</span>?
+              </p>
+              <p className="text-xs text-red-500 text-center mb-6">
+                This action cannot be undone. All associated data (students, timetable entries, etc.) may also be affected.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingClass(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Class'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -406,60 +406,109 @@ const Grading: React.FC = () => {
             )}
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Class
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Grades
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredGradeScales.map((scale) => (
-                <tr key={`${scale.class_id}-${scale.subject_id}`} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{scale.class_name}</div>
-                    <div className="text-sm text-gray-500">{scale.class_code}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{scale.subject_name}</div>
-                    <div className="text-sm text-gray-500">{scale.subject_code}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      {scale.grades.map((grade, gIndex) => (
-                        <span
-                          key={gIndex}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                          title={`${grade.min_marks}-${grade.max_marks} marks, ${grade.points} points`}
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Class
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Subject
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Grades
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredGradeScales.map((scale) => (
+                    <tr key={`${scale.class_id}-${scale.subject_id}`} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{scale.class_name}</div>
+                        <div className="text-sm text-gray-500">{scale.class_code}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{scale.subject_name}</div>
+                        <div className="text-sm text-gray-500">{scale.subject_code}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {scale.grades.map((grade, gIndex) => (
+                            <span
+                              key={gIndex}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                              title={`${grade.min_marks}-${grade.max_marks} marks, ${grade.points} points`}
+                            >
+                              {grade.grade}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleDeleteGradeScale(scale.class_id, scale.subject_id)}
+                          className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete grade scale"
                         >
-                          {grade.grade}
-                        </span>
-                      ))}
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {filteredGradeScales.map((scale) => (
+                <div key={`${scale.class_id}-${scale.subject_id}`} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">{scale.class_name}</h3>
+                        <p className="text-xs text-gray-500">{scale.class_code}</p>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
                       onClick={() => handleDeleteGradeScale(scale.class_id, scale.subject_id)}
-                      className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete grade scale"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="mt-2">
+                    <div className="flex items-center space-x-1 text-sm text-gray-700">
+                      <BookOpen className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="font-medium">{scale.subject_name}</span>
+                      <span className="text-gray-400">({scale.subject_code})</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {scale.grades.map((grade, gIndex) => (
+                      <span
+                        key={gIndex}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                        title={`${grade.min_marks}-${grade.max_marks} marks, ${grade.points} points`}
+                      >
+                        {grade.grade}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

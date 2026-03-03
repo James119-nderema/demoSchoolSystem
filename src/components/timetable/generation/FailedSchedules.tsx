@@ -124,7 +124,40 @@ const FailedSchedules: React.FC = () => {
       ) : (
         <>
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {failedSchedules.map((schedule, index) => (
+                <div key={schedule.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-7 h-7 bg-red-100 text-red-600 rounded-full font-semibold text-xs">
+                        {(currentPage - 1) * 50 + index + 1}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{schedule.class_name || 'N/A'}</span>
+                    </div>
+                    <span className="text-xs text-gray-400">{formatDate(schedule.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <BookOpen size={12} className="text-gray-400" />
+                      {schedule.subject_name || 'N/A'}
+                    </span>
+                    {schedule.day && schedule.time_slot && (
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} className="text-gray-400" />
+                        {schedule.day} • {schedule.time_slot}
+                      </span>
+                    )}
+                  </div>
+                  <div className={`border-l-4 rounded p-2 ${getReasonColor(schedule.reason)}`}>
+                    <p className="text-xs font-medium leading-relaxed">{schedule.reason}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-red-50 to-orange-50">
                   <tr>

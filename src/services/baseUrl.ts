@@ -27,7 +27,7 @@ const API_CONFIG = {
     STUDENTS: '/api/students/',
     CLASSES: '/api/classes/',
     SUBJECTS: '/api/subjects/',
-    STAFF: '/api/staff/',
+    STAFF: '/api/teachers/',
     
     // Input marks endpoints
     INPUT_MARKS: {
@@ -394,11 +394,13 @@ export const DataAPI = {
   // Classes
   getClasses: (params?: Record<string, string>) => 
     APIService.get(API_ENDPOINTS.CLASSES, params, 'staff'),
+  getClass: (id: string | number) => 
+    APIService.get(`${API_ENDPOINTS.CLASSES}${id}/`, undefined, 'staff'),
   createClass: (data: any) => 
     APIService.post(API_ENDPOINTS.CLASSES, data, 'staff'),
-  updateClass: (id: string, data: any) => 
+  updateClass: (id: string | number, data: any) => 
     APIService.put(`${API_ENDPOINTS.CLASSES}${id}/`, data, 'staff'),
-  deleteClass: (id: string) => 
+  deleteClass: (id: string | number) => 
     APIService.delete(`${API_ENDPOINTS.CLASSES}${id}/`, 'staff'),
     
   // Subjects

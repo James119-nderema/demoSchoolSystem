@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { TimetableByClass, TeacherIndexInfo } from '../types/generatedTimetable';
+import type { TimetableByClass, TeacherIndexInfo, BlockInfo } from '../types/generatedTimetable';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -163,6 +163,14 @@ const formatTime = (time: string): string => {
 };
 
 /**
+ * Get display name for entry - block name for block subjects, abbreviation otherwise
+ */
+const getDisplayName = (entry: { subject_name?: string; subject_abbreviation?: string; is_block?: boolean; block_name?: string }): string => {
+  if (entry.is_block && entry.block_name) return entry.block_name;
+  return entry.subject_abbreviation || entry.subject_name || '';
+};
+
+/**
  * Generate PDF for a single class timetable
  */
 export const generateSingleClassPDF = (
@@ -223,7 +231,7 @@ export const generateSingleClassPDF = (
       if (entry) {
         const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
         teachersInClass.add(entry.teacher_id);
-        rowData.push(`${entry.subject_abbreviation || entry.subject_name}\n(T${teacherIndex})`);
+        rowData.push(`${getDisplayName(entry)}\n(T${teacherIndex})`);
       } else {
         rowData.push('-');
       }
@@ -358,7 +366,8 @@ const addTeacherKey = (doc: jsPDF, teachers: TeacherIndexInfo[], startY: number)
  */
 export const generateAllClassesPDF = (
   timetables: TimetableByClass[],
-  teachers?: TeacherIndexInfo[]
+  teachers?: TeacherIndexInfo[],
+  blocks?: BlockInfo[]
 ): void => {
   if (timetables.length === 0) {
     alert('No timetables to download');
@@ -429,7 +438,7 @@ export const generateAllClassesPDF = (
         if (entry) {
           const teacherIndex = entry.teacher_index ?? teacherIndexMap.get(entry.teacher_id) ?? 0;
           teachersInClass.add(entry.teacher_id);
-          rowData.push(`${entry.subject_abbreviation || entry.subject_name}\n(T${teacherIndex})`);
+          rowData.push(`${getDisplayName(entry)}\n(T${teacherIndex})`);
         } else {
           rowData.push('-');
         }
@@ -516,9 +525,40 @@ export const generateAllClassesPDF = (
     const finalY = (doc as any).lastAutoTable?.finalY || 120;
     const teachersForClass = allTeachers.filter(t => teachersInClass.has(t.id));
     addTeacherKey(doc, teachersForClass, finalY + 10);
+    
+    // Add block legend if blocks exist
+    if (blocks && blocks.length > 0) {
+      const teacherKeyRows = Math.ceil(teachersForClass.length / 3);
+      const blockStartY = finalY + 10 + 6 + (teacherKeyRows * 5) + 6;
+      addBlockKey(doc, blocks, blockStartY);
+    }
   });
   
   // Save the PDF
   doc.save('all_classes_timetables.pdf');
+};
+
+/**
+ * Add block subject key/legend to the PDF
+ */
+const addBlockKey = (doc: jsPDF, blocks: BlockInfo[], startY: number): void => {
+  if (blocks.length === 0) return;
+  
+  const margin = 10;
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Block Subjects Key:', margin, startY);
+  
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  
+  let currentY = startY + 6;
+  
+  blocks.forEach((block) => {
+    const subjectNames = block.subjects.map(s => s.abbreviation).join(', ');
+    doc.text(`${block.block_name}: ${subjectNames}`, margin, currentY);
+    currentY += 5;
+  });
 };
 

@@ -99,65 +99,32 @@ const ReportsDashboard: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setDropdownData(data);
-        }
-      } catch (err) {
-        console.error('Error fetching dropdown data:', err);
-      }
-    };
-
-    const fetchAvailableYears = async () => {
-      try {
-        // Get distinct academic years from actual results
-        const response = await authFetch('/api/input-marks/results/?page_size=1');
-        if (response.ok) {
-          const data = await response.json();
-          // Extract unique years from results if available
-          const yearsSet = new Set<string>();
-          const results = data.results || data;
-          if (Array.isArray(results)) {
-            results.forEach((r: any) => {
-              if (r.academic_year) yearsSet.add(r.academic_year);
-            });
-          }
-          // Also try a larger fetch to get more years
-          const allResponse = await authFetch('/api/input-marks/results/?page_size=100');
-          if (allResponse.ok) {
-            const allData = await allResponse.json();
-            const allResults = allData.results || allData;
-            if (Array.isArray(allResults)) {
-              allResults.forEach((r: any) => {
-                if (r.academic_year) yearsSet.add(r.academic_year);
-              });
-            }
-          }
-          if (yearsSet.size > 0) {
-            setAvailableYears(Array.from(yearsSet).sort().reverse());
+          // Use years from dropdown data (returned by backend)
+          if (data.years && data.years.length > 0) {
+            setAvailableYears(data.years);
           } else {
             // Fallback: generate reasonable year ranges
             const currentYear = new Date().getFullYear();
             const fallbackYears = [];
-            for (let y = currentYear; y >= currentYear - 5; y--) {
+            for (let y = currentYear; y >= currentYear - 3; y--) {
               fallbackYears.push(`${y}-${y + 1}`);
-              fallbackYears.push(`${y}`);
             }
             setAvailableYears(fallbackYears);
           }
         }
       } catch (err) {
-        console.error('Error fetching available years:', err);
+        console.error('Error fetching dropdown data:', err);
         // Fallback years
         const currentYear = new Date().getFullYear();
         const fallbackYears = [];
-        for (let y = currentYear; y >= currentYear - 5; y--) {
+        for (let y = currentYear; y >= currentYear - 3; y--) {
           fallbackYears.push(`${y}-${y + 1}`);
-          fallbackYears.push(`${y}`);
         }
         setAvailableYears(fallbackYears);
       }
     };
 
     fetchDropdownData();
-    fetchAvailableYears();
   }, []);
 
   const fetchReportsData = async () => {
@@ -171,11 +138,7 @@ const ReportsDashboard: React.FC = () => {
       if (academicYear) params.append('academic_year', academicYear);
       if (examType) params.append('exam_type', examType);
 
-      console.log('Fetching reports data with params:', params.toString());
       const response = await authFetch(`/api/input-marks/reports-data/?${params.toString()}`);
-      
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -184,7 +147,6 @@ const ReportsDashboard: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Response data:', data);
       
       if (data.error) {
         throw new Error(data.error);
@@ -366,12 +328,6 @@ const ReportsDashboard: React.FC = () => {
         fill: COLORS[index % COLORS.length]
       }));
   }
-
-  // Debug logging
-  console.log('Reports Data:', reportsData);
-  console.log('Pie Chart Data Raw:', reportsData?.pie_chart_data);
-  console.log('Top Students Pie Data:', topStudentsPieData);
-  console.log('Champions Pie Data:', championsPieData);
 
   return (
     <div className="p-6">
@@ -556,7 +512,8 @@ const ReportsDashboard: React.FC = () => {
             <h3 className="text-md font-medium text-gray-800 mb-3">
               {classData.class_name} ({classData.stream} Stream)
             </h3>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -603,6 +560,37 @@ const ReportsDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {classData.students.map((student, studentIndex) => (
+                <div key={studentIndex} className={`rounded-lg border p-4 ${studentIndex === 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">
+                        {student.position === 1 && '🥇'}
+                        {student.position === 2 && '🥈'}
+                        {student.position === 3 && '🥉'}
+                      </span>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900">{student.student_name}</h4>
+                        <p className="text-xs text-gray-500">{student.stream} Stream</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500">#{student.position}</span>
+                  </div>
+                  <div className="mt-3 flex items-center space-x-4">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-indigo-600">{student.average ? student.average.toFixed(2) : '0.00'}%</p>
+                      <p className="text-xs text-gray-500">Average</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-700">{student.total}</p>
+                      <p className="text-xs text-gray-500">Total</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           ))
         )}
@@ -624,7 +612,8 @@ const ReportsDashboard: React.FC = () => {
             <h3 className="text-md font-medium text-gray-800 mb-3">
               {classData.class_name} ({classData.stream} Stream)
             </h3>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -662,6 +651,31 @@ const ReportsDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {classData.champions.map((champion, championIndex) => (
+                <div key={championIndex} className="rounded-lg border border-gray-200 bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">🏆</span>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900">{champion.student_name}</h4>
+                        <p className="text-xs text-gray-500">{champion.stream} Stream</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-indigo-600">{champion.marks}</p>
+                      <p className="text-xs text-gray-500">marks</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                      {champion.subject}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           ))
         )}
@@ -686,7 +700,8 @@ const ReportsDashboard: React.FC = () => {
                   Class Average: {classData.class_average ? classData.class_average.toFixed(2) : '0.00'}%
                 </span>
               </h3>
-              <div className="overflow-x-auto">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -746,6 +761,46 @@ const ReportsDashboard: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {classData.streams?.map((streamRank, streamIndex) => {
+                  const gradeForAverage = calculateGradeFromPercent(streamRank.average || 0);
+
+                  return (
+                    <div key={streamIndex} className={`rounded-lg border p-4 ${streamIndex === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xl">
+                            {streamRank.position === 1 && '🥇'}
+                            {streamRank.position === 2 && '🥈'}
+                            {streamRank.position === 3 && '🥉'}
+                            {streamRank.position > 3 && `#${streamRank.position}`}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900">{streamRank.class_name}</h4>
+                            <span className="inline-flex mt-0.5 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                              {streamRank.stream}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getGradeColor(gradeForAverage)}`}>
+                          {gradeForAverage}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center space-x-4">
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-indigo-600">{streamRank.average ? streamRank.average.toFixed(2) : '0.00'}%</p>
+                          <p className="text-xs text-gray-500">Average</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-gray-700">{streamRank.total_students || 0}</p>
+                          <p className="text-xs text-gray-500">Students</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))

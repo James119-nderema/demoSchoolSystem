@@ -36,7 +36,47 @@ export default function SubjectFrequencyTable({ frequencies, onDelete, onUpdate 
 
   return (
     <>
-      <div className="overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden divide-y divide-gray-200">
+        {frequencies.map((frequency) => (
+          <div key={frequency.id} className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">{frequency.subject_name}</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleEditClick(frequency)}
+                  className="text-indigo-600 hover:text-indigo-900 p-1"
+                  title="Edit"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(frequency.id)}
+                  className="text-red-600 hover:text-red-900 p-1"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">Code: {frequency.subject_code || '-'}</span>
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                {frequency.class_level}
+              </span>
+              <span className="text-xs text-gray-700 font-medium">{frequency.frequency} times/week</span>
+              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                frequency.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {frequency.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

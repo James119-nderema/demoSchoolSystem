@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { teacherService } from '../../../services/teacherService';
 import type { Teacher } from '../../../types/teacher';
 import AddTeacherModal from './AddTeacherModal';
 import EditTeacherModal from './EditTeacherModal';
 
 export default function Teachers() {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -213,7 +215,73 @@ export default function Teachers() {
 
       {/* Teachers Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-200">
+          {teachers.length === 0 ? (
+            <div className="px-4 py-8 text-center text-gray-500">
+              {searchQuery ? 'No teachers found matching your search' : 'No teachers added yet'}
+            </div>
+          ) : (
+            teachers.map((teacher) => (
+              <div key={teacher.id} className="p-4 space-y-3">
+                <div
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => navigate(`/timetable/teachers/${teacher.id}`)}
+                >
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold flex-shrink-0">
+                    {teacher.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-blue-600 truncate">{teacher.full_name}</p>
+                    <p className="text-xs text-gray-500 truncate">{teacher.email}</p>
+                  </div>
+                  <span
+                    className={`px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${
+                      teacher.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {teacher.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>
+                    <span className="text-gray-400">Phone:</span> {teacher.phone_number || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Joined:</span>{' '}
+                    {teacher.date_joined ? new Date(teacher.date_joined).toLocaleDateString() : 'N/A'}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500 truncate">{teacher.school_name}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditModal(teacher); }}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edit teacher"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher.id, teacher.full_name); }}
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Delete teacher"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -249,9 +317,13 @@ export default function Teachers() {
                 </tr>
               ) : (
                 teachers.map((teacher) => (
-                  <tr key={teacher.id} className="hover:bg-gray-50">
+                  <tr
+                    key={teacher.id}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(`/timetable/teachers/${teacher.id}`)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{teacher.full_name}</div>
+                      <div className="text-sm font-medium text-blue-600 hover:text-blue-800">{teacher.full_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600">{teacher.email}</div>
@@ -278,7 +350,7 @@ export default function Teachers() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
-                        onClick={() => openEditModal(teacher)}
+                        onClick={(e) => { e.stopPropagation(); openEditModal(teacher); }}
                         className="text-blue-600 hover:text-blue-900"
                         title="Edit teacher"
                       >
@@ -287,7 +359,7 @@ export default function Teachers() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDeleteTeacher(teacher.id, teacher.full_name)}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher.id, teacher.full_name); }}
                         className="text-red-600 hover:text-red-900"
                         title="Delete teacher"
                       >

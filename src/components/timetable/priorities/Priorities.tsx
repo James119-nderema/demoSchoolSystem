@@ -191,6 +191,52 @@ export default function Priorities() {
           </div>
         ) : (
           <>
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {filteredPriorities.map((priority) => (
+                <div key={priority.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{priority.subject_name}</p>
+                      <p className="text-xs text-gray-500">{priority.subject_code || '-'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(priority)}
+                        className="text-blue-600 hover:text-blue-900 p-1 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeletePriority(priority.id)}
+                        className="text-red-600 hover:text-red-900 p-1 text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {priority.teacher_name ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span className="text-xs font-medium text-indigo-600">{priority.teacher_name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <span className="text-xs text-gray-700">{priority.teacher_name}</span>
+                    </div>
+                  ) : (
+                    <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">All Teachers</span>
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                      {priority.time_slot_display}
+                    </span>
+                    <span className="text-gray-500">{formatTime(priority.start_time)} - {formatTime(priority.end_time)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -276,6 +322,7 @@ export default function Priorities() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

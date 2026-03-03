@@ -43,19 +43,11 @@ interface TemplateStudent {
 }
 
 interface TemplateData {
-  teacher_id: string;
-  teacher_name: string;
   class_id: string;
   class_name: string;
   class_code: string;
   subjects: TemplateSubject[];
   students: TemplateStudent[];
-}
-
-interface Teacher {
-  id: string;
-  full_name: string;
-  email: string;
 }
 
 // interface StudentMark {
@@ -76,9 +68,6 @@ const InputMarks: React.FC = () => {
   // Download modal state
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
-  const [isDirector, setIsDirector] = useState(false);
-  const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
-  const [selectedTeacherForDownload, setSelectedTeacherForDownload] = useState<string>('');
   const [selectedClassForDownload, setSelectedClassForDownload] = useState<string>('');
   
   // Form state
@@ -149,50 +138,19 @@ const InputMarks: React.FC = () => {
     }
   };
 
-  // Check if user is Director of Studies or Administrative Staff (school admin)
-  const checkUserRole = () => {
-    const staffInfo = localStorage.getItem('staff_info');
-    if (staffInfo) {
-      const parsed = JSON.parse(staffInfo);
-      return parsed.role === 'DIRECTOR_OF_STUDIES' || parsed.role === 'ADMINISTRATIVE_STAFF';
-    }
-    return false;
-  };
-
-  // Fetch available teachers for download (Director only)
-  const fetchAvailableTeachers = async () => {
-    try {
-      const response = await APIService.get(API_ENDPOINTS.INPUT_MARKS.AVAILABLE_TEACHERS, undefined, 'staff');
-      if (response.success) {
-        setAvailableTeachers(response.teachers || []);
-      }
-    } catch (err) {
-      console.error('Error fetching teachers:', err);
-    }
-  };
-
   // Open download modal
   const handleOpenDownloadModal = () => {
-    const isDOS = checkUserRole();
-    setIsDirector(isDOS);
-    if (isDOS) {
-      fetchAvailableTeachers();
-    }
-    setSelectedTeacherForDownload('');
     setSelectedClassForDownload('');
     setShowDownloadModal(true);
   };
 
-  // Generate PDF with student marks template
+  // Generate PDF with student marks template (organized by class, 10 subject columns)
   const handleDownloadTemplate = async () => {
     setDownloadLoading(true);
     setError('');
     
     try {
       const params: Record<string, string> = {};
-      if (selectedTeacherForDownload) {
-        params.teacher_id = selectedTeacherForDownload;
-      }
       if (selectedClassForDownload) {
         params.class_id = selectedClassForDownload;
       }
@@ -200,14 +158,14 @@ const InputMarks: React.FC = () => {
       const response = await APIService.get(API_ENDPOINTS.INPUT_MARKS.MARKS_TEMPLATE, params, 'staff');
       
       if (!response.success || !response.template_data || response.template_data.length === 0) {
-        setError('No data available for download. Please ensure you have class-subject assignments.');
+        setError('No data available for download. Please ensure there are class-subject assignments.');
         setDownloadLoading(false);
         return;
       }
       
       const templateData: TemplateData[] = response.template_data;
       
-      // Create PDF
+      // Create PDF - landscape A4
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -216,11 +174,10 @@ const InputMarks: React.FC = () => {
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 10;
+      const margin = 8;
       
       let isFirstPage = true;
       
-      // Generate a page for each class-teacher combination
       for (const data of templateData) {
         if (!isFirstPage) {
           doc.addPage();
@@ -230,124 +187,121 @@ const InputMarks: React.FC = () => {
         let y = margin;
         
         // Header
-        doc.setFontSize(14);
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.text(`Student Marks Template - ${data.class_name}`, pageWidth / 2, y, { align: 'center' });
+        y += 7;
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, margin, y);
+        doc.text(`Students: ${data.students.length}  |  Subjects: ${data.subjects.length}`, pageWidth - margin, y, { align: 'right' });
         y += 8;
         
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Teacher: ${data.teacher_name}`, margin, y);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - margin - 40, y);
-        y += 10;
+        // Column layout: # | Adm No | Full Name | up to 10 subjects
+        const numWidth = 8;
+        const admWidth = 22;
+        const nameWidth = 40;
+        const subjectCount = Math.min(data.subjects.length, 10);
+        const remainingWidth = pageWidth - 2 * margin - numWidth - admWidth - nameWidth;
+        const subjectWidth = remainingWidth / subjectCount;
+        const tableWidth = numWidth + admWidth + nameWidth + subjectCount * subjectWidth;
         
-        // Calculate column widths
-        const assessmentWidth = 25;
-        const nameWidth = 45;
-        const subjectCount = data.subjects.length;
-        const remainingWidth = pageWidth - 2 * margin - assessmentWidth - nameWidth;
-        const subjectWidth = Math.min(20, remainingWidth / subjectCount);
+        const drawHeader = (yPos: number): number => {
+          const headerHeight = 8;
+          doc.setDrawColor(50);
+          doc.rect(margin, yPos, tableWidth, headerHeight);
+          
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          
+          let x = margin;
+          // #
+          doc.text('#', x + numWidth / 2, yPos + 5.5, { align: 'center' });
+          x += numWidth;
+          doc.line(x, yPos, x, yPos + headerHeight);
+          
+          // Adm No
+          doc.text('Adm No', x + 2, yPos + 5.5);
+          x += admWidth;
+          doc.line(x, yPos, x, yPos + headerHeight);
+          
+          // Full Name
+          doc.text('Full Name', x + 2, yPos + 5.5);
+          x += nameWidth;
+          doc.line(x, yPos, x, yPos + headerHeight);
+          
+          // Subject headers - empty (just draw column dividers)
+          for (let i = 0; i < Math.min(data.subjects.length, 10); i++) {
+            x += subjectWidth;
+            doc.line(x, yPos, x, yPos + headerHeight);
+          }
+          
+          doc.setFont('helvetica', 'normal');
+          return yPos + headerHeight;
+        };
         
-        // Table header
-        doc.setFillColor(200, 200, 200);
-        const headerHeight = 8;
-        doc.rect(margin, y, pageWidth - 2 * margin, headerHeight, 'F');
-        doc.setDrawColor(0);
-        doc.rect(margin, y, pageWidth - 2 * margin, headerHeight);
-        
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        
-        let x = margin;
-        doc.text('Assessment No', x + 2, y + 5);
-        x += assessmentWidth;
-        doc.line(x, y, x, y + headerHeight);
-        
-        doc.text('Full Name', x + 2, y + 5);
-        x += nameWidth;
-        doc.line(x, y, x, y + headerHeight);
-        
-        // Subject headers
-        for (const subj of data.subjects) {
-          const subjText = subj.name.length > 8 ? subj.name.substring(0, 8) : subj.name;
-          doc.text(subjText, x + 2, y + 5);
-          x += subjectWidth;
-          doc.line(x, y, x, y + headerHeight);
-        }
-        
-        y += headerHeight;
+        y = drawHeader(y);
         
         // Student rows
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         const rowHeight = 6;
         
-        for (const student of data.students) {
-          // Check if we need a new page
+        data.students.forEach((student, idx) => {
+          // Check page break
           if (y + rowHeight > pageHeight - margin) {
             doc.addPage();
             y = margin;
             
-            // Re-draw header on new page
-            doc.setFontSize(10);
+            // Re-draw mini header
+            doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${data.class_name} - Teacher: ${data.teacher_name}`, margin, y);
-            y += 8;
-            
-            // Re-draw table header
-            doc.setFillColor(200, 200, 200);
-            doc.rect(margin, y, pageWidth - 2 * margin, headerHeight, 'F');
-            doc.rect(margin, y, pageWidth - 2 * margin, headerHeight);
-            
-            doc.setFontSize(8);
-            x = margin;
-            doc.text('Assessment No', x + 2, y + 5);
-            x += assessmentWidth;
-            doc.line(x, y, x, y + headerHeight);
-            
-            doc.text('Full Name', x + 2, y + 5);
-            x += nameWidth;
-            doc.line(x, y, x, y + headerHeight);
-            
-            for (const subj of data.subjects) {
-              const subjText = subj.name.length > 8 ? subj.name.substring(0, 8) : subj.name;
-              doc.text(subjText, x + 2, y + 5);
-              x += subjectWidth;
-              doc.line(x, y, x, y + headerHeight);
-            }
-            
-            y += headerHeight;
+            doc.text(`${data.class_name} (continued)`, margin, y);
+            y += 6;
+            y = drawHeader(y);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7);
           }
           
-          // Draw row
-          doc.rect(margin, y, pageWidth - 2 * margin, rowHeight);
+          doc.setDrawColor(180);
+          doc.rect(margin, y, tableWidth, rowHeight);
           
-          x = margin;
-          doc.text(student.assessment_no.substring(0, 12), x + 2, y + 4);
-          x += assessmentWidth;
+          let x = margin;
+          
+          // Row number
+          doc.text(String(idx + 1), x + numWidth / 2, y + 4, { align: 'center' });
+          x += numWidth;
           doc.line(x, y, x, y + rowHeight);
           
-          const displayName = student.full_name.length > 25 ? student.full_name.substring(0, 23) + '..' : student.full_name;
+          // Admission number
+          const admText = student.assessment_no.length > 14 ? student.assessment_no.substring(0, 13) + '.' : student.assessment_no;
+          doc.text(admText, x + 2, y + 4);
+          x += admWidth;
+          doc.line(x, y, x, y + rowHeight);
+          
+          // Full name
+          const displayName = student.full_name.length > 28 ? student.full_name.substring(0, 26) + '..' : student.full_name;
           doc.text(displayName, x + 2, y + 4);
           x += nameWidth;
           doc.line(x, y, x, y + rowHeight);
           
-          // Empty cells for marks
-          for (let i = 0; i < data.subjects.length; i++) {
+          // Empty subject cells
+          for (let i = 0; i < subjectCount; i++) {
             x += subjectWidth;
             doc.line(x, y, x, y + rowHeight);
           }
           
           y += rowHeight;
-        }
+        });
       }
       
       // Save PDF
-      const filename = isDirector && selectedTeacherForDownload 
-        ? `Marks_Template_${availableTeachers.find(t => t.id === selectedTeacherForDownload)?.full_name || 'Teacher'}.pdf`
-        : 'Marks_Template.pdf';
+      const selectedClassName = dropdownData?.classes.find(c => c.id === selectedClassForDownload)?.class_name;
+      const filename = selectedClassName
+        ? `Marks_Template_${selectedClassName}.pdf`
+        : 'Marks_Template_All_Classes.pdf';
       doc.save(filename);
       
       setSuccess('Template downloaded successfully!');
@@ -531,34 +485,12 @@ const InputMarks: React.FC = () => {
                       </h3>
                       <div className="mt-4 space-y-4">
                         <p className="text-sm text-gray-500">
-                          Download a PDF template with student names and columns for each subject you teach.
+                          Download a PDF template organized by class with up to 10 subject columns per page.
                         </p>
-                        
-                        {isDirector && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Select Teacher (Optional)
-                              </label>
-                              <select
-                                value={selectedTeacherForDownload}
-                                onChange={(e) => setSelectedTeacherForDownload(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                              >
-                                <option value="">All Teachers</option>
-                                {availableTeachers.map((teacher) => (
-                                  <option key={teacher.id} value={teacher.id}>
-                                    {teacher.full_name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </>
-                        )}
                         
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Select Class (Optional)
+                            Select Class
                           </label>
                           <select
                             value={selectedClassForDownload}

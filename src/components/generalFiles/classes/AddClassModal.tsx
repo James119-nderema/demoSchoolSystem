@@ -160,20 +160,30 @@ export default function AddClassModal({
 
           <div>
             <label htmlFor="class_code" className="block text-sm font-medium text-gray-700 mb-1">
-              Class Code *
+              Class Level *
             </label>
-            <input
-              type="text"
+            <select
               id="class_code"
               name="class_code"
               value={formData.class_code}
-              onChange={handleChange}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, class_code: e.target.value }));
+                if (errors.class_code) setErrors(prev => ({ ...prev, class_code: '' }));
+              }}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.class_code ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="e.g., F1A, G5, Y7"
               disabled={isLoading}
-            />
+            >
+              <option value="">Select Class Level</option>
+              <option value="Primary">Primary</option>
+              <option value="Junior Secondary">Junior Secondary</option>
+              <option value="Senior Secondary">Senior Secondary</option>
+              {formData.class_code && 
+               !['Primary', 'Junior Secondary', 'Senior Secondary'].includes(formData.class_code) && (
+                <option value={formData.class_code}>{formData.class_code}</option>
+              )}
+            </select>
             {errors.class_code && (
               <p className="text-red-500 text-sm mt-1">{errors.class_code}</p>
             )}

@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIService, DataAPI } from '../../services/baseUrl';
+import { APIService, API_ENDPOINTS, DataAPI } from '../../services/baseUrl';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddStudentModal from '../generalFiles/students/modals/AddStudentModal';
 import UploadStudentModal from '../generalFiles/students/modals/UploadStudentModal';
 
 interface Student {
   id: number;
+  upi_no?: string;
+  assessment_no?: string;
+  surname?: string;
+  first_name?: string;
+  other_names?: string;
   full_name: string;
   admission_number: string;
   admission_class: string;
   current_class: string;
+  class_field?: string;
+  class?: string;
   date_of_birth: string;
+  birth_entry_no?: string;
+  disability?: string;
   gender: string;
   parent_guardian_name: string;
   parent_guardian_phone: string;
@@ -55,7 +64,11 @@ const StaffStudents: React.FC = () => {
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
@@ -87,7 +100,7 @@ const StaffStudents: React.FC = () => {
   const [pageSize] = useState(20);
   
   // Permissions
-  const { canAddStudents, canUploadStudents, canViewAllStudents } = usePermissions();
+  const { canAddStudents, canUploadStudents, canViewAllStudents, canEditStudents, canDeleteStudents } = usePermissions();
 
   useEffect(() => {
     fetchStudents();
@@ -240,6 +253,97 @@ const StaffStudents: React.FC = () => {
 
   // Since we're using server-side filtering, we don't need to filter again
   const filteredStudents = students;
+
+  // Edit student handler
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setFormData({
+      upi_no: student.upi_no || '',
+      assessment_no: student.assessment_no || '',
+      surname: student.surname || student.full_name?.split(' ')[0] || '',
+      first_name: student.first_name || student.full_name?.split(' ').slice(1).join(' ') || '',
+      other_names: student.other_names || '',
+      gender: student.gender || '',
+      date_of_birth: student.date_of_birth || '',
+      birth_entry_no: student.birth_entry_no || '',
+      disability: student.disability || '',
+      admission_number: student.admission_number || '',
+      class: student.class_field || student.class || student.current_class || '',
+      parent_guardian_name: student.parent_guardian_name || '',
+      parent_guardian_phone: student.parent_guardian_phone || '',
+      parent_guardian_email: student.parent_guardian_email || '',
+      address: student.address || '',
+      status: student.status || 'active'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      const studentData = {
+        ...formData,
+        upi_no: formData.upi_no || null,
+        assessment_no: formData.assessment_no || null,
+        other_names: formData.other_names || null,
+        birth_entry_no: formData.birth_entry_no || null,
+        disability: formData.disability || null,
+        parent_guardian_email: formData.parent_guardian_email || null,
+        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
+      };
+      
+      await APIService.put(`${API_ENDPOINTS.STUDENTS}${selectedStudent.id}/`, studentData, 'staff');
+      
+      setShowEditModal(false);
+      setSelectedStudent(null);
+      setFormData({
+        upi_no: '', assessment_no: '', surname: '', first_name: '', other_names: '',
+        gender: '', date_of_birth: '', birth_entry_no: '', disability: '',
+        admission_number: '', class: '', parent_guardian_name: '',
+        parent_guardian_phone: '', parent_guardian_email: '', address: '', status: 'active'
+      });
+      
+      await fetchStudents();
+      setSuccessMessage('Student updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update student');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (student: Student) => {
+    setSelectedStudent(student);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!selectedStudent) return;
+    
+    setIsDeleting(true);
+    setError('');
+    
+    try {
+      await APIService.delete(`${API_ENDPOINTS.STUDENTS}${selectedStudent.id}/`, 'staff');
+      
+      setShowDeleteModal(false);
+      setSelectedStudent(null);
+      
+      await fetchStudents();
+      setSuccessMessage('Student deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete student');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Get unique classes for filter (from current page data)
   const uniqueClasses = [...new Set(students.map(student => student.current_class || student.admission_class))];
@@ -502,7 +606,9 @@ const StaffStudents: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -521,12 +627,17 @@ const StaffStudents: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  {(canEditStudents() || canDeleteStudents()) && (
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       {totalCount === 0 
                         ? (
                           <div>
@@ -594,11 +705,144 @@ const StaffStudents: React.FC = () => {
                           {student.status}
                         </span>
                       </td>
+                      {(canEditStudents() || canDeleteStudents()) && (
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2">
+                            {canEditStudents() && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                                className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                                title="Edit student"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            )}
+                            {canDeleteStudents() && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(student); }}
+                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                                title="Delete student"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden">
+            {filteredStudents.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                {totalCount === 0 
+                  ? (
+                    <div>
+                      <p className="mb-2">No students found in your assigned classes.</p>
+                      <p className="text-sm text-gray-400">
+                        Please contact your administrator to assign you to classes and subjects.
+                      </p>
+                    </div>
+                  ) 
+                  : "No students match your search criteria."
+                }
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {filteredStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    onClick={() => navigate(`/students/${student.id}`)}
+                    className="p-4 hover:bg-indigo-50/50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-indigo-600">
+                            {student.full_name?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">{student.full_name}</h3>
+                          <p className="text-xs text-gray-500">Adm: {student.admission_number}</p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        student.status === 'active' 
+                          ? 'bg-green-100 text-green-800'
+                          : student.status === 'inactive'
+                          ? 'bg-gray-100 text-gray-800'
+                          : student.status === 'suspended'
+                          ? 'bg-red-100 text-red-800'
+                          : student.status === 'graduated'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {student.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Class: </span>
+                        <span className="font-medium text-gray-900">{student.current_class || student.admission_class}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Age: </span>
+                        <span className="text-gray-900">{student.age ? `${student.age} yrs` : 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Gender: </span>
+                        <span className="text-gray-900 capitalize">{student.gender || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Guardian: </span>
+                        <span className="text-gray-900">{student.parent_guardian_name || 'N/A'}</span>
+                      </div>
+                    </div>
+                    {student.parent_guardian_phone && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        📞 {student.parent_guardian_phone}
+                      </div>
+                    )}
+                    {(canEditStudents() || canDeleteStudents()) && (
+                      <div className="mt-3 flex items-center justify-end gap-2 border-t border-gray-100 pt-2">
+                        {canEditStudents() && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                          >
+                            <svg className="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                        )}
+                        {canDeleteStudents() && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(student); }}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100"
+                          >
+                            <svg className="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -725,6 +969,60 @@ const StaffStudents: React.FC = () => {
         isUploading={isUploading}
         uploadProgress={uploadProgress}
       />
+
+      {/* Edit Student Modal */}
+      <AddStudentModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setSelectedStudent(null); }}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleUpdateStudent}
+        isSubmitting={isSubmitting}
+        title="Edit Student"
+        isEditMode={true}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => { setShowDeleteModal(false); setSelectedStudent(null); }} />
+            <div className="relative inline-block w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="mt-3 text-center">
+                <h3 className="text-lg font-medium leading-6 text-gray-900">Delete Student</h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to delete <span className="font-semibold">{selectedStudent.full_name}</span>? 
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteModal(false); setSelectedStudent(null); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteStudent}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

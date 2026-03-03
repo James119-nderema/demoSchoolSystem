@@ -208,8 +208,8 @@ const StaffSubjects: React.FC = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Table - Desktop */}
+            <div className="hidden md:block overflow-x-auto">
               {loading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -330,6 +330,86 @@ const StaffSubjects: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : subjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No subjects found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm ? 'Try adjusting your search criteria.' : 'No subjects have been added yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {subjects.map((subject) => (
+                    <div key={subject.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <BookOpen className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900">{subject.subject_name}</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">Code: {subject.subject_code}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          subject.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {subject.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      {subject.description && (
+                        <p className="mt-2 text-xs text-gray-600 line-clamp-2">{subject.description}</p>
+                      )}
+                      <div className="mt-3 flex items-center space-x-4 text-sm text-gray-500">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                          subject.is_double 
+                            ? 'bg-indigo-100 text-indigo-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {subject.is_double ? 'Double Period' : 'Single Period'}
+                        </span>
+                        <div className="flex items-center">
+                          <Calendar className="h-3.5 w-3.5 mr-1 text-gray-400" />
+                          {formatDate(subject.date_created)}
+                        </div>
+                      </div>
+                      {(canEditSubjects() || canDeleteSubjects()) && (
+                        <div className="mt-3 flex items-center space-x-2 pt-2 border-t border-gray-100">
+                          {canEditSubjects() && (
+                            <button
+                              onClick={() => handleEditSubject(subject)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                              <Edit2 className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </button>
+                          )}
+                          {canDeleteSubjects() && (
+                            <button
+                              onClick={() => handleDeleteClick(subject)}
+                              className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 

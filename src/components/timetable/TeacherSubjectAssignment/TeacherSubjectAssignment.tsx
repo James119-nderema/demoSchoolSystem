@@ -217,7 +217,57 @@ export default function TeacherSubjectAssignment() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {assignments.map((assignment) => (
+                  <div key={assignment.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <Users className="h-4 w-4 text-indigo-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{assignment.teacher_name}</p>
+                          <p className="text-xs text-gray-500 truncate">{assignment.teacher_email}</p>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${
+                          assignment.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {assignment.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-600">
+                      <span><span className="text-gray-400">Subject:</span> {assignment.subject_name}</span>
+                      <span><span className="text-gray-400">Class:</span> {assignment.class_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{assignment.subject_code} • {assignment.class_code}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(assignment)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(String(assignment.id))}
+                          className="text-red-600 hover:text-red-900 p-1"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
