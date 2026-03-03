@@ -143,7 +143,7 @@ export const usePermissions = () => {
   // Special permissions for Director of Studies
   // DOS can add students, classes, and subjects
   const canAddStudents = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
+    role === 'CLASS_TEACHER' || role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
   
   const canUploadStudents = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';

@@ -82,8 +82,54 @@ const InputMarks: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const academicYearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+  // --- Auto-save draft helpers ---
+  const DRAFT_KEY = 'inputMarks_draft';
+
+  const saveDraft = (overrides: Record<string, any> = {}) => {
+    try {
+      const draft = {
+        selectedClass: overrides.selectedClass ?? selectedClass,
+        selectedSubject: overrides.selectedSubject ?? selectedSubject,
+        examType: overrides.examType ?? examType,
+        term: overrides.term ?? term,
+        totalMarks: overrides.totalMarks ?? totalMarks,
+        academicYear: overrides.academicYear ?? academicYear,
+        studentMarks: overrides.studentMarks ?? studentMarks,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* ignore quota errors */ }
+  };
+
+  const loadDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  };
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* */ }
+  };
+
+  // --- Restore draft on mount ---
+  const [draftRestored, setDraftRestored] = useState(false);
+
   useEffect(() => {
     fetchDropdownData();
+    // Restore saved draft if available
+    const draft = loadDraft();
+    if (draft) {
+      if (draft.selectedClass) setSelectedClass(draft.selectedClass);
+      if (draft.selectedSubject) setSelectedSubject(draft.selectedSubject);
+      if (draft.examType) setExamType(draft.examType);
+      if (draft.term) setTerm(draft.term);
+      if (draft.totalMarks) setTotalMarks(draft.totalMarks);
+      if (draft.academicYear) setAcademicYear(draft.academicYear);
+      if (draft.studentMarks) setStudentMarks(draft.studentMarks);
+      setDraftRestored(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -95,8 +141,12 @@ const InputMarks: React.FC = () => {
       setAvailableSubjects([]);
       setStudentMarks({});
     }
-    // Reset selected subject when class changes
-    setSelectedSubject('');
+    // Only reset subject on manual class change, not on draft restore
+    if (!draftRestored) {
+      setSelectedSubject('');
+    } else {
+      setDraftRestored(false);
+    }
   }, [selectedClass]);
 
   const fetchDropdownData = async () => {
@@ -115,10 +165,12 @@ const InputMarks: React.FC = () => {
     try {
       const data = await MarksAPI.getClassStudents(selectedClass);
       setStudents(data.students);
-      // Initialize marks for all students
+      // Initialize marks, merging any saved draft values
+      const draft = loadDraft();
+      const savedMarks = draft?.studentMarks || {};
       const initialMarks: { [key: string]: number } = {};
       data.students.forEach((student: Student) => {
-        initialMarks[student.id] = 0;
+        initialMarks[student.id] = savedMarks[student.id] ?? 0;
       });
       setStudentMarks(initialMarks);
     } catch (err) {
@@ -325,11 +377,19 @@ const InputMarks: React.FC = () => {
     }
     
     setError(''); // Clear error if marks are valid
-    setStudentMarks(prev => ({
-      ...prev,
-      [studentId]: marks
-    }));
+    setStudentMarks(prev => {
+      const updated = { ...prev, [studentId]: marks };
+      saveDraft({ studentMarks: updated });
+      return updated;
+    });
   };
+
+  // Auto-save form fields whenever they change
+  useEffect(() => {
+    if (selectedClass || selectedSubject || examType || term || totalMarks) {
+      saveDraft();
+    }
+  }, [selectedClass, selectedSubject, examType, term, totalMarks, academicYear]);
 
   const calculatePercentage = (marks: number): string => {
     if (!totalMarks || totalMarks === 0) return '0%';
@@ -350,36 +410,19 @@ const InputMarks: React.FC = () => {
         return;
       }
 
-      // Check if results already exist for this combination
-      try {
-        const existingResults = await MarksAPI.checkExistingResults({
-          class_id: selectedClass,
-          subject_id: selectedSubject,
-          exam_type: examType,
-          term: term,
-          academic_year: academicYear
-        });
-        
-        if (existingResults && existingResults.length > 0) {
-          const confirmOverwrite = window.confirm(
-            `Results for this class, subject, exam type, and term combination already exist. Do you want to proceed? This may create duplicate entries for some students.`
-          );
-          
-          if (!confirmOverwrite) {
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        // If check fails, continue with submission but log the error
-        console.warn('Could not check for existing results:', err);
-      }
+      // Prepare results data - only include students with marks > 0
+      const results = Object.entries(studentMarks)
+        .filter(([_, marks]) => marks > 0)
+        .map(([studentId, marks]) => ({
+          student_id: studentId,
+          marks: marks
+        }));
 
-      // Prepare results data
-      const results = Object.entries(studentMarks).map(([studentId, marks]) => ({
-        student_id: studentId,
-        marks: marks
-      }));
+      if (results.length === 0) {
+        setError('Please enter marks for at least one student');
+        setLoading(false);
+        return;
+      }
 
       const submitData = {
         class_id: selectedClass,
@@ -392,12 +435,17 @@ const InputMarks: React.FC = () => {
       };
 
       const data = await MarksAPI.bulkInput(submitData);
-      setSuccess(`Successfully processed ${data.successful_records} out of ${data.total_records} records`);
+      let successMsg = `Successfully uploaded marks for ${data.successful_records} student(s).`;
+      if (data.skipped_records > 0) {
+        successMsg += ` ${data.skipped_records} student(s) skipped (already have marks): ${data.skipped_students?.join(', ')}.`;
+      }
+      setSuccess(successMsg);
       if (data.failed_records > 0) {
         setError(`${data.failed_records} records failed: ${data.errors.join(', ')}`);
       }
       
-      // Reset form
+      // Clear saved draft and reset form
+      clearDraft();
       setSelectedClass('');
       setSelectedSubject('');
       setExamType('');
@@ -410,8 +458,9 @@ const InputMarks: React.FC = () => {
       
       // Handle specific error types
       if (err.response?.status === 409) {
-        // Conflict - results already exist
-        setError(err.response.data.error || 'Results for this combination have already been uploaded.');
+        // Conflict - all students already have marks
+        const skippedNames = err.response.data.skipped_students?.join(', ');
+        setError(err.response.data.error + (skippedNames ? ` (${skippedNames})` : ''));
       } else if (err.response?.status === 403) {
         // Forbidden - no permission
         setError(err.response.data.error || 'You do not have permission to input marks for this class-subject combination.');
@@ -542,6 +591,36 @@ const InputMarks: React.FC = () => {
         )}
 
         {/* Alert Messages */}
+        {/* Draft restored banner */}
+        {students.length > 0 && Object.values(studentMarks).some(m => m > 0) && !success && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-md p-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+              </svg>
+              <span className="text-sm text-amber-800">
+                You have unsaved marks in progress. They are auto-saved and will persist if you refresh.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearDraft();
+                setSelectedClass('');
+                setSelectedSubject('');
+                setExamType('');
+                setTerm('');
+                setTotalMarks('');
+                setStudents([]);
+                setStudentMarks({});
+              }}
+              className="ml-4 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-md flex-shrink-0"
+            >
+              Discard Draft
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="text-sm text-red-700">{error}</div>
