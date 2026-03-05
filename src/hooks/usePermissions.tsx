@@ -23,7 +23,8 @@ const ADMIN_STAFF_PERMISSIONS = [
   'view_reports', 'download_reports', 'download_all_reports',
   'manage_finance', 'view_finance',
   'access_school_profile',
-  'view_national_results', 'manage_national_results'
+  'view_national_results', 'manage_national_results',
+  'manage_library', 'view_library'
 ];
 
 export const usePermissions = () => {
@@ -132,12 +133,19 @@ export const usePermissions = () => {
   const canViewFinance = (): boolean => 
     hasPermission('view_finance') || role === 'ADMINISTRATIVE_STAFF';
 
+  // Library permissions
+  const canManageLibrary = (): boolean => 
+    hasPermission('manage_library') || role === 'LIBRARIAN' || role === 'ADMINISTRATIVE_STAFF';
+  const canViewLibrary = (): boolean => 
+    hasPermission('view_library') || role === 'LIBRARIAN' || role === 'ADMINISTRATIVE_STAFF';
+
   // Role checks
   const isTeacher = (): boolean => role === 'TEACHER';
   const isClassTeacher = (): boolean => role === 'CLASS_TEACHER';
   const isHOD = (): boolean => role === 'HOD';
   const isDirectorOfStudies = (): boolean => role === 'DIRECTOR_OF_STUDIES';
   const isBursar = (): boolean => role === 'BURSAR';
+  const isLibrarian = (): boolean => role === 'LIBRARIAN';
   const isAdministrativeStaff = (): boolean => role === 'ADMINISTRATIVE_STAFF';
 
   // Special permissions for Director of Studies
@@ -216,6 +224,8 @@ export const usePermissions = () => {
     canAccessReportCards,
     canManageFinance,
     canViewFinance,
+    canManageLibrary,
+    canViewLibrary,
     // Special permissions for DOS/Bursar/Admin Staff
     canAddStudents,
     canUploadStudents,
@@ -236,6 +246,7 @@ export const usePermissions = () => {
     isHOD,
     isDirectorOfStudies,
     isBursar,
+    isLibrarian,
     isAdministrativeStaff,
   };
 };

@@ -59,6 +59,8 @@ const UnifiedLogin: React.FC = () => {
         setTimeout(() => {
           if (result.role === 'BURSAR' || result.role === 'ACCOUNTANT') {
             navigate('/finance/dashboard');
+          } else if (result.role === 'LIBRARIAN') {
+            navigate('/library/dashboard');
           } else {
             navigate('/dashboard');
           }

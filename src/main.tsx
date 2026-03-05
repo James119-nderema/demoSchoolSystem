@@ -97,6 +97,12 @@ import ParentTermSummary from './components/messaging/ParentTermSummary'
 import Payment from './pages/Payment'
 import SchoolFinance from './components/finance/School_Finance'
 import SchoolPaymentMethod from './components/finance/School_Payment_Methods'
+import LibrarianDashboard from './components/libraryManagement/dashboard/LibrarianDashboard'
+import BookCatalog from './components/libraryManagement/catalog/BookCatalog'
+import BorrowingTab from './components/libraryManagement/borrowing/BorrowingTab'
+import MembersTab from './components/libraryManagement/members/MembersTab'
+import CBCResourcesTab from './components/libraryManagement/cbc/CBCResourcesTab'
+import ReportsTab from './components/libraryManagement/reports/ReportsTab'
 import { RouteErrorBoundary } from './components/ErrorBoundary'
 
 const router = createBrowserRouter([
@@ -497,6 +503,55 @@ const router = createBrowserRouter([
         element: (
           <AuthenticatedRoute userType="staff">
             <SchoolPaymentMethod />
+          </AuthenticatedRoute>
+        ) 
+      },
+      // Library Management
+      { 
+        path: 'library/dashboard', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <LibrarianDashboard />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'library/catalog', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <BookCatalog />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'library/borrowing', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <BorrowingTab />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'library/members', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <MembersTab />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'library/cbc-resources', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <CBCResourcesTab />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'library/reports', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ReportsTab />
           </AuthenticatedRoute>
         ) 
       },

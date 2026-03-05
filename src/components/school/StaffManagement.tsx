@@ -49,6 +49,7 @@ const StaffManagement: React.FC = () => {
     { value: 'HOD', label: 'Head of Department' },
     { value: 'DIRECTOR_OF_STUDIES', label: 'Director of Studies' },
     { value: 'BURSAR', label: 'Bursar/Accountant' },
+    { value: 'LIBRARIAN', label: 'Librarian' },
     { value: 'ADMINISTRATIVE_STAFF', label: 'Administrative Staff' },
   ];
 
