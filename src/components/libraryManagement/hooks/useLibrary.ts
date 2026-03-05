@@ -446,12 +446,14 @@ export function useBulkUpload() {
     formData.append('file', file);
 
     try {
-      const result = await APIService.fetch('/api/students/bulk_upload/', {
-        method: 'POST',
-        body: formData,
+      const result = await APIService.uploadWithProgress('/api/students/bulk_upload/', formData, (pct) => {
+        setProgress(`Uploading... ${pct}%`);
       }, 'staff');
 
       let msg = `Successfully uploaded ${result.created_count} students.`;
+      if ((result as any).updated_count > 0) {
+        msg += ` ${(result as any).updated_count} student(s) updated.`;
+      }
       if (result.classes_created_count > 0) {
         msg += ` ${result.classes_created_count} new class(es) created.`;
       }

@@ -13,7 +13,7 @@ export const ENV = {
     development: {
       BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
-      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 300000, // 5 minutes for uploads
+      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Local Development',
     },
     
@@ -21,7 +21,7 @@ export const ENV = {
     staging: {
       BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
-      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 600000, // 10 minutes for uploads
+      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Staging Server',
     },
     
@@ -29,7 +29,7 @@ export const ENV = {
     production: {
       BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com',
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
-      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 600000, // 10 minutes for uploads
+      UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Production Server',
     },
     

@@ -573,13 +573,15 @@ export default function Students() {
         throw new Error(`Missing authentication token: ${requiredToken}. Please log in again.`);
       }
       
-      const result = await APIService.fetch('/api/students/bulk_upload/', {
-        method: 'POST',
-        body: formDataUpload,
+      const result = await APIService.uploadWithProgress('/api/students/bulk_upload/', formDataUpload, (pct) => {
+        setUploadProgress(`Uploading... ${pct}%`);
       }, userType);
       
       // Build success message with classes created info
       let successMessage = `Successfully uploaded ${result.created_count} students.`;
+      if ((result as any).updated_count > 0) {
+        successMessage += ` ${(result as any).updated_count} student(s) updated.`;
+      }
       if (result.classes_created_count && result.classes_created_count > 0) {
         successMessage += ` ${result.classes_created_count} new class(es) created.`;
       }

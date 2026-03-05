@@ -89,7 +89,6 @@ export class APIService {
   // Check if error is authentication related
   private static isAuthenticationError(status: number, errorData: any): boolean {
     return status === 401 || 
-           status === 403 ||
            errorData.detail === 'Authentication credentials were not provided.' ||
            errorData.error === 'Authentication credentials were not provided.' ||
            errorData.message === 'Authentication credentials were not provided.' ||
