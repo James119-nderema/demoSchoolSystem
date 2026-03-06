@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import {
+  BarChart, Bar, Line, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend
+} from 'recharts';
 import { authFetch } from '../../../utils/apiInterceptors';
 import { generateReportsPDF } from '../../../utils/pdfGenerator';
 import { getGrade as calculateGradeFromPercent, getGradeColor } from '../../../utils/gradingUtils';
@@ -61,8 +64,6 @@ export interface ReportsData {
   pie_chart_data: PieChartData[];
   message?: string;
 }
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 interface DropdownOption {
   value: string;
@@ -307,26 +308,36 @@ const ReportsDashboard: React.FC = () => {
     );
   }
 
-  // Prepare pie chart data (only when data exists)
-  let topStudentsPieData: Array<{name: string, value: number, fill: string}> = [];
-  let championsPieData: Array<{name: string, value: number, fill: string}> = [];
-  
+  // Prepare chart data (only when data exists)
+  let barChartData: Array<{ stream: string; top_students: number; subject_champions: number }> = [];
+  let streamAverageData: Array<{ name: string; average: number; students: number }> = [];
+  let summaryStats = { totalTopStudents: 0, totalChampions: 0, totalStreams: 0, overallAvg: 0 };
+
   if (reportsData?.pie_chart_data && Array.isArray(reportsData.pie_chart_data)) {
-    topStudentsPieData = reportsData.pie_chart_data
-      .filter(item => item.top_students > 0)
-      .map((item, index) => ({
-        name: item.stream,
-        value: item.top_students,
-        fill: COLORS[index % COLORS.length]
+    barChartData = reportsData.pie_chart_data
+      .filter(item => item.top_students > 0 || item.subject_champions > 0)
+      .map(item => ({
+        stream: item.stream,
+        top_students: item.top_students,
+        subject_champions: item.subject_champions
       }));
 
-    championsPieData = reportsData.pie_chart_data
-      .filter(item => item.subject_champions > 0)
-      .map((item, index) => ({
-        name: item.stream,
-        value: item.subject_champions,
-        fill: COLORS[index % COLORS.length]
-      }));
+    summaryStats.totalTopStudents = reportsData.pie_chart_data.reduce((s, i) => s + i.top_students, 0);
+    summaryStats.totalChampions = reportsData.pie_chart_data.reduce((s, i) => s + i.subject_champions, 0);
+    summaryStats.totalStreams = reportsData.pie_chart_data.length;
+  }
+
+  if (reportsData?.stream_rankings && Array.isArray(reportsData.stream_rankings)) {
+    // Flatten all streams across class levels for line chart
+    streamAverageData = reportsData.stream_rankings.flatMap(cl =>
+      (cl.streams || []).map(s => ({
+        name: s.class_name || s.stream,
+        average: Number((s.average || 0).toFixed(2)),
+        students: s.total_students || 0
+      }))
+    );
+    const allAvgs = streamAverageData.map(d => d.average).filter(a => a > 0);
+    summaryStats.overallAvg = allAvgs.length ? Number((allAvgs.reduce((a, b) => a + b, 0) / allAvgs.length).toFixed(1)) : 0;
   }
 
   return (
@@ -354,8 +365,8 @@ const ReportsDashboard: React.FC = () => {
       </div>
       
       {/* Filter Controls - Always visible */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Filters</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Term</label>
@@ -399,48 +410,62 @@ const ReportsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Pie Charts */}
+      {/* Summary Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+          <p className="text-xs font-medium text-indigo-100 uppercase tracking-wider">Top Students</p>
+          <p className="text-2xl font-bold mt-1">{loading ? '—' : summaryStats.totalTopStudents}</p>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+          <p className="text-xs font-medium text-emerald-100 uppercase tracking-wider">Subject Champions</p>
+          <p className="text-2xl font-bold mt-1">{loading ? '—' : summaryStats.totalChampions}</p>
+        </div>
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
+          <p className="text-xs font-medium text-amber-100 uppercase tracking-wider">Streams</p>
+          <p className="text-2xl font-bold mt-1">{loading ? '—' : summaryStats.totalStreams}</p>
+        </div>
+        <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl p-4 text-white shadow-lg">
+          <p className="text-xs font-medium text-rose-100 uppercase tracking-wider">Overall Avg</p>
+          <p className="text-2xl font-bold mt-1">{loading ? '—' : `${summaryStats.overallAvg}%`}</p>
+        </div>
+      </div>
+
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Top Students by Stream
-            {loading && <span className="ml-2 text-sm text-gray-500">(Updating...)</span>}
+        {/* Bar Chart — Top Students vs Subject Champions per Stream */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">
+            Top Students vs Champions by Stream
+            {loading && <span className="ml-2 text-sm text-gray-400 font-normal">(Updating…)</span>}
           </h2>
-          {topStudentsPieData.length > 0 ? (
+          <p className="text-xs text-gray-500 mb-4">Side-by-side comparison across all streams</p>
+          {barChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={topStudentsPieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {topStudentsPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+              <BarChart data={barChartData} barGap={4} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="stream" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: 'rgba(99,102,241,0.05)' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="top_students" name="Top Students" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="subject_champions" name="Subject Champions" fill="#10b981" radius={[6, 6, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600 text-sm">Loading chart data...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">Loading chart data…</p>
                   </>
                 ) : (
                   <>
-                    <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <p className="text-gray-600">No data available for chart</p>
+                    <svg className="h-10 w-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    <p className="text-gray-400 text-sm">No stream data available</p>
                   </>
                 )}
               </div>
@@ -448,46 +473,50 @@ const ReportsDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Subject Champions by Stream
-            {loading && <span className="ml-2 text-sm text-gray-500">(Updating...)</span>}
+        {/* Area Chart — Stream Averages */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">
+            Stream Performance Overview
+            {loading && <span className="ml-2 text-sm text-gray-400 font-normal">(Updating…)</span>}
           </h2>
-          {championsPieData.length > 0 ? (
+          <p className="text-xs text-gray-500 mb-4">Average marks & student count per stream</p>
+          {streamAverageData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={championsPieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {championsPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
+              <AreaChart data={streamAverageData}>
+                <defs>
+                  <linearGradient id="avgGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="studGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" height={50} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} unit="%" />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Area yAxisId="left" type="monotone" dataKey="average" name="Average (%)" stroke="#6366f1" strokeWidth={2} fill="url(#avgGrad)" dot={{ r: 4, fill: '#6366f1' }} activeDot={{ r: 6 }} />
+                <Line yAxisId="right" type="monotone" dataKey="students" name="Students" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4, fill: '#f59e0b' }} />
+              </AreaChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600 text-sm">Loading chart data...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">Loading chart data…</p>
                   </>
                 ) : (
                   <>
-                    <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <p className="text-gray-600">No data available for chart</p>
+                    <svg className="h-10 w-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    <p className="text-gray-400 text-sm">No ranking data available</p>
                   </>
                 )}
               </div>
@@ -497,8 +526,9 @@ const ReportsDashboard: React.FC = () => {
       </div>
 
       {/* Top 3 Students Per Class */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Top 3 Students Per Class</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Top 3 Students Per Class</h2>
+        <p className="text-xs text-gray-500 mb-4">Highest performing students in each class</p>
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="text-center">
@@ -597,8 +627,9 @@ const ReportsDashboard: React.FC = () => {
       </div>
 
       {/* Subject Champions Per Class */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Subject Champions Per Class</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Subject Champions Per Class</h2>
+        <p className="text-xs text-gray-500 mb-4">Top scorer in each subject per class</p>
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="text-center">
@@ -682,8 +713,9 @@ const ReportsDashboard: React.FC = () => {
       </div>
 
       {/* Stream Rankings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Stream Rankings</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Stream Rankings</h2>
+        <p className="text-xs text-gray-500 mb-4">Performance comparison across streams</p>
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="text-center">

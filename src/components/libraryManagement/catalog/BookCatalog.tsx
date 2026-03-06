@@ -32,6 +32,23 @@ const BookCatalog: React.FC = () => {
   const [dbClasses, setDbClasses] = useState<ClassRecord[]>([]);
   const [dbSubjects, setDbSubjects] = useState<SubjectRecord[]>([]);
 
+  // Auto-apply filters when any dropdown changes (skip initial mount)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const newFilters: Record<string, string> = {};
+    if (searchTerm) newFilters.search = searchTerm;
+    if (selectedArea) newFilters.learning_area = selectedArea;
+    if (selectedGrade) newFilters.grade_level = selectedGrade;
+    if (selectedType) newFilters.resource_type = selectedType;
+    setFilters(newFilters);
+    fetchBooks(newFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedArea, selectedGrade, selectedType]);
+
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {

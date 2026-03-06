@@ -31,7 +31,7 @@ export const libraryService = {
 
   // ─── Book Catalog ───────────────────────────────────────────────────────
   getBooks: (params?: Record<string, string>) =>
-    APIService.get<{ results: Book[]; count: number }>(`${BASE}/books/`, params, 'staff'),
+    APIService.get<{ results: Book[]; count: number }>(`${BASE}/books/`, { page_size: '1000', ...params }, 'staff'),
 
   getBook: (id: string) =>
     APIService.get<Book>(`${BASE}/books/${id}/`, {}, 'staff'),

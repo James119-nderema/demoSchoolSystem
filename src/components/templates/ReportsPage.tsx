@@ -5,6 +5,7 @@ import { APIService, DataAPI, MarksAPI, API_ENDPOINTS } from '../../services/bas
 import { generateTemplate1PDF } from './HighSchoolReportPDF';
 import { generateTemplate2PDF } from './Grade8CBCReportPDF';
 import { getRemarks } from './utils/reportUtils';
+import { prefetchLogo } from './utils/imageUtils';
 import { 
   sendBulkSms, 
   generateResultMessage, 
@@ -375,48 +376,53 @@ const ReportsPage: React.FC = () => {
       // Create a map to group reports by student admission number
       const studentReportsMap = new Map<string, StudentReportData[]>();
       
-      // Fetch data for each selected exam type
-      for (const examType of selectedExamTypes) {
-        const params: Record<string, string> = {
-          term: selectedTerm,
-          academic_year: selectedYear,
-          exam_type: examType
-        };
+      // Fetch data for all selected exam types in parallel
+      const examResults = await Promise.all(
+        selectedExamTypes.map(async (examType) => {
+          const params: Record<string, string> = {
+            term: selectedTerm,
+            academic_year: selectedYear,
+            exam_type: examType
+          };
 
-        if (classId) {
-          params.class_id = classId;
-        }
+          if (classId) {
+            params.class_id = classId;
+          }
 
-        try {
-          console.log('Fetching bulk report data with params:', params);
-          const response = await APIService.get(API_ENDPOINTS.REPORTS.BULK_REPORT_DATA, params, 'staff');
-          console.log('Bulk report API response:', response);
-          
-          // Transform backend response array to frontend format
-          const reports = response.reports || response.students || [];
-          console.log('Reports array length:', reports.length);
-          
-          reports.forEach((report: BackendStudentReport) => {
-            try {
-              const transformed = transformBackendToFrontend(report, examType);
-              // Add exam type info for labeling
-              if (transformed.exam_info) {
-                transformed.exam_info.exam_type = examType;
-              }
-              
-              // Group by admission number
-              const admNo = transformed.student.admission_number;
-              if (!studentReportsMap.has(admNo)) {
-                studentReportsMap.set(admNo, []);
-              }
-              studentReportsMap.get(admNo)!.push(transformed);
-            } catch (transformErr) {
-              console.error('Error transforming report:', transformErr, report);
+          try {
+            console.log('Fetching bulk report data with params:', params);
+            const response = await APIService.get(API_ENDPOINTS.REPORTS.BULK_REPORT_DATA, params, 'staff');
+            console.log('Bulk report API response:', response);
+            return { examType, response };
+          } catch (err) {
+            console.warn(`No data found for exam type: ${examType}`, err);
+            return { examType, response: null };
+          }
+        })
+      );
+
+      // Process all responses
+      for (const { examType, response } of examResults) {
+        if (!response) continue;
+        const reports = response.reports || response.students || [];
+        console.log('Reports array length:', reports.length);
+        
+        reports.forEach((report: BackendStudentReport) => {
+          try {
+            const transformed = transformBackendToFrontend(report, examType);
+            if (transformed.exam_info) {
+              transformed.exam_info.exam_type = examType;
             }
-          });
-        } catch (err) {
-          console.warn(`No data found for exam type: ${examType}`, err);
-        }
+            
+            const admNo = transformed.student.admission_number;
+            if (!studentReportsMap.has(admNo)) {
+              studentReportsMap.set(admNo, []);
+            }
+            studentReportsMap.get(admNo)!.push(transformed);
+          } catch (transformErr) {
+            console.error('Error transforming report:', transformErr, report);
+          }
+        });
       }
       
       // Combine reports for each student
@@ -705,6 +711,11 @@ const ReportsPage: React.FC = () => {
       const isTemplate1 = selectedTemplate?.id === 'template1';
       console.log('Using template:', isTemplate1 ? 'template1' : 'template2');
 
+      // Pre-fetch logo ONCE and reuse for every student
+      const logoUrl = schoolInfo?.logo_url || studentsData[0]?.school_info?.logo_url;
+      const logoBase64 = await prefetchLogo(logoUrl);
+      console.log('Logo pre-fetched:', logoBase64 ? 'yes' : 'no');
+
       for (let i = 0; i < studentsData.length; i++) {
         const studentData = {
           ...studentsData[i],
@@ -723,7 +734,8 @@ const ReportsPage: React.FC = () => {
             schoolInfo,
             selectedTerm,
             selectedYear,
-            isNewPage
+            isNewPage,
+            logoBase64
           });
         } else {
           await generateTemplate2PDF({
@@ -732,7 +744,8 @@ const ReportsPage: React.FC = () => {
             schoolInfo,
             selectedTerm,
             selectedYear,
-            isNewPage
+            isNewPage,
+            logoBase64
           });
         }
 
@@ -812,13 +825,11 @@ const ReportsPage: React.FC = () => {
 
     setLoading(true);
     try {
-      // Fetch reports for all classes
-      const allStudentsData: StudentReportData[] = [];
-      
-      for (const classItem of classes) {
-        const classReports = await fetchBulkReportData(classItem.id);
-        allStudentsData.push(...classReports);
-      }
+      // Fetch reports for all classes in parallel
+      const allClassReports = await Promise.all(
+        classes.map(classItem => fetchBulkReportData(classItem.id))
+      );
+      const allStudentsData = allClassReports.flat();
       
       if (allStudentsData.length > 0) {
         const examTypesLabel = selectedExamTypes.join('_');

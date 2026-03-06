@@ -6,6 +6,7 @@
 import jsPDF from 'jspdf';
 import type { StudentReportData, SchoolInfo } from './utils/reportTypes';
 import { getCBCRating } from './utils/reportUtils';
+import { loadImageAsBase64 } from './utils/imageUtils';
 
 interface GenerateTemplate2Options {
   doc: jsPDF;
@@ -14,23 +15,9 @@ interface GenerateTemplate2Options {
   selectedTerm: string;
   selectedYear?: string;
   isNewPage?: boolean;
+  /** Pre-fetched logo base64 data — avoids re-fetching for every student */
+  logoBase64?: string | null;
 }
-
-// Helper function to load image as base64
-const loadImageAsBase64 = async (url: string): Promise<string | null> => {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-};
 
 export const generateTemplate2PDF = async ({
   doc,
@@ -38,7 +25,8 @@ export const generateTemplate2PDF = async ({
   schoolInfo,
   selectedTerm,
   selectedYear,
-  isNewPage = false
+  isNewPage = false,
+  logoBase64: preloadedLogo
 }: GenerateTemplate2Options): Promise<void> => {
   if (isNewPage) {
     doc.addPage();
@@ -62,20 +50,23 @@ export const generateTemplate2PDF = async ({
   const logoY = y;
   
   // Load and add logo (supports JPG, PNG, JPEG)
-  let logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
-  // Proxy PythonAnywhere logo through Vercel to bypass CORS
-  if (logoUrl && logoUrl.includes('pythonanywhere.com/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png')) {
-    logoUrl = '/api/proxy-logo';
+  // Use pre-fetched logo if available, otherwise fetch on-the-fly (fallback)
+  let logoData = preloadedLogo ?? null;
+  if (!logoData) {
+    let logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
+    if (logoUrl && logoUrl.includes('pythonanywhere.com/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png')) {
+      logoUrl = '/api/proxy-logo';
+    }
+    if (logoUrl) {
+      try { logoData = await loadImageAsBase64(logoUrl); } catch { /* continue without logo */ }
+    }
   }
-  if (logoUrl) {
+  if (logoData) {
     try {
-      const logoData = await loadImageAsBase64(logoUrl);
-      if (logoData) {
-        const format = logoData.includes('image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(logoData, format, logoX, logoY, logoSize, logoSize);
-      }
+      const format = logoData.includes('image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(logoData, format, logoX, logoY, logoSize, logoSize);
     } catch {
-      // Logo failed to load - continue without it
+      // Logo failed to render - continue without it
     }
   }
 
