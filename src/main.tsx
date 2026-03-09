@@ -95,14 +95,23 @@ import ParentExamResults from './components/messaging/ParentExamResults'
 import ParentTermSummary from './components/messaging/ParentTermSummary'
 // payment
 import Payment from './pages/Payment'
-import SchoolFinance from './components/finance/School_Finance'
-import SchoolPaymentMethod from './components/finance/School_Payment_Methods'
+import SchoolFinance from './components/feeManagement/finance/School_Finance'
+import SchoolPaymentMethod from './components/feeManagement/finance/School_Payment_Methods'
 import LibrarianDashboard from './components/libraryManagement/dashboard/LibrarianDashboard'
 import BookCatalog from './components/libraryManagement/catalog/BookCatalog'
 import BorrowingTab from './components/libraryManagement/borrowing/BorrowingTab'
 import MembersTab from './components/libraryManagement/members/MembersTab'
 import CBCResourcesTab from './components/libraryManagement/cbc/CBCResourcesTab'
 import ReportsTab from './components/libraryManagement/reports/ReportsTab'
+import SalaryManagement from './components/payroll/SalaryManagement'
+import PayrollDashboard from './components/payroll/PayrollDashboard'
+import PaymentProcessing from './components/payroll/PaymentProcessing'
+import DeductionSettings from './components/payroll/DeductionSettings'
+import BudgetPlanning from './components/finance/BudgetPlanning'
+import BalanceSheet from './components/finance/BalanceSheet'
+import SchoolExpenses from './components/finance/SchoolExpenses'
+import FinanceGuide from './components/finance/FinanceGuide'
+import FinanceAnalytics from './components/finance/FinanceAnalytics'
 import { RouteErrorBoundary } from './components/ErrorBoundary'
 
 const router = createBrowserRouter([
@@ -129,6 +138,7 @@ const router = createBrowserRouter([
       { path: 'parent/register', element: <ParentRegistration /> },
       { path: 'parent/login', element: <ParentLogin /> },
       { path: 'parent/forgot-password', element: <ParentForgotPassword /> },
+      { path: 'finance/guide', element: <FinanceGuide />},
     ],
   },
   // Main authenticated routes (dashboard, students, classes, etc.)
@@ -572,6 +582,73 @@ const router = createBrowserRouter([
         ) 
       },
       { path: 'profile', element: <StaffProfile /> },
+      // Payroll Management
+      { 
+        path: 'payroll/salaries', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <SalaryManagement />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'payroll/dashboard', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <PayrollDashboard />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'payroll/payments', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <PaymentProcessing />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'payroll/deductions', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <DeductionSettings />
+          </AuthenticatedRoute>
+        ) 
+      },
+      // Financial Management
+      { 
+        path: 'finance/budget', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <BudgetPlanning />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'finance/balance-sheet', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <BalanceSheet />
+          </AuthenticatedRoute>
+        ) 
+      },
+      { 
+        path: 'finance/expenses', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <SchoolExpenses />
+          </AuthenticatedRoute>
+        ) 
+      },
+      
+      { 
+        path: 'finance/analytics', 
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <FinanceAnalytics />
+          </AuthenticatedRoute>
+        ) 
+      },
     ],
   },
   // Parent routes

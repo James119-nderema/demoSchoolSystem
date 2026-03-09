@@ -22,6 +22,7 @@ const ADMIN_STAFF_PERMISSIONS = [
   'view_statistics', 'view_all_statistics',
   'view_reports', 'download_reports', 'download_all_reports',
   'manage_finance', 'view_finance',
+  'manage_payroll', 'view_payroll',
   'access_school_profile',
   'view_national_results', 'manage_national_results',
   'manage_library', 'view_library'
