@@ -4,8 +4,8 @@ import {
   Play, Trash2, Eye, X, ChevronRight, Calendar, DollarSign,
   TrendingUp, TrendingDown, FileText, Loader2, Landmark, PiggyBank, Scale,
 } from 'lucide-react';
-import { payrollService } from '../../services/payrollService';
-import type { PayrollRun, PayrollDashboardStats, PaymentTransaction, RevenueStats } from '../../services/payrollService';
+import { payrollService } from '../../../services/payrollService';
+import type { PayrollRun, PayrollDashboardStats, PaymentTransaction, RevenueStats } from '../../../services/payrollService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Constants

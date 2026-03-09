@@ -4,8 +4,8 @@ import {
   Building2, ChevronDown, ChevronUp, Save, X, AlertCircle, CheckCircle,
   ArrowUpDown, Wallet, TrendingUp, TrendingDown, CalendarClock, Loader2, Info,
 } from 'lucide-react';
-import { payrollService } from '../../services/payrollService';
-import type { SalaryStructure, StaffForPayroll, DeductionPreview } from '../../services/payrollService';
+import { payrollService } from '../../../services/payrollService';
+import type { SalaryStructure, StaffForPayroll, DeductionPreview } from '../../../services/payrollService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Constants

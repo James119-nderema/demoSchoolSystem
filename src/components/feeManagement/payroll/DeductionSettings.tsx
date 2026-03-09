@@ -4,8 +4,8 @@ import {
   Shield, Heart, Home, Landmark, PiggyBank,
   Calculator, RefreshCw, ChevronRight, Info,
 } from 'lucide-react';
-import { payrollService } from '../../services/payrollService';
-import type { DeductionConfig, PAYEBracket } from '../../services/payrollService';
+import { payrollService } from '../../../services/payrollService';
+import type { DeductionConfig, PAYEBracket } from '../../../services/payrollService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Component

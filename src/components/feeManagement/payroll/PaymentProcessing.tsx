@@ -5,8 +5,8 @@ import {
   Users, TrendingDown, Landmark, PiggyBank, CalendarClock, Filter, X,
   ArrowUpDown, ChevronUp, ChevronDown, CreditCard,
 } from 'lucide-react';
-import { payrollService } from '../../services/payrollService';
-import type { StaffForPayroll, SalaryStructure, PaymentTransaction, RevenueStats } from '../../services/payrollService';
+import { payrollService } from '../../../services/payrollService';
+import type { StaffForPayroll, SalaryStructure, PaymentTransaction, RevenueStats } from '../../../services/payrollService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Constants

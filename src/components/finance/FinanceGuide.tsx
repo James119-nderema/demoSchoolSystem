@@ -429,7 +429,7 @@ const SECTIONS: SectionData[] = [
         features: ['Status Badges', 'Search & Filter', 'Bulk View'],
         screenshotAlt: 'Invoice List Page Screenshot',
         screenshotHint: 'Capture the invoice list page showing the table with status badges and filters at /finance/invoices',
-        screenshotSrc: '/screenshots/invoices.png'
+        screenshotSrc: '/screenshots/invoice.png'
       },
       {
         title: 'Create a New Invoice',
@@ -438,7 +438,7 @@ const SECTIONS: SectionData[] = [
         features: ['Single/Multiple/Class/All Students', 'Custom Line Items', 'Term & Year Selection', 'Auto Invoice Numbering'],
         screenshotAlt: 'Create Invoice Modal Screenshot',
         screenshotHint: 'Capture the create invoice modal showing student selection and fee line items',
-        screenshotSrc: '/screenshots/create-invoice.png',
+        screenshotSrc: '/screenshots/create_invoice.png',
         tip: 'You can create invoices for an entire class in one click — the system generates individual invoices for each student with the same fee items.',
       },
       {
@@ -448,7 +448,7 @@ const SECTIONS: SectionData[] = [
         features: ['Edit/Delete Invoices', 'View Student Balances', 'Overdue Highlighting'],
         screenshotAlt: 'Invoice Detail Screenshot',
         screenshotHint: 'Capture an invoice detail view showing line items and student balance',
-        screenshotSrc: '/screenshots/invoice-detail.png'
+        screenshotSrc: '/screenshots/edit_invoice.png'
       },
     ],
   },
@@ -470,7 +470,7 @@ const SECTIONS: SectionData[] = [
         features: ['Outstanding Balance Card', 'Mobile Money Options', 'Bank Transfer Options', '13+ Payment Methods'],
         screenshotAlt: 'Parent Pay Fees Page Screenshot',
         screenshotHint: 'Capture the parent pay-fees page showing the balance card and payment method grid',
-        screenshotSrc: '/screenshots/payments.png'
+        screenshotSrc: '/screenshots/payment.png'
       },
       {
         title: 'Payment Instructions & STK Push',
@@ -521,7 +521,7 @@ const SECTIONS: SectionData[] = [
         screenshotAlt: 'Record Payment Modal Screenshot',
         screenshotHint: 'Capture the record payment modal showing student selection, invoice picker, and payment form fields',
         tip: 'Partial payments are fully supported. If a parent pays KES 10,000 against a KES 25,000 invoice, the invoice status changes to "Partially Paid" and the remaining KES 15,000 balance is tracked.',
-        screenshotSrc: '/screenshots/manual_payment.png'
+        screenshotSrc: '/screenshots/manual_record.png'
       },
     ],
   },
@@ -575,7 +575,7 @@ const SECTIONS: SectionData[] = [
         features: ['Create/Edit/Delete Categories', 'Expense Count per Category'],
         screenshotAlt: 'Expense Categories Screenshot',
         screenshotHint: 'Capture the categories tab showing the category list and the Add Category button',
-        screenshotSrc: '/screenshots/manage_expennse.png'
+        screenshotSrc: '/screenshots/manage_expenses.png'
       },
       {
         title: 'Create an Expense',
@@ -702,6 +702,7 @@ const SECTIONS: SectionData[] = [
         features: ['Line Items per Category', 'Planned Amount', 'Actual Amount', 'Variance Calculation', 'Variance Percentage'],
         screenshotAlt: 'Budget Items Table Screenshot',
         screenshotHint: 'Capture a category card expanded to show the line items table with planned/actual/variance columns',
+        screenshotSrc: '/screenshots/budget_items.png'
       },
       {
         title: 'Run Budget Simulation',
