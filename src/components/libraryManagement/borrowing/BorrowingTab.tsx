@@ -118,7 +118,7 @@ const BorrowingTab: React.FC = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<StaffSearchResult | null>(null);
   const [classAssignments, setClassAssignments] = useState<ClassBorrowingAssignment[]>([]);
   const [loadingClass, setLoadingClass] = useState(false);
-  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [_pdfGenerated, setPdfGenerated] = useState(false);
   const { loading: classIssueLoading, issueClassBooks } = useClassBorrowing();
 
   // Class mode — selected book for class issuing

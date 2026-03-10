@@ -105,7 +105,7 @@ export const libraryService = {
     APIService.get<{ results: OverdueEntry[]; count: number }>(`${BASE}/borrowings/overdue/`, params, 'staff'),
 
   issueClassBooks: (data: ClassBorrowingData) =>
-    APIService.post<{ success: boolean; issued_count: number; records: BorrowingRecord[] }>(`${BASE}/borrowings/issue-class/`, data, 'staff'),
+    APIService.post<{ success: boolean; issued_count: number; error_count: number; records: BorrowingRecord[] }>(`${BASE}/borrowings/issue-class/`, data, 'staff'),
 
   returnClassBooks: (borrowingIds: string[], condition?: string, notes?: string) =>
     APIService.post<{ returned_count: number; error_count: number; records: BorrowingRecord[]; errors: any[] }>(

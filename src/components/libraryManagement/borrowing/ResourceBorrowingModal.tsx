@@ -169,7 +169,7 @@ const ResourceBorrowingModal: React.FC<Props> = ({ book, subject, onClose, onSuc
   const [selectedTeacher, setSelectedTeacher] = useState<StaffSearchResult | null>(null);
   const [classAssignments, setClassAssignments] = useState<ClassBorrowingAssignment[]>([]);
   const [loadingClass, setLoadingClass] = useState(false);
-  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [_pdfGenerated, setPdfGenerated] = useState(false);
   const { loading: classIssueLoading, issueClassBooks } = useClassBorrowing();
 
   // Fetch classes & teachers on mount
