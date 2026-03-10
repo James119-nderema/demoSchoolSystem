@@ -16,7 +16,7 @@ interface Props {
 }
 
 const BookCopyManager: React.FC<Props> = ({ book, onClose, onBorrow }) => {
-  const { copies, loading, error, addCopy, deleteCopy } = useBookCopies(book.id);
+  const { copies, loading, error, addCopy, addCopiesBulk, deleteCopy } = useBookCopies(book.id);
   const [newCopyUid, setNewCopyUid] = useState('');
   const [bulkText, setBulkText] = useState('');
   const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
@@ -93,29 +93,22 @@ const BookCopyManager: React.FC<Props> = ({ book, onClose, onBorrow }) => {
     setSubmitting(true);
     setBulkProgress({ added: 0, failed: [], total: uniqueIds.length });
 
-    let addedCount = 0;
-    const failedIds: string[] = [];
+    try {
+      const result = await addCopiesBulk(uniqueIds);
+      const addedCount = result.created_count || 0;
+      const failedIds = result.failed || [];
 
-    for (const uid of uniqueIds) {
-      if (isDuplicate(uid)) {
-        failedIds.push(`${uid} (duplicate)`);
-        continue;
+      setBulkProgress({ added: addedCount, failed: failedIds, total: uniqueIds.length });
+      if (addedCount > 0) setBulkText('');
+      if (failedIds.length > 0) {
+        setAddError(`${addedCount} added, ${failedIds.length} failed: ${failedIds.join(', ')}`);
       }
-      try {
-        await addCopy({ book_id: book.id, copy_uid: uid });
-        addedCount++;
-        setBulkProgress({ added: addedCount, failed: failedIds, total: uniqueIds.length });
-      } catch (err: any) {
-        failedIds.push(`${uid} (${err?.error || 'failed'})`);
-      }
+    } catch (err: any) {
+      setAddError(err?.error || err?.message || 'Bulk upload failed');
+      setBulkProgress(null);
+    } finally {
+      setSubmitting(false);
     }
-
-    setBulkProgress({ added: addedCount, failed: failedIds, total: uniqueIds.length });
-    if (addedCount > 0) setBulkText('');
-    if (failedIds.length > 0) {
-      setAddError(`${addedCount} added, ${failedIds.length} failed: ${failedIds.join(', ')}`);
-    }
-    setSubmitting(false);
   };
 
   const handleDeleteCopy = async (copy: { id: string; is_available: boolean }) => {

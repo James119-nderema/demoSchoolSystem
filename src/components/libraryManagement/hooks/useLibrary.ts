@@ -12,6 +12,7 @@ import type {
   BookFormData,
   BookCopy,
   BookCopyFormData,
+  BookCopyBulkResponse,
   BorrowingRecord,
   LibraryMember,
   LibraryDashboardStats,
@@ -267,12 +268,20 @@ export function useBookCopies(bookId: string) {
     return copy;
   };
 
+  const addCopiesBulk = async (copyUids: string[]): Promise<BookCopyBulkResponse> => {
+    const result = await libraryService.addBookCopiesBulk(bookId, copyUids);
+    if (result.created && result.created.length > 0) {
+      setCopies(prev => [...prev, ...result.created]);
+    }
+    return result;
+  };
+
   const deleteCopy = async (copyId: string) => {
     await libraryService.deleteBookCopy(bookId, copyId);
     setCopies(prev => prev.filter(c => c.id !== copyId));
   };
 
-  return { copies, loading, error, fetchCopies, addCopy, deleteCopy };
+  return { copies, loading, error, fetchCopies, addCopy, addCopiesBulk, deleteCopy };
 }
 
 // ─── Class Borrowing Hook ────────────────────────────────────────────────────

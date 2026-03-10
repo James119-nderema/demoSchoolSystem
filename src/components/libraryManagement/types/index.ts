@@ -110,6 +110,13 @@ export interface BookCopyFormData {
   copy_uid: string;
 }
 
+export interface BookCopyBulkResponse {
+  created: BookCopy[];
+  failed: string[];
+  created_count: number;
+  failed_count: number;
+}
+
 // ─── Library Member ──────────────────────────────────────────────────────────
 export interface LibraryMember {
   id: string;

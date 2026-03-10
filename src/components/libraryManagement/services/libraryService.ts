@@ -9,6 +9,7 @@ import type {
   BookFormData,
   BookCopy,
   BookCopyFormData,
+  BookCopyBulkResponse,
   BorrowingRecord,
   IssueBorrowingData,
   ReturnData,
@@ -68,6 +69,9 @@ export const libraryService = {
 
   addBookCopy: (bookId: string, data: BookCopyFormData) =>
     APIService.post<BookCopy>(`${BASE}/books/${bookId}/copies/`, data, 'staff'),
+
+  addBookCopiesBulk: (bookId: string, copyUids: string[]) =>
+    APIService.post<BookCopyBulkResponse>(`${BASE}/books/${bookId}/copies/bulk/`, { copy_uids: copyUids }, 'staff'),
 
   deleteBookCopy: (bookId: string, copyId: string) =>
     APIService.delete(`${BASE}/books/${bookId}/copies/${copyId}/`, 'staff'),
