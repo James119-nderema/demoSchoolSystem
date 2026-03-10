@@ -17,7 +17,7 @@ interface ClassRecord { id: string; class_name: string }
 
 const CBCResourcesTab: React.FC = () => {
   const { projectRequests, readingLogs, loading } = useCBCResources();
-  const { books } = useBookCatalog();
+  const { books, fetchBooks } = useBookCatalog();
   const [activeSection, setActiveSection] = useState<'learning-areas' | 'projects' | 'reading-corner' | 'digital'>('learning-areas');
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -75,6 +75,11 @@ const CBCResourcesTab: React.FC = () => {
     setSelectedBookForCopies(book);
   };
 
+  const handleCloseCopyManager = () => {
+    setSelectedBookForCopies(null);
+    fetchBooks(); // Refresh book list to show updated copy counts
+  };
+
   const handleBorrowFromCopyManager = (book: Book) => {
     setSelectedBookForCopies(null);
     setSelectedBookForBorrowing(book);
@@ -83,6 +88,7 @@ const CBCResourcesTab: React.FC = () => {
 
   const handleBorrowSuccess = () => {
     setSelectedBookForBorrowing(null);
+    fetchBooks(); // Refresh book list to show updated availability
   };
 
   const sections = [
@@ -324,7 +330,7 @@ const CBCResourcesTab: React.FC = () => {
       {selectedBookForCopies && (
         <BookCopyManager
           book={selectedBookForCopies}
-          onClose={() => setSelectedBookForCopies(null)}
+          onClose={handleCloseCopyManager}
           onBorrow={handleBorrowFromCopyManager}
         />
       )}
