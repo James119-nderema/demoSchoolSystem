@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
   BookOpen, FileText, CreditCard, Users, CheckCircle, ArrowRight,
@@ -20,68 +19,377 @@ export default function FinanceGuide() {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownloadPDF = async () => {
-    if (!pageRef.current) return;
     setDownloading(true);
     try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth  = pdf.internal.pageSize.getWidth();   // 210
-      const pageHeight = pdf.internal.pageSize.getHeight();  // 297
-      const margin = 10;
-      const usableWidth  = pageWidth  - margin * 2;          // 190
-      const usableHeight = pageHeight - margin * 2;          // 277
-      let cursorY = margin;
-
-      // Gather every direct child of the page container as a "block"
-      const blocks = Array.from(pageRef.current.children) as HTMLElement[];
-
-      for (const block of blocks) {
-        const canvas = await html2canvas(block, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#f9fafb',
-          windowWidth: pageRef.current.scrollWidth,
+      /* ── pre-load all screenshot images ──────────────────────── */
+      const imgCache = new Map<string, { data: string; w: number; h: number }>();
+      const loadImg = (src: string): Promise<void> =>
+        new Promise((resolve) => {
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d')!.drawImage(img, 0, 0);
+            imgCache.set(src, {
+              data: canvas.toDataURL('image/jpeg', 0.75),
+              w: img.naturalWidth,
+              h: img.naturalHeight,
+            });
+            resolve();
+          };
+          img.onerror = () => resolve(); // skip missing images
+          img.src = src;
         });
 
-        const imgData   = canvas.toDataURL('image/png');
-        const imgWidth  = usableWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const allSrcs = SECTIONS.flatMap(s => s.steps.map(st => st.screenshotSrc)).filter(Boolean) as string[];
+      await Promise.all([...new Set(allSrcs)].map(loadImg));
 
-        // If this block alone is taller than a full page, tile it across pages
-        if (imgHeight > usableHeight) {
-          let srcY = 0;
-          const totalSrcH = canvas.height;
-          while (srcY < totalSrcH) {
-            if (cursorY > margin) { pdf.addPage(); cursorY = margin; }
-            const sliceH  = Math.min(
-              totalSrcH - srcY,
-              (usableHeight / imgHeight) * totalSrcH
-            );
-            const sliceMM = (sliceH * imgWidth) / canvas.width;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pw = pdf.internal.pageSize.getWidth();   // 210
+      const ph = pdf.internal.pageSize.getHeight();  // 297
+      const m = 15; // margin
+      const cw = pw - m * 2; // content width = 180
+      let y = m;
 
-            // Draw from a temporary cropped canvas to avoid cutting mid-block
-            const tmp    = document.createElement('canvas');
-            tmp.width    = canvas.width;
-            tmp.height   = sliceH;
-            tmp.getContext('2d')!.drawImage(
-              canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH
-            );
-            pdf.addImage(tmp.toDataURL('image/png'), 'PNG', margin, cursorY, imgWidth, sliceMM);
-            cursorY = margin + sliceMM;
-            srcY   += sliceH;
-            if (srcY < totalSrcH) { pdf.addPage(); cursorY = margin; }
+      /* ── helpers ─────────────────────────────────────────────── */
+      const ensureSpace = (needed: number) => {
+        if (y + needed > ph - m) { pdf.addPage(); y = m; }
+      };
+      const lineH = (fs: number) => fs * 0.4;
+      const writeLines = (
+        text: string, x: number, fs: number,
+        color: [number, number, number],
+        weight: 'normal' | 'bold' = 'normal',
+        maxW?: number,
+      ) => {
+        pdf.setFontSize(fs);
+        pdf.setTextColor(...color);
+        pdf.setFont('helvetica', weight);
+        const w = maxW ?? cw - (x - m);
+        const lines: string[] = pdf.splitTextToSize(text, w);
+        const lh = lineH(fs);
+        ensureSpace(lines.length * lh + 1);
+        pdf.text(lines, x, y);
+        y += lines.length * lh;
+        return lines.length;
+      };
+      const gap = (n = 3) => { y += n; };
+      const hLine = () => {
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.3);
+        pdf.line(m, y, pw - m, y);
+        y += 2;
+      };
+
+      /* ── HERO HEADER ─────────────────────────────────────────── */
+      pdf.setFillColor(29, 78, 216);
+      pdf.rect(0, 0, pw, 52, 'F');
+
+      y = 15;
+      // "Complete Guide" badge
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      const badgeText = 'Complete Guide';
+      const btw = pdf.getTextWidth(badgeText);
+      pdf.setFillColor(59, 130, 246);
+      pdf.roundedRect(m, y - 3.5, btw + 6, 5.5, 2, 2, 'F');
+      pdf.text(badgeText, m + 3, y);
+      y += 9;
+
+      pdf.setFontSize(22); pdf.setFont('helvetica', 'bold');
+      pdf.text('School Finance System Guide', m, y);
+      y += 9;
+
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(191, 219, 254);
+      const heroSub = pdf.splitTextToSize(
+        'A step-by-step walkthrough of the entire financial workflow \u2014 from creating invoices and collecting fees, to managing payroll, recording expenses, and generating balance sheets.',
+        cw,
+      );
+      pdf.text(heroSub, m, y);
+      y = 57;
+
+      /* ── CONTENTS LINE ───────────────────────────────────────── */
+      pdf.setFontSize(7); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(100, 116, 139);
+      pdf.text('CONTENTS:  ' + SECTIONS.map(s => s.shortTitle).join('  \u2022  '), m, y);
+      y += 8;
+
+      /* ── FLOW DIAGRAM ────────────────────────────────────────── */
+      ensureSpace(14);
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text('End-to-End Financial Flow', m, y);
+      y += 5;
+
+      let fx = m;
+      for (let i = 0; i < FLOW_STEPS.length; i++) {
+        const step = FLOW_STEPS[i];
+        pdf.setFontSize(7); pdf.setFont('helvetica', 'bold');
+        const tw = pdf.getTextWidth(step.label);
+        const bw = tw + 6;
+        if (fx + bw > pw - m) { fx = m; y += 7; ensureSpace(7); }
+        pdf.setFillColor(240, 249, 255);
+        pdf.setDrawColor(186, 230, 253);
+        pdf.roundedRect(fx, y - 3, bw, 5.5, 1.5, 1.5, 'FD');
+        pdf.setTextColor(29, 78, 216);
+        pdf.text(step.label, fx + 3, y);
+        fx += bw + 2;
+        if (i < FLOW_STEPS.length - 1) {
+          pdf.setTextColor(200, 200, 200);
+          pdf.setFontSize(9);
+          pdf.text('\u2192', fx, y);
+          fx += 5;
+        }
+      }
+      y += 8;
+      hLine();
+
+      /* ── SECTIONS ────────────────────────────────────────────── */
+      const sectionColors: Record<string, { bg: [number, number, number] }> = {
+        blue:    { bg: [37, 99, 235] },
+        emerald: { bg: [5, 150, 105] },
+        amber:   { bg: [245, 158, 11] },
+        teal:    { bg: [13, 148, 136] },
+        purple:  { bg: [124, 58, 237] },
+        rose:    { bg: [225, 29, 72] },
+        indigo:  { bg: [79, 70, 229] },
+        gray:    { bg: [75, 85, 99] },
+      };
+
+      for (const section of SECTIONS) {
+        const sc = sectionColors[section.color] ?? sectionColors.blue;
+
+        /* section header */
+        ensureSpace(22);
+        pdf.setFillColor(...sc.bg);
+        pdf.roundedRect(m, y, cw, 16, 2, 2, 'F');
+        pdf.setFontSize(13); pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(section.title, m + 5, y + 7);
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
+        pdf.text(section.subtitle, m + 5, y + 12);
+        y += 20;
+
+        /* steps */
+        for (let si = 0; si < section.steps.length; si++) {
+          const step = section.steps[si];
+          ensureSpace(20);
+
+          // step number circle
+          pdf.setFillColor(...sc.bg);
+          pdf.circle(m + 4, y + 1, 3, 'F');
+          pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(255, 255, 255);
+          pdf.text(String(si + 1), m + 2.8, y + 2.2);
+
+          // step title
+          pdf.setFontSize(11); pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(17, 24, 39);
+          pdf.text(step.title, m + 12, y + 2);
+          y += 7;
+
+          // description
+          writeLines(step.description, m + 12, 9, [75, 85, 99], 'normal', cw - 12);
+          gap(2);
+
+          // features
+          if (step.features?.length) {
+            let bx = m + 12;
+            for (const f of step.features) {
+              pdf.setFontSize(7);
+              pdf.setFont('helvetica', 'normal');
+              const ftw = pdf.getTextWidth(f) + 8;
+              if (bx + ftw > pw - m) { bx = m + 12; y += 5; ensureSpace(5); }
+              pdf.setFillColor(240, 253, 244);
+              pdf.setDrawColor(209, 250, 229);
+              pdf.roundedRect(bx, y - 2.5, ftw, 4.5, 1, 1, 'FD');
+              pdf.setTextColor(22, 163, 74);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text('\u2713', bx + 1.5, y + 0.3);
+              pdf.setTextColor(75, 85, 99);
+              pdf.setFont('helvetica', 'normal');
+              pdf.text(f, bx + 5, y + 0.3);
+              bx += ftw + 2;
+            }
+            y += 5;
           }
-          continue;
+
+          // tip
+          if (step.tip) {
+            pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
+            const tipLines: string[] = pdf.splitTextToSize(step.tip, cw - 22);
+            const tipH = tipLines.length * lineH(8) + 4;
+            ensureSpace(tipH + 2);
+            pdf.setFillColor(239, 246, 255);
+            pdf.setDrawColor(191, 219, 254);
+            pdf.roundedRect(m + 12, y - 1, cw - 12, tipH, 2, 2, 'FD');
+            pdf.setTextColor(29, 78, 216);
+            y += 2;
+            pdf.text(tipLines, m + 15, y);
+            y += tipLines.length * lineH(8) + 3;
+          }
+
+          // screenshot image
+          if (step.screenshotSrc) {
+            const cached = imgCache.get(step.screenshotSrc);
+            if (cached) {
+              const imgW = cw - 12; // fit within step indent
+              const imgH = (cached.h / cached.w) * imgW;
+
+              // If image is taller than usable page, tile across pages
+              if (imgH > ph - m * 2) {
+                const ratio = cached.w / imgW;
+                let srcY = 0;
+                const totalSrcH = cached.h;
+                while (srcY < totalSrcH) {
+                  if (y > m) { pdf.addPage(); y = m; }
+                  const availH = ph - m * 2;
+                  const sliceSrcH = Math.min(totalSrcH - srcY, availH * ratio);
+                  const sliceMM = sliceSrcH / ratio;
+
+                  const tmp = document.createElement('canvas');
+                  tmp.width = cached.w;
+                  tmp.height = sliceSrcH;
+                  const tmpImg = new window.Image();
+                  tmpImg.src = cached.data;
+                  tmp.getContext('2d')!.drawImage(
+                    tmpImg, 0, srcY, cached.w, sliceSrcH, 0, 0, cached.w, sliceSrcH
+                  );
+                  pdf.addImage(tmp.toDataURL('image/jpeg', 0.75), 'JPEG', m + 12, y, imgW, sliceMM);
+                  y += sliceMM + 2;
+                  srcY += sliceSrcH;
+                }
+              } else {
+                // Normal: fits on page (maybe need new page)
+                ensureSpace(imgH + 4);
+                // light border around image
+                pdf.setDrawColor(229, 231, 235);
+                pdf.setLineWidth(0.3);
+                pdf.roundedRect(m + 12, y, imgW, imgH, 1.5, 1.5, 'S');
+                pdf.addImage(cached.data, 'JPEG', m + 12, y, imgW, imgH);
+                y += imgH + 3;
+              }
+            } else {
+              // fallback placeholder if image failed to load
+              ensureSpace(8);
+              pdf.setFillColor(249, 250, 251);
+              pdf.setDrawColor(229, 231, 235);
+              pdf.roundedRect(m + 12, y, cw - 12, 6, 1.5, 1.5, 'FD');
+              pdf.setFontSize(7); pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(156, 163, 175);
+              pdf.text('Screenshot: ' + step.screenshotAlt, m + 15, y + 3.8);
+              y += 9;
+            }
+          }
+
+          gap(4);
         }
 
-        // Normal block — if it won't fit on the current page, start a new one
-        if (cursorY + imgHeight > pageHeight - margin) {
-          pdf.addPage();
-          cursorY = margin;
-        }
+        hLine();
+        gap(3);
+      }
 
-        pdf.addImage(imgData, 'PNG', margin, cursorY, imgWidth, imgHeight);
-        cursorY += imgHeight + 2; // 2 mm gap between blocks
+      /* ── PRO TIPS ────────────────────────────────────────────── */
+      ensureSpace(20);
+      pdf.setFillColor(255, 251, 235);
+      pdf.roundedRect(m, y, cw, 12, 2, 2, 'F');
+      pdf.setFontSize(12); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(146, 64, 14);
+      pdf.text('Pro Tips', m + 5, y + 7.5);
+      y += 16;
+
+      const tipsList = [
+        { title: 'Automate Deductions', text: 'Set up PAYE brackets and statutory rates once in Deduction Settings. All new salary structures will auto-calculate deductions.' },
+        { title: 'Budget Simulation', text: 'Run budget simulations monthly to compare planned vs actual. The system automatically pulls real revenue and expense data.' },
+        { title: 'Reconcile Daily', text: 'Check the Reconcile page daily to match M-Pesa and bank transactions with student accounts. This keeps your records accurate.' },
+        { title: 'Expense Approval Workflow', text: 'All expenses start as "Pending". Only approved expenses can be paid. This ensures proper authorization before any disbursement.' },
+        { title: 'Balance Sheet Date Filter', text: 'Use the date filter on the Balance Sheet page to view point-in-time snapshots \u2014 great for end-of-term or audit preparation.' },
+        { title: 'PDF Statements', text: 'Parents can download PDF fee statements from their portal. These include a full ledger of invoiced fees and payments.' },
+      ];
+      for (const t of tipsList) {
+        ensureSpace(12);
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(146, 64, 14);
+        pdf.text('\u2022 ' + t.title, m + 3, y);
+        y += 4;
+        writeLines(t.text, m + 6, 8, [180, 83, 9], 'normal', cw - 6);
+        gap(2);
+      }
+      hLine();
+      gap(3);
+
+      /* ── ROLE TABLE ──────────────────────────────────────────── */
+      ensureSpace(20);
+      pdf.setFontSize(12); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text('Role-Based Access', m, y);
+      y += 3;
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Different staff roles see different features. Here\'s who can access what:', m, y);
+      y += 6;
+
+      const cols = ['Feature', 'Bursar', 'Admin', 'Principal', 'Teacher', 'Parent'];
+      const colW = [58, 22, 22, 26, 22, 22];
+      let cx = m;
+
+      // header row
+      ensureSpace(8);
+      pdf.setFillColor(243, 244, 246);
+      pdf.rect(m, y - 3, cw, 6, 'F');
+      pdf.setFontSize(7); pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(75, 85, 99);
+      for (let c = 0; c < cols.length; c++) {
+        pdf.text(cols[c], cx + 2, y);
+        cx += colW[c];
+      }
+      y += 5;
+
+      // data rows
+      for (const row of ROLE_TABLE) {
+        ensureSpace(6);
+        cx = m;
+        pdf.setFontSize(7); pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(row.feature, cx + 2, y);
+        cx += colW[0];
+        for (let c = 0; c < row.access.length; c++) {
+          if (row.access[c]) {
+            pdf.setTextColor(16, 185, 129);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('\u2713', cx + 8, y);
+          } else {
+            pdf.setTextColor(209, 213, 219);
+            pdf.text('\u2014', cx + 8, y);
+          }
+          cx += colW[c + 1];
+        }
+        y += 4.5;
+        pdf.setDrawColor(243, 244, 246);
+        pdf.setLineWidth(0.15);
+        pdf.line(m, y - 1.5, pw - m, y - 1.5);
+      }
+
+      gap(8);
+
+      /* ── FOOTER ──────────────────────────────────────────────── */
+      ensureSpace(14);
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(156, 163, 175);
+      pdf.text('This guide covers all finance modules of the School Management System.', pw / 2, y, { align: 'center' });
+      y += 4;
+      pdf.text('For technical support, contact your system administrator.', pw / 2, y, { align: 'center' });
+
+      // page numbers on every page
+      const totalPages = (pdf as unknown as { getNumberOfPages: () => number }).getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(7); pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(180, 180, 180);
+        pdf.text(`Page ${i} of ${totalPages}`, pw / 2, ph - 8, { align: 'center' });
       }
 
       pdf.save('School_Finance_Guide.pdf');
