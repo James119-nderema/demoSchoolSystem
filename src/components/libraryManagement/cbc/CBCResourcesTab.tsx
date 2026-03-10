@@ -2,11 +2,15 @@
  * CBC Resources Tab — Project resource tracking, reading corner logs,
  * learning area browser, digital resources section
  * Subjects and classes fetched from database APIs
+ * Click books → manage copy IDs → borrow (Individual / Class)
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCBCResources, useBookCatalog } from '../hooks/useLibrary';
 import { APIService } from '../../../services/baseUrl';
+import BookCopyManager from '../catalog/BookCopyManager';
+import ResourceBorrowingModal from '../borrowing/ResourceBorrowingModal';
+import type { Book } from '../types';
 
 interface SubjectRecord { id: string; subject_name: string }
 interface ClassRecord { id: string; class_name: string }
@@ -22,6 +26,11 @@ const CBCResourcesTab: React.FC = () => {
   const [dbSubjects, setDbSubjects] = useState<SubjectRecord[]>([]);
   const [dbClasses, setDbClasses] = useState<ClassRecord[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  // Book copy manager & borrowing modal state
+  const [selectedBookForCopies, setSelectedBookForCopies] = useState<Book | null>(null);
+  const [selectedBookForBorrowing, setSelectedBookForBorrowing] = useState<Book | null>(null);
+  const [borrowSubject, setBorrowSubject] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoadingData(true);
@@ -60,6 +69,21 @@ const CBCResourcesTab: React.FC = () => {
   });
 
   const digitalBooks = books.filter(b => b.resource_type === 'digital_resource');
+
+  // Handlers for copy management & borrowing
+  const handleBookClick = (book: Book) => {
+    setSelectedBookForCopies(book);
+  };
+
+  const handleBorrowFromCopyManager = (book: Book) => {
+    setSelectedBookForCopies(null);
+    setSelectedBookForBorrowing(book);
+    setBorrowSubject(selectedArea || book.learning_areas[0] || 'General');
+  };
+
+  const handleBorrowSuccess = () => {
+    setSelectedBookForBorrowing(null);
+  };
 
   const sections = [
     { key: 'learning-areas' as const, label: 'Learning Area Browser', icon: '📖' },
@@ -145,7 +169,9 @@ const CBCResourcesTab: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredBooks.map(book => (
-                    <div key={book.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div key={book.id} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer group"
+                      onClick={() => handleBookClick(book)}
+                    >
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="text-sm font-semibold text-slate-800 line-clamp-2">{book.title}</h4>
                         {book.is_kicd_approved && <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full flex-shrink-0 ml-2">KICD</span>}
@@ -159,7 +185,10 @@ const CBCResourcesTab: React.FC = () => {
                           {book.subject_integration_tags.map(tag => <span key={tag} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[10px] rounded">{tag}</span>)}
                         </div>
                       )}
-                      <p className="text-xs text-slate-500 mt-2">{book.available_copies}/{book.total_copies} copies available</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-slate-500">{book.available_copies}/{book.total_copies} copies available</p>
+                        <span className="text-xs text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Manage Copies →</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -262,7 +291,9 @@ const CBCResourcesTab: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {digitalBooks.map(book => (
-                  <div key={book.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={book.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleBookClick(book)}
+                  >
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">💻</span>
                       <div className="min-w-0 flex-1">
@@ -272,7 +303,10 @@ const CBCResourcesTab: React.FC = () => {
                           {book.learning_areas.map(a => <span key={a} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] rounded">{a}</span>)}
                         </div>
                         {book.digital_url && (
-                          <a href={book.digital_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mt-2 font-medium">
+                          <a href={book.digital_url} target="_blank" rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mt-2 font-medium"
+                          >
                             Open Resource →
                           </a>
                         )}
@@ -284,6 +318,25 @@ const CBCResourcesTab: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* ─── Book Copy Manager Modal ───────────────────────────────────────── */}
+      {selectedBookForCopies && (
+        <BookCopyManager
+          book={selectedBookForCopies}
+          onClose={() => setSelectedBookForCopies(null)}
+          onBorrow={handleBorrowFromCopyManager}
+        />
+      )}
+
+      {/* ─── Borrowing Modal (Individual / Class) ──────────────────────────── */}
+      {selectedBookForBorrowing && (
+        <ResourceBorrowingModal
+          book={selectedBookForBorrowing}
+          subject={borrowSubject}
+          onClose={() => setSelectedBookForBorrowing(null)}
+          onSuccess={handleBorrowSuccess}
+        />
       )}
     </div>
   );

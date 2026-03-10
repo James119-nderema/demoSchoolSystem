@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { API_BASE_URL } from "../../config/environment";
+import { API_BASE_URL } from "../../../config/environment";
 import {
   LineChart,
   Line,

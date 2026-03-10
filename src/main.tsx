@@ -107,11 +107,11 @@ import SalaryManagement from './components/feeManagement/payroll/SalaryManagemen
 import PayrollDashboard from './components/feeManagement/payroll/PayrollDashboard'
 import PaymentProcessing from './components/feeManagement/payroll/PaymentProcessing'
 import DeductionSettings from './components/feeManagement/payroll/DeductionSettings'
-import BudgetPlanning from './components/finance/BudgetPlanning'
-import BalanceSheet from './components/finance/BalanceSheet'
-import SchoolExpenses from './components/finance/SchoolExpenses'
-import FinanceGuide from './components/finance/FinanceGuide'
-import FinanceAnalytics from './components/finance/FinanceAnalytics'
+import BudgetPlanning from './components/feeManagement/finances/BudgetPlanning'
+import BalanceSheet from './components/feeManagement/finances/BalanceSheet'
+import SchoolExpenses from './components/feeManagement/finances/SchoolExpenses'
+import FinanceGuide from './components/feeManagement/finances/FinanceGuide'
+import FinanceAnalytics from './components/feeManagement/finances/FinanceAnalytics'
 import { RouteErrorBoundary } from './components/ErrorBoundary'
 
 const router = createBrowserRouter([

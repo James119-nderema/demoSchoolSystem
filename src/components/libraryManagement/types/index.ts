@@ -64,6 +64,7 @@ export interface Book {
   condition: BookCondition;
   digital_url?: string;
   barcode?: string;
+  price: number;
   date_acquired: string;
   created_at: string;
   updated_at: string;
@@ -89,7 +90,24 @@ export interface BookFormData {
   condition: BookCondition;
   digital_url?: string;
   barcode?: string;
+  price?: number;
   date_acquired: string;
+}
+
+// ─── Book Copy (unique identifier per physical copy) ─────────────────────────
+export interface BookCopy {
+  id: string;
+  book_id: string;
+  copy_uid: string;          // Unique char identifier e.g. "MAT-001-A"
+  is_available: boolean;
+  condition: BookCondition;
+  assigned_to?: string;      // member_id when borrowed
+  created_at: string;
+}
+
+export interface BookCopyFormData {
+  book_id: string;
+  copy_uid: string;
 }
 
 // ─── Library Member ──────────────────────────────────────────────────────────
@@ -130,12 +148,34 @@ export interface BorrowingRecord {
   created_at: string;
 }
 
+export type BorrowingMode = 'individual' | 'class';
+
 export interface IssueBorrowingData {
   book_id: string;
   member_id: string;
   member_type: 'student' | 'staff';
   due_date: string;
   notes?: string;
+  copy_uid?: string;         // unique book copy identifier
+  borrowing_mode?: BorrowingMode;
+}
+
+export interface ClassBorrowingAssignment {
+  student_id: string;
+  student_name: string;
+  admission_number: string;
+  copy_uid: string;
+}
+
+export interface ClassBorrowingData {
+  book_id: string;
+  class_id: string;
+  class_name: string;
+  teacher_id: string;
+  teacher_name: string;
+  subject: string;
+  due_date: string;
+  assignments: ClassBorrowingAssignment[];
 }
 
 export interface ReturnData {

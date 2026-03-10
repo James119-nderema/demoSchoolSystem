@@ -5,11 +5,11 @@ import {
   Target, ChevronDown, ChevronRight, Info,
   Calculator, Layers,
 } from 'lucide-react';
-import { financeService } from '../../services/financeService';
+import { financeService } from '../../../services/financeService';
 import type {
   BudgetPeriod, BudgetPeriodListItem, BudgetCategory, BudgetItem,
   BudgetSimulation,
-} from '../../services/financeService';
+} from '../../../services/financeService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Component

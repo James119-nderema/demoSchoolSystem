@@ -7,9 +7,12 @@ import { APIService } from '../../../services/baseUrl';
 import type {
   Book,
   BookFormData,
+  BookCopy,
+  BookCopyFormData,
   BorrowingRecord,
   IssueBorrowingData,
   ReturnData,
+  ClassBorrowingData,
   LibraryMember,
   ProjectResourceRequest,
   ReadingCornerEntry,
@@ -31,7 +34,7 @@ export const libraryService = {
 
   // ─── Book Catalog ───────────────────────────────────────────────────────
   getBooks: (params?: Record<string, string>) =>
-    APIService.get<{ results: Book[]; count: number }>(`${BASE}/books/`, { page_size: '1000', ...params }, 'staff'),
+    APIService.get<{ results: Book[]; count: number }>(`${BASE}/books/`, { page_size: '5000', ...params }, 'staff'),
 
   getBook: (id: string) =>
     APIService.get<Book>(`${BASE}/books/${id}/`, {}, 'staff'),
@@ -58,6 +61,19 @@ export const libraryService = {
 
   searchBooks: (query: string, params?: Record<string, string>) =>
     APIService.get<{ results: Book[]; count: number }>(`${BASE}/books/`, { search: query, ...params }, 'staff'),
+
+  // ─── Book Copies (unique identifiers per physical copy) ─────────────────
+  getBookCopies: (bookId: string) =>
+    APIService.get<{ results: BookCopy[]; count: number }>(`${BASE}/books/${bookId}/copies/`, {}, 'staff'),
+
+  addBookCopy: (bookId: string, data: BookCopyFormData) =>
+    APIService.post<BookCopy>(`${BASE}/books/${bookId}/copies/`, data, 'staff'),
+
+  deleteBookCopy: (bookId: string, copyId: string) =>
+    APIService.delete(`${BASE}/books/${bookId}/copies/${copyId}/`, 'staff'),
+
+  searchBookCopies: (query: string) =>
+    APIService.get<{ results: BookCopy[]; count: number }>(`${BASE}/book-copies/`, { search: query }, 'staff'),
 
   // ─── Members ────────────────────────────────────────────────────────────
   getMembers: (params?: Record<string, string>) =>
@@ -88,6 +104,16 @@ export const libraryService = {
   getOverdue: (params?: Record<string, string>) =>
     APIService.get<{ results: OverdueEntry[]; count: number }>(`${BASE}/borrowings/overdue/`, params, 'staff'),
 
+  issueClassBooks: (data: ClassBorrowingData) =>
+    APIService.post<{ success: boolean; issued_count: number; records: BorrowingRecord[] }>(`${BASE}/borrowings/issue-class/`, data, 'staff'),
+
+  returnClassBooks: (borrowingIds: string[], condition?: string, notes?: string) =>
+    APIService.post<{ returned_count: number; error_count: number; records: BorrowingRecord[]; errors: any[] }>(
+      `${BASE}/borrowings/return-class/`,
+      { borrowing_ids: borrowingIds, condition: condition || 'good', notes: notes || '' },
+      'staff',
+    ),
+
   getMemberBorrowings: (memberId: string, params?: Record<string, string>) =>
     APIService.get<{ results: BorrowingRecord[]; count: number }>(`${BASE}/borrowings/`, { member_id: memberId, ...params }, 'staff'),
 
@@ -97,6 +123,11 @@ export const libraryService = {
 
   waiveFine: (borrowingId: string, reason: string) =>
     APIService.post(`${BASE}/borrowings/${borrowingId}/waive-fine/`, { reason }, 'staff'),
+
+  markLost: (borrowingId: string) =>
+    APIService.post<{ status: string; borrowing: BorrowingRecord; invoice_created: boolean; charge_amount: number }>(
+      `${BASE}/borrowings/${borrowingId}/mark-lost/`, {}, 'staff',
+    ),
 
   // ─── CBC Project Resources ─────────────────────────────────────────────
   getProjectRequests: (params?: Record<string, string>) =>

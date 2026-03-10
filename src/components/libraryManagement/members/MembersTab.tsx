@@ -10,13 +10,14 @@ import {
   useBulkUpload,
 } from '../hooks/useLibrary';
 import type { StudentRecord, StaffRecord } from '../hooks/useLibrary';
+import TablePagination, { usePagination } from '../utils/TablePagination';
 
 type ActiveTab = 'students' | 'staff';
 
 const MembersTab: React.FC = () => {
   /* ─── Data hooks ──────────────────────────────────────────────────────── */
-  const { students, totalCount: studentCount, loading: studentsLoading, error: studentsError, fetchStudents } = useStudentMembers();
-  const { staff, totalCount: staffCount, loading: staffLoading, error: staffError, fetchStaff } = useStaffMembers();
+  const { students, totalCount: studentCount, loading: studentsLoading, loadingMore: studentsLoadingMore, error: studentsError, fetchStudents } = useStudentMembers();
+  const { staff, totalCount: staffCount, loading: staffLoading, loadingMore: staffLoadingMore, error: staffError, fetchStaff } = useStaffMembers();
   const { uploading, progress, error: uploadError, uploadStudents, setProgress, setError: setUploadError } = useBulkUpload();
 
   /* ─── Local state ─────────────────────────────────────────────────────── */
@@ -31,6 +32,7 @@ const MembersTab: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loading = activeTab === 'students' ? studentsLoading : staffLoading;
+  const loadingMore = activeTab === 'students' ? studentsLoadingMore : staffLoadingMore;
   const error = activeTab === 'students' ? studentsError : staffError;
 
   /* ─── Derived data ────────────────────────────────────────────────────── */
@@ -78,6 +80,23 @@ const MembersTab: React.FC = () => {
     }
     return list;
   }, [staff, search, roleFilter]);
+
+  /* ─── Pagination ──────────────────────────────────────────────────────── */
+  const {
+    currentPage: studentPage,
+    itemsPerPage: studentPerPage,
+    paginatedItems: paginatedStudents,
+    setPage: setStudentPage,
+    setItemsPerPage: setStudentPerPage,
+  } = usePagination(filteredStudents, 25);
+
+  const {
+    currentPage: staffPage,
+    itemsPerPage: staffPerPage,
+    paginatedItems: paginatedStaff,
+    setPage: setStaffPage,
+    setItemsPerPage: setStaffPerPage,
+  } = usePagination(filteredStaff, 25);
 
   /* ─── Handlers ────────────────────────────────────────────────────────── */
   const handleServerSearch = () => {
@@ -132,6 +151,7 @@ const MembersTab: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-800">Members</h2>
           <p className="text-sm text-slate-500">
             {studentCount} students · {staffCount} staff members
+            {loadingMore && <span className="ml-2 text-indigo-500 animate-pulse">· loading more…</span>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -277,13 +297,13 @@ const MembersTab: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((student, idx) => (
+                  {paginatedStudents.map((student, idx) => (
                     <tr
                       key={student.id}
                       className="hover:bg-slate-50 cursor-pointer transition-colors"
                       onClick={() => setSelectedStudent(student)}
                     >
-                      <td className="py-3 px-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                      <td className="py-3 px-4 text-slate-400 font-mono text-xs">{(studentPage - 1) * studentPerPage + idx + 1}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -319,9 +339,20 @@ const MembersTab: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
-              Showing {filteredStudents.length} of {studentCount} students
-            </div>
+            <TablePagination
+              totalItems={filteredStudents.length}
+              currentPage={studentPage}
+              itemsPerPage={studentPerPage}
+              onPageChange={setStudentPage}
+              onItemsPerPageChange={setStudentPerPage}
+              itemLabel="students"
+            />
+            {studentsLoadingMore && (
+              <div className="flex items-center justify-center gap-2 py-2 bg-indigo-50 border-t border-indigo-100 text-indigo-600 text-xs font-medium">
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-300 border-t-indigo-600" />
+                Loading more students… ({students.length} of {studentCount})
+              </div>
+            )}
           </div>
         )
       )}
@@ -353,13 +384,13 @@ const MembersTab: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStaff.map((member, idx) => (
+                  {paginatedStaff.map((member, idx) => (
                     <tr
                       key={member.id}
                       className="hover:bg-slate-50 cursor-pointer transition-colors"
                       onClick={() => setSelectedStaff(member)}
                     >
-                      <td className="py-3 px-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                      <td className="py-3 px-4 text-slate-400 font-mono text-xs">{(staffPage - 1) * staffPerPage + idx + 1}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -386,9 +417,20 @@ const MembersTab: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
-              Showing {filteredStaff.length} of {staffCount} staff members
-            </div>
+            <TablePagination
+              totalItems={filteredStaff.length}
+              currentPage={staffPage}
+              itemsPerPage={staffPerPage}
+              onPageChange={setStaffPage}
+              onItemsPerPageChange={setStaffPerPage}
+              itemLabel="staff members"
+            />
+            {staffLoadingMore && (
+              <div className="flex items-center justify-center gap-2 py-2 bg-emerald-50 border-t border-emerald-100 text-emerald-600 text-xs font-medium">
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-300 border-t-emerald-600" />
+                Loading more staff… ({staff.length} of {staffCount})
+              </div>
+            )}
           </div>
         )
       )}

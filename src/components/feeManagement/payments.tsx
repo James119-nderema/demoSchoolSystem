@@ -95,12 +95,16 @@ export default function Payments() {
       setLoadingInvoices(true);
       const token = localStorage.getItem('staff_access_token');
       const response = await axios.get(`${API_BASE_URL}/api/finance/invoices/`, {
+        params: { page_size: 200 },
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // Handle both paginated { results } and plain array responses
+      const invoices = Array.isArray(response.data) ? response.data : (response.data.results ?? []);
+      
       // Filter invoice students for the selected student
       const allInvoiceStudents: InvoiceStudent[] = [];
-      for (const invoice of response.data) {
+      for (const invoice of invoices) {
         for (const invStudent of invoice.invoice_students || []) {
           if (invStudent.student === studentId) {
             allInvoiceStudents.push({

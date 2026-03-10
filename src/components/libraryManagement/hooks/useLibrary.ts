@@ -10,6 +10,8 @@ import { DEFAULT_LIBRARY_SETTINGS } from '../constants/cbcConstants';
 import type {
   Book,
   BookFormData,
+  BookCopy,
+  BookCopyFormData,
   BorrowingRecord,
   LibraryMember,
   LibraryDashboardStats,
@@ -23,6 +25,7 @@ import type {
   LibrarySettings,
   IssueBorrowingData,
   ReturnData,
+  ClassBorrowingData,
 } from '../types';
 
 // ─── Main Dashboard Hook (uses existing backend endpoints) ───────────────────
@@ -168,7 +171,7 @@ export function useBorrowing() {
   const fetchBorrowings = useCallback(async (params?: Record<string, string>) => {
     try {
       setLoading(true);
-      const data = await libraryService.getBorrowings(params);
+      const data = await libraryService.getBorrowings({ page_size: '10000', ...params });
       setBorrowings(data.results || []);
       setError(null);
     } catch (err: any) {
@@ -211,7 +214,87 @@ export function useBorrowing() {
     return record;
   };
 
-  return { borrowings, overdueList, loading, error, fetchBorrowings, fetchOverdue, issueBook, returnBook, renewBook };
+  const markLost = async (borrowingId: string) => {
+    const result = await libraryService.markLost(borrowingId);
+    setBorrowings(prev => prev.map(b => b.id === borrowingId ? result.borrowing : b));
+    return result;
+  };
+
+  const returnClassBooks = async (borrowingIds: string[], condition?: string, notes?: string) => {
+    const result = await libraryService.returnClassBooks(borrowingIds, condition, notes);
+    const returnedIds = new Set(result.records.map((r: BorrowingRecord) => r.id));
+    setBorrowings(prev =>
+      prev.map(b => {
+        if (returnedIds.has(b.id)) {
+          const returned = result.records.find((r: BorrowingRecord) => r.id === b.id);
+          return returned || b;
+        }
+        return b;
+      }),
+    );
+    return result;
+  };
+
+  return { borrowings, overdueList, loading, error, fetchBorrowings, fetchOverdue, issueBook, returnBook, renewBook, markLost, returnClassBooks };
+}
+
+// ─── Book Copies Hook ────────────────────────────────────────────────────────
+export function useBookCopies(bookId: string) {
+  const [copies, setCopies] = useState<BookCopy[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCopies = useCallback(async () => {
+    if (!bookId) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await libraryService.getBookCopies(bookId);
+      setCopies(data.results || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load copies');
+      setCopies([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [bookId]);
+
+  useEffect(() => { fetchCopies(); }, [fetchCopies]);
+
+  const addCopy = async (data: BookCopyFormData) => {
+    const copy = await libraryService.addBookCopy(bookId, data);
+    setCopies(prev => [...prev, copy]);
+    return copy;
+  };
+
+  const deleteCopy = async (copyId: string) => {
+    await libraryService.deleteBookCopy(bookId, copyId);
+    setCopies(prev => prev.filter(c => c.id !== copyId));
+  };
+
+  return { copies, loading, error, fetchCopies, addCopy, deleteCopy };
+}
+
+// ─── Class Borrowing Hook ────────────────────────────────────────────────────
+export function useClassBorrowing() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const issueClassBooks = async (data: ClassBorrowingData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await libraryService.issueClassBooks(data);
+      return result;
+    } catch (err: any) {
+      setError(err.message || 'Failed to issue class books');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, error, issueClassBooks };
 }
 
 // ─── Members Hook ────────────────────────────────────────────────────────────
@@ -361,31 +444,57 @@ export function useStudentMembers() {
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStudents = useCallback(async (params?: Record<string, string>) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await APIService.get<{ count: number; results: StudentRecord[] }>(
+
+      // First page — display immediately
+      const first = await APIService.get<{ count: number; results: StudentRecord[]; next: string | null }>(
         '/api/students/',
-        { page_size: '100', ...params },
+        { page_size: '1000', page: '1', view_all: 'true', ...params },
         'staff',
       );
-      setStudents(data.results || []);
-      setTotalCount(data.count || 0);
+      const firstResults = first.results || [];
+      setStudents(firstResults);
+      setTotalCount(first.count || firstResults.length);
+      setLoading(false);
+
+      // Remaining pages — load in background, append progressively
+      if (first.next) {
+        setLoadingMore(true);
+        let page = 2;
+        let hasMore = !!first.next;
+        while (hasMore) {
+          const data = await APIService.get<{ count: number; results: StudentRecord[]; next: string | null }>(
+            '/api/students/',
+            { page_size: '1000', page: String(page), view_all: 'true', ...params },
+            'staff',
+          );
+          const pageResults = data.results || [];
+          if (pageResults.length) {
+            setStudents(prev => [...prev, ...pageResults]);
+          }
+          hasMore = !!data.next;
+          page++;
+        }
+        setLoadingMore(false);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load students');
       setStudents([]);
       setTotalCount(0);
-    } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
-  return { students, totalCount, loading, error, fetchStudents };
+  return { students, totalCount, loading, loadingMore, error, fetchStudents };
 }
 
 // ─── Staff Members Hook (from existing /api/teachers/) ───────────────────────
@@ -404,31 +513,57 @@ export function useStaffMembers() {
   const [staff, setStaff] = useState<StaffRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStaff = useCallback(async (params?: Record<string, string>) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await APIService.get<{ count: number; results: StaffRecord[] }>(
+
+      // First page — display immediately
+      const first = await APIService.get<{ count: number; results: StaffRecord[]; next: string | null }>(
         '/api/teachers/',
-        { page_size: '100', ...params },
+        { page_size: '1000', page: '1', ...params },
         'staff',
       );
-      setStaff(data.results || []);
-      setTotalCount(data.count || 0);
+      const firstResults = first.results || [];
+      setStaff(firstResults);
+      setTotalCount(first.count || firstResults.length);
+      setLoading(false);
+
+      // Remaining pages — load in background, append progressively
+      if (first.next) {
+        setLoadingMore(true);
+        let page = 2;
+        let hasMore = !!first.next;
+        while (hasMore) {
+          const data = await APIService.get<{ count: number; results: StaffRecord[]; next: string | null }>(
+            '/api/teachers/',
+            { page_size: '1000', page: String(page), ...params },
+            'staff',
+          );
+          const pageResults = data.results || [];
+          if (pageResults.length) {
+            setStaff(prev => [...prev, ...pageResults]);
+          }
+          hasMore = !!data.next;
+          page++;
+        }
+        setLoadingMore(false);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load staff');
       setStaff([]);
       setTotalCount(0);
-    } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   useEffect(() => { fetchStaff(); }, [fetchStaff]);
 
-  return { staff, totalCount, loading, error, fetchStaff };
+  return { staff, totalCount, loading, loadingMore, error, fetchStaff };
 }
 
 // ─── Bulk Upload Hook ────────────────────────────────────────────────────────

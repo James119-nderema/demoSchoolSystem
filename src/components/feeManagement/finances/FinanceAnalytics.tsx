@@ -10,10 +10,10 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, RadialBarChart, RadialBar,
   CartesianGrid, XAxis, YAxis, Tooltip, Legend, ComposedChart, Line,
 } from 'recharts';
-import { financeService } from '../../services/financeService';
+import { financeService } from '../../../services/financeService';
 import type {
   EnhancedAnalytics,
-} from '../../services/financeService';
+} from '../../../services/financeService';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    COLOUR PALETTES

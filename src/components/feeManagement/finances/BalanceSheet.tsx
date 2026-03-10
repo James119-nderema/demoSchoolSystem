@@ -4,8 +4,8 @@ import {
   Landmark, TrendingUp, TrendingDown,
   Scale, Info, RefreshCw, Calendar,
 } from 'lucide-react';
-import { financeService } from '../../services/financeService';
-import type { BalanceSheetEntry, BalanceSheetData } from '../../services/financeService';
+import { financeService } from '../../../services/financeService';
+import type { BalanceSheetEntry, BalanceSheetData } from '../../../services/financeService';
 
 const ENTRY_TYPES = [
   { value: 'asset', label: 'Asset', icon: <TrendingUp className="w-4 h-4" />, color: 'emerald' },

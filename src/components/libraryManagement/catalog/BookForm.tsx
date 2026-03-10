@@ -30,7 +30,7 @@ const BookForm: React.FC<Props> = ({ book, onSubmit, onClose, isLoading = false 
     title: '', author: '', isbn: '', publisher: '', publication_year: new Date().getFullYear(),
     resource_type: 'textbook', learning_areas: [], grade_levels: [],
     subject_integration_tags: [], is_kicd_approved: false, total_copies: 1,
-    shelf_location: '', condition: 'new', date_acquired: new Date().toISOString().split('T')[0],
+    shelf_location: '', condition: 'new', price: 0, date_acquired: new Date().toISOString().split('T')[0],
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -102,6 +102,7 @@ const BookForm: React.FC<Props> = ({ book, onSubmit, onClose, isLoading = false 
         total_copies: book.total_copies, shelf_location: book.shelf_location,
         description: book.description, condition: book.condition,
         digital_url: book.digital_url, barcode: book.barcode,
+        price: book.price || 0,
         date_acquired: book.date_acquired,
       });
     }
@@ -310,11 +311,16 @@ const BookForm: React.FC<Props> = ({ book, onSubmit, onClose, isLoading = false 
             )}
           </div>
 
-          {/* Copies / Location / Digital */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Copies / Price / Location / Digital */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Total Copies</label>
               <input name="total_copies" type="number" value={form.total_copies} onChange={handleChange} min={1} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none ${errors.total_copies ? 'border-red-400' : 'border-slate-300'}`} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Price (KES)</label>
+              <input name="price" type="number" value={form.price || 0} onChange={handleChange} min={0} step="0.01" placeholder="0.00" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <p className="text-xs text-slate-400 mt-0.5">Charged if book is lost</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Shelf Location</label>

@@ -94,8 +94,10 @@ const InvoiceManagement: React.FC = () => {
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await APIService.get<Invoice[]>('/api/finance/invoices/', {}, 'staff');
-      setInvoices(response);
+      const response = await APIService.get<{ results: Invoice[]; count: number } | Invoice[]>('/api/finance/invoices/', { page_size: '200' }, 'staff');
+      // Handle both paginated { results } and plain array responses
+      const list = Array.isArray(response) ? response : (response as any).results ?? [];
+      setInvoices(list);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching invoices:', err);

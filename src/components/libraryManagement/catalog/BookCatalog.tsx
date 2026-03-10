@@ -2,11 +2,12 @@
  * Book Catalog — List, search, filter, add/edit books + bulk upload
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useBookCatalog, useBookBulkUpload } from '../hooks/useLibrary';
 import BookForm from './BookForm';
 import { RESOURCE_TYPES, BOOK_CONDITIONS } from '../constants/cbcConstants';
 import { APIService } from '../../../services/baseUrl';
+import TablePagination, { usePagination } from '../utils/TablePagination';
 import type { Book, BookFormData, ResourceType } from '../types';
 
 interface ClassRecord { id: string; class_name: string }
@@ -146,6 +147,27 @@ const BookCatalog: React.FC = () => {
     return c ? <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.color}`}>{c.label}</span> : condition;
   };
 
+  // Client-side search for instant filtering
+  const filteredBooks = useMemo(() => {
+    if (!searchTerm) return books;
+    const q = searchTerm.toLowerCase();
+    return books.filter(b =>
+      b.title?.toLowerCase().includes(q) ||
+      b.author?.toLowerCase().includes(q) ||
+      b.isbn?.toLowerCase().includes(q) ||
+      b.learning_areas?.some(a => a.toLowerCase().includes(q)) ||
+      b.grade_levels?.some(g => g.toLowerCase().includes(q))
+    );
+  }, [books, searchTerm]);
+
+  const {
+    currentPage: bookPage,
+    itemsPerPage: bookPerPage,
+    paginatedItems: paginatedBooks,
+    setPage: setBookPage,
+    setItemsPerPage: setBookPerPage,
+  } = usePagination(filteredBooks, 25);
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -238,7 +260,7 @@ const BookCatalog: React.FC = () => {
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
         </div>
-      ) : books.length === 0 ? (
+      ) : filteredBooks.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
           <p className="text-slate-500">No books found.</p>
           <button onClick={() => setShowForm(true)} className="mt-3 text-indigo-600 underline text-sm">Add the first book</button>
@@ -260,7 +282,7 @@ const BookCatalog: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {books.map((book) => (
+                {paginatedBooks.map((book) => (
                   <tr key={book.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -317,11 +339,20 @@ const BookCatalog: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            totalItems={filteredBooks.length}
+            currentPage={bookPage}
+            itemsPerPage={bookPerPage}
+            onPageChange={setBookPage}
+            onItemsPerPageChange={setBookPerPage}
+            itemLabel="books"
+          />
         </div>
       ) : (
         /* Grid View */
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {books.map((book) => (
+          {paginatedBooks.map((book) => (
             <div key={book.id} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <span className="text-2xl">{getResourceTypeIcon(book.resource_type)}</span>
@@ -347,6 +378,17 @@ const BookCatalog: React.FC = () => {
             </div>
           ))}
         </div>
+        <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <TablePagination
+            totalItems={filteredBooks.length}
+            currentPage={bookPage}
+            itemsPerPage={bookPerPage}
+            onPageChange={setBookPage}
+            onItemsPerPageChange={setBookPerPage}
+            itemLabel="books"
+          />
+        </div>
+        </>
       )}
 
       {/* Book Form Modal */}
