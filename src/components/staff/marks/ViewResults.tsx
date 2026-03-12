@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MarksAPI } from '../../../services/baseUrl';
 import { getGradeColor } from '../../../utils/gradingUtils';
 import { SkeletonTable } from '../../ui/Skeleton';
+import LoadingProgress from '../../ui/LoadingProgress';
+import { useProgressiveLoad, type PaginatedResponse } from '../../../hooks/useProgressiveLoad';
 
 interface Result {
   id: number;
@@ -130,10 +132,8 @@ interface Statistics {
 
 const ViewResults: React.FC = () => {
   const navigate = useNavigate();
-  const [results, setResults] = useState<Result[]>([]);
   const [filteredResults, setFilteredResults] = useState<Result[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [selectedResult, setSelectedResult] = useState<Result | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -159,9 +159,26 @@ const ViewResults: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const resultsPerPage = 20;
 
+  // Progressive data loading – fetch page 1 fast, load rest in background
+  const {
+    data: results,
+    loading,
+    totalCount,
+    loadedCount,
+    progress,
+    isComplete,
+    refresh: refreshResults,
+  } = useProgressiveLoad<Result>(
+    async (page, pageSize) => {
+      const data = await MarksAPI.getResults({ page: String(page), page_size: String(pageSize) });
+      return data as PaginatedResponse<Result>;
+    },
+    [],
+    { pageSize: 100 }
+  );
+
   useEffect(() => {
     fetchDropdownData();
-    fetchResults();
     fetchStatistics();
   }, []);
 
@@ -179,22 +196,11 @@ const ViewResults: React.FC = () => {
     }
   };
 
-  const fetchResults = async () => {
-    try {
-      const data = await MarksAPI.getResults();
-      setResults(data.results || data);
-    } catch (err) {
-      setError('Failed to fetch results');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEditResult = async (id: number, newMarks: number) => {
     try {
       await MarksAPI.updateResult(id.toString(), { marks_obtained: newMarks });
       // Refresh results after update
-      fetchResults();
+      refreshResults();
       setError('');
     } catch (err) {
       setError('Failed to update marks');
@@ -497,7 +503,14 @@ const ViewResults: React.FC = () => {
 
           <div className="mt-4 text-sm text-gray-600">
             Showing {filteredResults.length} of {results.length} results
+            {!isComplete && totalCount > 0 && ` (loading from ${totalCount.toLocaleString()} total)`}
           </div>
+          <LoadingProgress
+            loadedCount={loadedCount}
+            totalCount={totalCount}
+            progress={progress}
+            isComplete={isComplete}
+          />
         </div>
 
         {/* Results Table / Mobile Cards */}

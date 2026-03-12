@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
 import { SkeletonTable, SkeletonCards } from '../ui/Skeleton';
+import LoadingProgress from '../ui/LoadingProgress';
+import { useProgressiveLoad, type PaginatedResponse } from '../../hooks/useProgressiveLoad';
 
 interface Transaction {
   id: string;
@@ -49,9 +51,7 @@ const paymentMethodColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function Reconcile() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
@@ -63,30 +63,38 @@ export default function Reconcile() {
   const [methodFilter, setMethodFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const token = localStorage.getItem('staff_access_token');
+
+  // Progressive data loading for transactions
+  const {
+    data: transactions,
+    loading,
+    totalCount,
+    loadedCount,
+    progress,
+    isComplete,
+    error: loadError,
+    refresh: refreshTransactions,
+  } = useProgressiveLoad<Transaction>(
+    async (page, pageSize) => {
+      const response = await axios.get(`${API_BASE_URL}/api/mpesa/transactions/`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, page_size: pageSize }
+      });
+      return response.data as PaginatedResponse<Transaction>;
+    },
+    [],
+    { pageSize: 100 }
+  );
+
+  // Set error from progressive load
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (loadError) setError(loadError);
+  }, [loadError]);
 
   useEffect(() => {
     filterTransactions();
   }, [transactions, statusFilter, methodFilter, searchQuery]);
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('staff_access_token');
-      const response = await axios.get(`${API_BASE_URL}/api/mpesa/transactions/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTransactions(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-      setError('Failed to load transactions');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filterTransactions = () => {
     let filtered = [...transactions];
@@ -136,7 +144,7 @@ export default function Reconcile() {
       );
       
       // Refresh transactions
-      await fetchTransactions();
+      refreshTransactions();
       setEditingId(null);
       setNewStatus('');
       setNotes('');
@@ -188,7 +196,7 @@ export default function Reconcile() {
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="text-red-700 font-medium">{error}</p>
           <button 
-            onClick={fetchTransactions}
+            onClick={refreshTransactions}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
           >
             Retry
@@ -286,6 +294,14 @@ export default function Reconcile() {
         </div>
       </div>
 
+      {/* Loading progress */}
+      <LoadingProgress
+        loadedCount={loadedCount}
+        totalCount={totalCount}
+        progress={progress}
+        isComplete={isComplete}
+      />
+
       {/* Transactions Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -293,7 +309,7 @@ export default function Reconcile() {
             Transactions ({filteredTransactions.length})
           </h2>
           <button
-            onClick={fetchTransactions}
+            onClick={refreshTransactions}
             className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

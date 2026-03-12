@@ -4,6 +4,8 @@ import { API_BASE_URL } from '../../config/environment';
 import AddStaffModal from './modals/AddStaffModal';
 import EditStaffModal from './modals/EditStaffModal';
 import { SkeletonTable } from '../ui/Skeleton';
+import LoadingProgress from '../ui/LoadingProgress';
+import { useProgressiveLoad, type PaginatedResponse } from '../../hooks/useProgressiveLoad';
 
 // Helper to get the active token (school admin or staff)
 const getAuthToken = (): string | null => {
@@ -33,16 +35,49 @@ interface ClassOption {
 }
 
 const StaffManagement: React.FC = () => {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
   const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [schoolName, setSchoolName] = useState('');
-  const [totalCount, setTotalCount] = useState(0);
+
+  const token = getAuthToken();
+
+  // Progressive data loading for staff list
+  const {
+    data: staffList,
+    loading,
+    totalCount,
+    loadedCount,
+    progress,
+    isComplete,
+    meta,
+    refresh: refreshStaff,
+  } = useProgressiveLoad<Staff>(
+    async (page, pageSize) => {
+      if (!token) throw new Error('No authentication token found. Please login again.');
+      const response = await axios.get(`${API_BASE_URL}/api/schools/staff/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        params: { page, page_size: pageSize }
+      });
+      // The paginated response has { count, next, previous, results, school }
+      return response.data as PaginatedResponse<Staff>;
+    },
+    [],
+    { pageSize: 100 }
+  );
+
+  // Extract school name from meta (set by the paginated response)
+  useEffect(() => {
+    if (meta.school) {
+      setSchoolName(meta.school as string);
+    }
+  }, [meta]);
 
   const roleOptions = [
     { value: 'TEACHER', label: 'Teacher' },
@@ -55,7 +90,6 @@ const StaffManagement: React.FC = () => {
   ];
 
   useEffect(() => {
-    fetchStaff();
     fetchClasses();
   }, []);
 
@@ -79,46 +113,6 @@ const StaffManagement: React.FC = () => {
       })));
     } catch (error) {
       console.error('Failed to fetch classes:', error);
-    }
-  };
-
-  const fetchStaff = async () => {
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        setMessage({ type: 'error', text: 'No authentication token found. Please login again.' });
-        return;
-      }
-
-      const response = await axios.get(`${API_BASE_URL}/api/schools/staff/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      setStaffList(response.data.staff);
-      setSchoolName(response.data.school);
-      setTotalCount(response.data.total_count);
-      setLoading(false);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        setMessage({
-          type: 'error',
-          text: 'Authentication failed. Please login again.'
-        });
-        // Clear invalid tokens
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('school_info');
-        localStorage.removeItem('staff_access_token');
-        localStorage.removeItem('staff_info');
-      } else {
-        setMessage({
-          type: 'error',
-          text: error.response?.data?.error || 'Failed to fetch staff members'
-        });
-      }
-      setLoading(false);
     }
   };
 
@@ -148,7 +142,7 @@ const StaffManagement: React.FC = () => {
       });
 
       setShowAddModal(false);
-      fetchStaff();
+      refreshStaff();
 
     } catch (error: any) {
       // Detailed error logging
@@ -244,7 +238,7 @@ const StaffManagement: React.FC = () => {
 
       setShowEditModal(false);
       setEditingStaff(null);
-      fetchStaff();
+      refreshStaff();
 
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -292,7 +286,7 @@ const StaffManagement: React.FC = () => {
         text: response.data.message
       });
 
-      fetchStaff(); // Refresh the list
+      refreshStaff(); // Refresh the list
     } catch (error: any) {
       setMessage({
         type: 'error',
@@ -326,7 +320,7 @@ const StaffManagement: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
-            <p className="text-gray-600">{schoolName} • {totalCount} staff members</p>
+            <p className="text-gray-600">{schoolName} • {totalCount > 0 ? totalCount : staffList.length} staff members</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
@@ -335,6 +329,12 @@ const StaffManagement: React.FC = () => {
             + Add Staff Member
           </button>
         </div>
+        <LoadingProgress
+          loadedCount={loadedCount}
+          totalCount={totalCount}
+          progress={progress}
+          isComplete={isComplete}
+        />
       </div>
 
       {/* Messages */}

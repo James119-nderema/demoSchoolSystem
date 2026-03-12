@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
 import { SkeletonTable } from '../ui/Skeleton';
+import LoadingProgress from '../ui/LoadingProgress';
+import { useProgressiveLoad, type PaginatedResponse } from '../../hooks/useProgressiveLoad';
 
 interface Payment {
   id: string;
@@ -36,7 +38,6 @@ interface InvoiceStudent {
 }
 
 export default function Payments() {
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,26 +59,35 @@ export default function Payments() {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
+  const token = localStorage.getItem('staff_access_token');
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('staff_access_token');
+  // Progressive data loading for payments
+  const {
+    data: payments,
+    loading: paymentsLoading,
+    totalCount,
+    loadedCount,
+    progress,
+    isComplete,
+    error: loadError,
+    refresh: refreshPayments,
+  } = useProgressiveLoad<Payment>(
+    async (page, pageSize) => {
       const response = await axios.get(`${API_BASE_URL}/api/finance/payments/`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, page_size: pageSize }
       });
-      setPayments(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching payments:', err);
-      setError('Failed to load payments');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return response.data as PaginatedResponse<Payment>;
+    },
+    [],
+    { pageSize: 100 }
+  );
+
+  // Sync loading states
+  useEffect(() => {
+    setLoading(paymentsLoading);
+    if (loadError) setError(loadError);
+  }, [paymentsLoading, loadError]);
 
   const fetchStudents = async () => {
     try {
@@ -178,7 +188,7 @@ export default function Payments() {
       );
       
       setShowAddModal(false);
-      fetchPayments(); // Refresh the list
+      refreshPayments(); // Refresh the list
     } catch (err: unknown) {
       console.error('Error recording payment:', err);
       const errorMessage = axios.isAxiosError(err) && err.response?.data?.error
@@ -259,7 +269,7 @@ export default function Payments() {
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="text-red-700 font-medium">{error}</p>
           <button 
-            onClick={fetchPayments}
+            onClick={refreshPayments}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
           >
             Retry
@@ -334,6 +344,14 @@ export default function Payments() {
           <p className="text-2xl font-bold text-blue-600">{filteredPayments.length}</p>
         </div>
       </div>
+
+      {/* Loading progress */}
+      <LoadingProgress
+        loadedCount={loadedCount}
+        totalCount={totalCount}
+        progress={progress}
+        isComplete={isComplete}
+      />
 
       {/* Payments Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

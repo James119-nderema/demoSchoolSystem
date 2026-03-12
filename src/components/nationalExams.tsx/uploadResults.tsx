@@ -19,13 +19,14 @@ import nationalResultsService, {
 } from '../../services/nationalResultsService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { SkeletonTable } from '../ui/Skeleton';
+import LoadingProgress from '../ui/LoadingProgress';
+import { useProgressiveLoad, type PaginatedResponse } from '../../hooks/useProgressiveLoad';
+import { APIService } from '../../services/baseUrl';
 
 const UploadResults: React.FC = () => {
   // State
-  const [results, setResults] = useState<NationalExamResult[]>([]);
   const [years, setYears] = useState<number[]>([]);
   const [classes, setClasses] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -33,6 +34,9 @@ const UploadResults: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState<string>('');
   const [filterClass, setFilterClass] = useState<string>('');
+  
+  // Debounced search value
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   
   // Modal state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -49,23 +53,49 @@ const UploadResults: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch data on mount
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Progressive data loading for national exam results
+  const {
+    data: results,
+    loading,
+    totalCount,
+    loadedCount,
+    progress,
+    isComplete,
+    error: loadError,
+    refresh: refreshResults,
+  } = useProgressiveLoad<NationalExamResult>(
+    async (page, pageSize) => {
+      const params: Record<string, string> = { page: String(page), page_size: String(pageSize) };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (filterYear) params.year = filterYear;
+      if (filterClass) params.class_name = filterClass;
+      
+      const data = await APIService.get('/api/national-results/', params, 'staff');
+      return data as PaginatedResponse<NationalExamResult>;
+    },
+    [debouncedSearch, filterYear, filterClass],
+    { pageSize: 100 }
+  );
 
-  // Apply filters when search term or filters change
+  // Debounce search term
   useEffect(() => {
     const debounce = setTimeout(() => {
-      fetchResults();
+      setDebouncedSearch(searchTerm);
     }, 300);
     return () => clearTimeout(debounce);
-  }, [searchTerm, filterYear, filterClass]);
+  }, [searchTerm]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    
+  // Set error from progressive load
+  useEffect(() => {
+    if (loadError) setError(loadError);
+  }, [loadError]);
+
+  // Fetch dropdown data on mount
+  useEffect(() => {
+    fetchDropdownData();
+  }, []);
+
+  const fetchDropdownData = async () => {
     try {
       const [yearsData, classesData] = await Promise.all([
         nationalResultsService.getYears(),
@@ -74,26 +104,9 @@ const UploadResults: React.FC = () => {
       
       setYears(yearsData);
       setClasses(classesData);
-      
-      await fetchResults();
     } catch (err: any) {
-      setError('Failed to load data');
+      setError('Failed to load filter data');
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchResults = async () => {
-    try {
-      const data = await nationalResultsService.getResults({
-        search: searchTerm || undefined,
-        year: filterYear || undefined,
-        class_name: filterClass || undefined
-      });
-      setResults(data);
-    } catch (err: any) {
-      console.error('Error fetching results:', err);
     }
   };
 
@@ -122,7 +135,7 @@ const UploadResults: React.FC = () => {
       if (response.successful_records > 0) {
         setSuccess(`Successfully uploaded ${response.successful_records} results`);
         // Refresh the data
-        await fetchData();
+        refreshResults();
       }
     } catch (err: any) {
       setError(err.message || 'Failed to upload results');
@@ -151,7 +164,7 @@ const UploadResults: React.FC = () => {
     try {
       await nationalResultsService.deleteResult(id);
       setSuccess('Result deleted successfully');
-      await fetchResults();
+      refreshResults();
     } catch (err: any) {
       setError('Failed to delete result');
     }
@@ -289,6 +302,14 @@ const UploadResults: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Loading progress */}
+      <LoadingProgress
+        loadedCount={loadedCount}
+        totalCount={totalCount}
+        progress={progress}
+        isComplete={isComplete}
+      />
 
       {/* Results Table */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
