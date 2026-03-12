@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MarksAPI } from '../../../services/api';
 import { Card, CardContent } from '../../ui/card';
 import { BookOpen, ArrowUpRight } from 'lucide-react';
+import { SkeletonCards } from '../../ui/Skeleton';
 
 interface Subject {
   id: string;
@@ -37,9 +38,15 @@ const SubjectList = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-        <span className="ml-2">Loading subjects...</span>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <BookOpen className="h-6 w-6 mr-2" />
+            Subject Analytics
+          </h1>
+          <p className="text-gray-600">Select a subject to view detailed analytics</p>
+        </div>
+        <SkeletonCards count={6} className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
       </div>
     );
   }

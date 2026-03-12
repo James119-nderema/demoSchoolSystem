@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { DataAPI } from '../../services/baseUrl';
+import { SkeletonProfile, SkeletonLines } from '../ui/Skeleton';
 
 interface SchoolProfile {
   id: string;
@@ -189,10 +190,11 @@ export default function SchoolProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-sm text-slate-500 font-medium">Loading school profile...</p>
+      <div className="min-h-screen bg-slate-50 p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">School Profile</h1>
+        <SkeletonProfile />
+        <div className="mt-6 bg-white rounded-lg shadow p-6 space-y-4">
+          <SkeletonLines lines={4} />
         </div>
       </div>
     );

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
 import AddStaffModal from './modals/AddStaffModal';
 import EditStaffModal from './modals/EditStaffModal';
+import { SkeletonTable } from '../ui/Skeleton';
 
 // Helper to get the active token (school admin or staff)
 const getAuthToken = (): string | null => {
@@ -302,8 +303,18 @@ const StaffManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-gray-600">Loading staff members...</div>
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-32" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+        </div>
+        <SkeletonTable rows={8} cols={5} />
       </div>
     );
   }

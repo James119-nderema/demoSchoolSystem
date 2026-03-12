@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { TrendingUp, TrendingDown, Users, BookOpen, Award, AlertTriangle } from 'lucide-react';
 import { MarksAPI } from '../services/baseUrl';
+import { DashboardSkeleton } from '../components/ui/Skeleton';
 
 interface DashboardSummaryData {
   total_students: number;
@@ -126,11 +127,7 @@ const StatisticsDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <DashboardSkeleton title="Statistics Dashboard" subtitle="Loading performance data..." />;
   }
 
   if (error) {

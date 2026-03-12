@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { Shimmer } from '../ui/Skeleton';
 
 const TemplateFullPreview: React.FC = () => {
   const { templateName } = useParams<{ templateName: string }>();
@@ -38,10 +39,19 @@ const TemplateFullPreview: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-          <p className="mt-4 text-gray-600">Loading template...</p>
+      <div className="min-h-screen bg-gray-100">
+        <div className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="animate-pulse bg-gray-200 rounded h-8 w-20" />
+            <div className="animate-pulse bg-gray-200 rounded h-6 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="animate-pulse bg-gray-200 rounded h-9 w-24" />
+            <div className="animate-pulse bg-gray-200 rounded h-9 w-24" />
+          </div>
+        </div>
+        <div className="p-6">
+          <Shimmer className="w-full h-[80vh] rounded-lg" />
         </div>
       </div>
     );

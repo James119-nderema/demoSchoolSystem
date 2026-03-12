@@ -10,6 +10,7 @@ import type {
   BudgetPeriod, BudgetPeriodListItem, BudgetCategory, BudgetItem,
   BudgetSimulation,
 } from '../../../services/financeService';
+import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Component
@@ -237,11 +238,7 @@ export default function BudgetPlanning() {
      ═══════════════════════════════════════════════════════════════════════════ */
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <FinancePageSkeleton title="Budget Planning" subtitle="Loading budget data..." />;
   }
 
   return (

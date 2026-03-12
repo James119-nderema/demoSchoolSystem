@@ -15,6 +15,7 @@ import {
   Cell,
   Legend
 } from "recharts";
+import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 interface MonthlyPayment {
   month: string;
@@ -125,14 +126,7 @@ const SchoolFinance: React.FC = () => {
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   if (loading) {
-    return (
-      <div className="p-6 font-sans bg-gray-50 min-h-screen">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading analytics...</span>
-        </div>
-      </div>
-    );
+    return <FinancePageSkeleton title="School Finance Dashboard" subtitle="Loading financial analytics..." />;
   }
 
   if (error) {

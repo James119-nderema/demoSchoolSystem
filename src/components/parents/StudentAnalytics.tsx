@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import StudentAnalyticsFilters from './StudentAnalyticsFilters';
 import { ParentsAPI } from '../../services/baseUrl';
 import { getGradeColorFromMarks } from '../../utils/gradingUtils';
+import { SkeletonCards, SkeletonChart } from '../ui/Skeleton';
 
 interface StudentInfo {
   name: string;
@@ -182,8 +183,14 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Student Analysis & Statistics</h1>
+            <p className="text-gray-600 mt-2">Comprehensive academic performance analysis</p>
+          </div>
+          <SkeletonCards count={4} className="mb-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SkeletonChart />
+            <SkeletonChart />
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { APIService, API_ENDPOINTS } from '../../../services/baseUrl';
 import AddStudentModal from './modals/AddStudentModal';
 import UploadStudentModal from './modals/UploadStudentModal';
 import DownloadStudentModal from './modals/DownloadStudentModal';
+import { SkeletonTable } from '../../ui/Skeleton';
 
 interface Student {
   current_class: string;
@@ -786,10 +787,22 @@ export default function Students() {
 
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <div className="text-lg text-gray-600">Loading students...</div>
+      <div className="h-full bg-gray-50">
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-4 sm:py-6">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Students</h1>
+              <p className="mt-1 text-sm sm:text-base text-gray-600">Manage student records and admissions</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+          </div>
+          <SkeletonTable rows={10} cols={7} />
         </div>
       </div>
     );

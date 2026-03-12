@@ -83,8 +83,20 @@ const BursarDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="p-6 font-sans bg-gray-50 min-h-screen">
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-gray-800">Bursar Dashboard</h2>
+          <p className="text-gray-600">Overview of school fee collections and outstanding balances</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm p-5">
+              <div className="space-y-2"><div className="animate-pulse bg-gray-200 rounded h-3 w-24" /><div className="animate-pulse bg-gray-200 rounded h-7 w-20" /></div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-40 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-64" /></div>
+          <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-40 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-64" /></div>
         </div>
       </div>
     );

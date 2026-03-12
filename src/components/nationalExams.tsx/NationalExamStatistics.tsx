@@ -12,6 +12,7 @@ import {
 import nationalResultsService, { 
   type NationalExamStatistics
 } from '../../services/nationalResultsService';
+import { SkeletonCards, SkeletonChart } from '../ui/Skeleton';
 
 const GRADE_COLORS: Record<string, string> = {
   'EE1': '#22c55e',  // Exceeding Expectations Level 1 (Best)
@@ -78,8 +79,19 @@ const NationalExamStatisticsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <BarChart3 className="w-7 h-7 text-blue-600" />
+            National Exam Statistics
+          </h1>
+          <p className="text-gray-600 mt-1">Comprehensive analysis of national examination results</p>
+        </div>
+        <SkeletonCards count={4} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart height="h-80" />
+          <SkeletonChart height="h-80" />
+        </div>
       </div>
     );
   }

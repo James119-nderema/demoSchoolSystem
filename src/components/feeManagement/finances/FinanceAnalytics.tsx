@@ -14,6 +14,7 @@ import { financeService } from '../../../services/financeService';
 import type {
   EnhancedAnalytics,
 } from '../../../services/financeService';
+import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    COLOUR PALETTES
@@ -56,11 +57,7 @@ export default function FinanceAnalytics() {
   const kpi = data?.kpi;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <FinancePageSkeleton title="Finance Analytics" subtitle="Loading financial insights..." />;
   }
 
   return (

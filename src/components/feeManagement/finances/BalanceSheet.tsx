@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { financeService } from '../../../services/financeService';
 import type { BalanceSheetEntry, BalanceSheetData } from '../../../services/financeService';
+import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 const ENTRY_TYPES = [
   { value: 'asset', label: 'Asset', icon: <TrendingUp className="w-4 h-4" />, color: 'emerald' },
@@ -130,11 +131,7 @@ export default function BalanceSheet() {
   const set = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <FinancePageSkeleton title="Balance Sheet" subtitle="Loading balance sheet data..." />;
   }
 
   const entries = data?.entries || [];

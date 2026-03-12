@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarksAPI } from '../../../services/baseUrl';
 import { getGradeColor } from '../../../utils/gradingUtils';
+import { SkeletonTable } from '../../ui/Skeleton';
 
 interface Result {
   id: number;
@@ -260,8 +261,18 @@ const ViewResults: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading results...</div>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Student Results</h1>
+            <p className="mt-2 text-gray-600">View and manage examination results</p>
+          </div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+          </div>
+          <SkeletonTable rows={8} cols={6} />
+        </div>
       </div>
     );
   }

@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { Users, TrendingUp, Award, AlertCircle, BookOpen } from 'lucide-react';
+import { SkeletonCards, SkeletonChart } from '../../ui/Skeleton';
 
 interface ClassAnalyticsData {
   class_info: {
@@ -147,8 +148,16 @@ const ClassAnalytics: React.FC<ClassAnalyticsProps> = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse bg-gray-200 rounded h-7 w-56 mb-2" />
+          <div className="animate-pulse bg-gray-200 rounded h-4 w-72" />
+        </div>
+        <SkeletonCards count={4} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
       </div>
     );
   }

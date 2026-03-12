@@ -14,8 +14,19 @@ const LibrarianDashboard: React.FC = () => {
   /* ─── Loading ─────────────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Library Dashboard</h1>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl ring-1 ring-gray-200 p-4">
+              <div className="space-y-2"><div className="animate-pulse bg-gray-200 rounded h-3 w-20" /><div className="animate-pulse bg-gray-200 rounded h-7 w-12" /></div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-36 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-48" /></div>
+          <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-36 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-48" /></div>
+        </div>
       </div>
     );
   }

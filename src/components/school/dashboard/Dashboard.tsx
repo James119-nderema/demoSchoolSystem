@@ -310,8 +310,33 @@ const SchoolDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{schoolInfo?.name || ''} Dashboard</h1>
+                <div className="animate-pulse bg-gray-200 rounded h-4 w-48 mt-1" />
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 flex-1"><div className="animate-pulse bg-gray-200 rounded h-3 w-24" /><div className="animate-pulse bg-gray-200 rounded h-7 w-16" /></div>
+                  <div className="animate-pulse bg-gray-200 rounded-full h-10 w-10" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-40 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-64" /></div>
+            <div className="bg-white rounded-lg shadow p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-40 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-64" /></div>
+          </div>
+        </div>
       </div>
     );
   }

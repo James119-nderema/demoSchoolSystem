@@ -3,6 +3,7 @@ import { Users, Calendar, Clock, AlertCircle, Download, ChevronDown, ChevronUp, 
 import { generateSingleTeacherPDF, generateAllTeachersPDF } from '../../utils/teacherSchedulePdfGenerator';
 import allTeachersScheduleService from '../../services/allTeachersScheduleService';
 import type { TeacherSchedule, TimeSlot, ScheduleEntry } from '../../services/allTeachersScheduleService';
+import { SkeletonList } from '../ui/Skeleton';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -87,8 +88,18 @@ const AllTeachersSchedules: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-600" />
+            All Teachers Schedules
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-36" />
+        </div>
+        <SkeletonList items={6} />
       </div>
     );
   }

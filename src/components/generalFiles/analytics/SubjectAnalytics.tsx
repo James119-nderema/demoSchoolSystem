@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { MarksAPI } from '../../../services/baseUrl';
 import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users, Filter, RefreshCw } from 'lucide-react';
+import { SkeletonCards, SkeletonChart } from '../../ui/Skeleton';
 
 interface AvailableFilters {
   terms: string[];
@@ -255,9 +256,20 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-        <span className="ml-2">Loading subject analytics...</span>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="animate-pulse bg-gray-200 rounded-full h-8 w-8" />
+          <div>
+            <div className="animate-pulse bg-gray-200 rounded h-7 w-48 mb-2" />
+            <div className="animate-pulse bg-gray-200 rounded h-4 w-64" />
+          </div>
+        </div>
+        <SkeletonCards count={4} />
+        <SkeletonChart height="h-80" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
       </div>
     );
   }

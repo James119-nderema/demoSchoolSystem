@@ -5,6 +5,7 @@ import { teacherService } from '../../../services/teacherService';
 import { teacherSubjectClassService } from '../../../services/teacherSubjectClassService';
 import type { Teacher } from '../../../types/teacher';
 import type { TeacherSubjectClass } from '../../../services/teacherSubjectClassService';
+import { SkeletonProfile, SkeletonTable } from '../../ui/Skeleton';
 
 export default function TeacherProfile() {
   const { id } = useParams<{ id: string }>();
@@ -76,8 +77,10 @@ export default function TeacherProfile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="animate-pulse bg-gray-200 rounded h-4 w-32" />
+        <SkeletonProfile />
+        <SkeletonTable rows={5} cols={3} />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
+import { SkeletonTable, SkeletonCards } from '../ui/Skeleton';
 
 interface Transaction {
   id: string;
@@ -172,12 +173,11 @@ export default function Reconcile() {
   if (loading) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-4">Loading transactions...</p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payment Reconciliation</h1>
         </div>
+        <SkeletonCards count={3} className="mb-6" />
+        <SkeletonTable rows={8} cols={6} />
       </div>
     );
   }

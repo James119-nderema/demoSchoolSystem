@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import teacherTimetableService from '../../services/teacherTimetableService';
 import type { TimetableEntry, TimeSlot, TeacherStatsResponse } from '../../services/teacherTimetableService';
+import { SkeletonCards, SkeletonTable } from '../ui/Skeleton';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -223,11 +224,15 @@ const TeacherTimetableView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your timetable...</p>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Calendar className="w-6 h-6 text-blue-600" />
+            My Timetable
+          </h1>
         </div>
+        <SkeletonCards count={4} />
+        <SkeletonTable rows={8} cols={6} />
       </div>
     );
   }

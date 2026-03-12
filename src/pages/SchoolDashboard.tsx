@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { MarksAPI } from '../services/baseUrl';
+import { DashboardSkeleton } from '../components/ui/Skeleton';
 
 interface ClassRankingData {
   class_id: number;
@@ -72,11 +73,7 @@ const SchoolDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <DashboardSkeleton title="School Dashboard" subtitle="Loading school analytics..." />;
   }
 
   if (error) {

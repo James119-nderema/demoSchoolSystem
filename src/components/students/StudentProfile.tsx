@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { APIService } from '../../services/baseUrl';
+import { SkeletonProfile, SkeletonCards, SkeletonTable } from '../ui/Skeleton';
 
 interface StudentData {
   id: string;
@@ -285,11 +286,12 @@ const StudentProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-sm text-slate-500 font-medium">Loading student profile...</p>
-        </div>
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="animate-pulse bg-gray-200 rounded h-4 w-24 mb-6" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Student Profile</h1>
+        <SkeletonProfile />
+        <SkeletonCards count={3} className="mt-6" />
+        <SkeletonTable rows={4} cols={4} className="mt-6" />
       </div>
     );
   }

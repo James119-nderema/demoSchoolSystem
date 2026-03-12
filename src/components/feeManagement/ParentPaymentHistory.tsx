@@ -4,6 +4,7 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { API_BASE_URL } from '../../config/environment';
+import { SkeletonTable } from '../ui/Skeleton';
 
 interface PaymentHistoryItem {
   id: string;
@@ -155,12 +156,11 @@ export default function ParentPaymentHistory() {
   if (loading) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-4">Loading payment history...</p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payment History</h1>
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-32" />
         </div>
+        <SkeletonTable rows={8} cols={5} />
       </div>
     );
   }

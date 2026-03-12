@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subjectsService } from '../../../services/subjectsService';
 import SubjectAnalytics from './SubjectAnalytics';
-import { Loader2 } from 'lucide-react';
+import { SkeletonCards } from '../../ui/Skeleton';
 import type { Subject } from '../../../types/subjects';
 
 const SubjectAnalyticsDashboard: React.FC = () => {
@@ -40,8 +40,9 @@ const SubjectAnalyticsDashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Subject Analysis</h1>
+        <SkeletonCards count={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" />
       </div>
     );
   }

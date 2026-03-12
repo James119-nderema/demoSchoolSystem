@@ -185,10 +185,29 @@ const StaffDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-3 text-sm text-gray-500">Loading dashboard…</p>
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-3 sm:py-4 gap-2">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{staffInfo?.school?.name || 'Staff Dashboard'}</h1>
+                <div className="animate-pulse bg-gray-200 rounded h-4 w-40 mt-1" />
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="space-y-2"><div className="animate-pulse bg-gray-200 rounded h-3 w-20" /><div className="animate-pulse bg-gray-200 rounded h-7 w-14" /></div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow-sm border p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-36 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-48" /></div>
+            <div className="bg-white rounded-xl shadow-sm border p-6"><div className="animate-pulse bg-gray-200 rounded h-4 w-36 mb-4" /><div className="animate-pulse bg-gray-100 rounded h-48" /></div>
+          </div>
         </div>
       </div>
     );

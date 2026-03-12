@@ -18,6 +18,7 @@ import nationalResultsService, {
   type UploadResponse 
 } from '../../services/nationalResultsService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { SkeletonTable } from '../ui/Skeleton';
 
 const UploadResults: React.FC = () => {
   // State
@@ -192,8 +193,15 @@ const UploadResults: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FileSpreadsheet className="w-7 h-7 text-blue-600" />
+            National Exam Results
+          </h1>
+          <p className="text-gray-600 mt-1">View and manage national examination results</p>
+        </div>
+        <SkeletonTable rows={8} cols={6} />
       </div>
     );
   }

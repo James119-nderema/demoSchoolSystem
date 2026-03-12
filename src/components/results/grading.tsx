@@ -18,6 +18,7 @@ import gradingService, {
   type ClassItem,
   type SubjectItem
 } from '../../services/gradingService';
+import { SkeletonTable } from '../ui/Skeleton';
 
 // Default grade template
 const DEFAULT_GRADES: GradeDefinition[] = [
@@ -242,11 +243,19 @@ const Grading: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading grading data...</p>
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <GraduationCap className="w-8 h-8 text-indigo-600" />
+            <h1 className="text-3xl font-bold text-gray-900">Grading System</h1>
+          </div>
         </div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+        </div>
+        <SkeletonTable rows={6} cols={5} />
       </div>
     );
   }

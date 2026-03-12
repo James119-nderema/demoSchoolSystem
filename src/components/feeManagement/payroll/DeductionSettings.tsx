@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { payrollService } from '../../../services/payrollService';
 import type { DeductionConfig, PAYEBracket } from '../../../services/payrollService';
+import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Component
@@ -138,11 +139,7 @@ export default function DeductionSettings() {
      ═══════════════════════════════════════════════════════════════════════════ */
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <FinancePageSkeleton title="Deduction Settings" subtitle="Loading deduction configuration..." />;
   }
 
   if (!config) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/environment';
+import { SkeletonTable } from '../ui/Skeleton';
 
 interface Payment {
   id: string;
@@ -239,12 +240,15 @@ export default function Payments() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-4">Loading payments...</p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-36" />
         </div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
+        </div>
+        <SkeletonTable rows={8} cols={6} />
       </div>
     );
   }
