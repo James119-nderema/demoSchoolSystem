@@ -149,6 +149,7 @@ export class APIService {
           ...options.headers,
         },
         signal: controller.signal,
+        cache: 'no-store',
       });
       
       clearTimeout(timeoutId);
