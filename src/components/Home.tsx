@@ -161,6 +161,24 @@ const Home: React.FC = () => {
     }
   ];
 
+  const kenyaCurriculumBlogs = [
+    {
+      title: 'CBC in Kenya: How Schools Can Track Competencies Without Manual Chaos',
+      excerpt: 'A practical guide for Kenyan school leaders on mapping CBC learning areas, grading evidence, and parent-ready reporting inside one platform.',
+      tag: 'Kenya CBC',
+    },
+    {
+      title: 'Kenya School Finance Playbook: Fee Collection, Reconciliation, and Visibility',
+      excerpt: 'How Kenyan schools can reduce fee leakage, improve cashflow predictability, and give parents trusted payment visibility.',
+      tag: 'Kenya Finance',
+    },
+    {
+      title: 'From Timetable Conflicts to Teaching Time: A Kenyan Operations Blueprint',
+      excerpt: 'How to move from manual scheduling bottlenecks to stable, conflict-free timetables that protect instructional time.',
+      tag: 'Kenya Operations',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-white pt-16">
       {/* Hero Section with Image Carousel */}
@@ -304,10 +322,10 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Powerful Features for Modern Schools
+              Powerful Features for Kenyan Schools
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to manage your educational institution efficiently and effectively.
+              Built for school owners and administrators who need stronger performance, tighter operations, and predictable revenue.
             </p>
           </ScrollReveal>
 
@@ -344,10 +362,10 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Schools Worldwide
+              Trusted by Kenyan Schools
             </h2>
             <p className="text-xl text-gray-600">
-              See what educators are saying about SchoolMaster Pro
+              See what school leaders in Kenya are saying
             </p>
           </ScrollReveal>
 
@@ -381,29 +399,28 @@ const Home: React.FC = () => {
             <ScrollReveal>
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                About SchoolMaster Pro
+                Kenya-First School Management Platform
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                We are dedicated to transforming education through innovative technology solutions. 
-                Our comprehensive school management system empowers educators, administrators, and 
-                students to achieve their full potential.
+                Built for Kenyan schools, this platform combines academics, finance, library, and operations in one connected system. 
+                It helps owners and administrators protect revenue, improve service delivery, and make faster, data-backed decisions.
               </p>
               <div className="space-y-4">
                 <div className="flex items-center">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">10+ years of education technology experience</span>
+                  <span className="text-gray-700">Designed around Kenyan school workflows and reporting realities</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">500+ schools trust our platform</span>
+                  <span className="text-gray-700">One connected system for academics, finance, timetable, and library</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">24/7 customer support</span>
+                  <span className="text-gray-700">Improves fee visibility, parent trust, and school cashflow confidence</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700">Regular updates and new features</span>
+                  <span className="text-gray-700">Practical support for school teams across Kenya</span>
                 </div>
               </div>
               <Link
@@ -416,12 +433,22 @@ const Home: React.FC = () => {
             </div>
             </ScrollReveal>
             <ScrollReveal delay={200}>
-            <div className="lg:text-center">
-              <img
-                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-                alt="School Management"
-                className="rounded-xl shadow-lg"
-              />
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-900">Kenyan Curriculum Blog</h3>
+              <p className="text-gray-600 text-sm">Insights focused on CBC delivery, school finance discipline, and operational growth in Kenya.</p>
+              <div className="space-y-3">
+                {kenyaCurriculumBlogs.map((blog, idx) => (
+                  <div key={idx} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{blog.tag}</span>
+                    <h4 className="mt-2 text-sm font-semibold text-gray-900">{blog.title}</h4>
+                    <p className="mt-1 text-sm text-gray-600">{blog.excerpt}</p>
+                    <Link to="/about" className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                      Read article
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
             </ScrollReveal>
           </div>

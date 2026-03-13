@@ -31,6 +31,13 @@ interface StudentSearchResult {
   current_class: string;
 }
 
+interface InvoiceStudentSearchResult {
+  id: string;
+  full_name: string;
+  admission_number: string;
+  class_field: string;
+}
+
 interface StaffSearchResult {
   id: string;
   full_name: string;
@@ -52,6 +59,11 @@ interface ClassRecord {
   class_name: string;
   class_teacher?: string;
   class_teacher_name?: string;
+}
+
+interface StudentClassOption {
+  id: string;
+  name: string;
 }
 
 /** Tracks a book + selected copy UIDs in individual multi-book mode */
@@ -388,11 +400,24 @@ const BorrowingTab: React.FC = () => {
     if (issueMode !== 'class' || !showIssueModal) return;
     const fetchClassesAndTeachers = async () => {
       try {
-        const [classesRes, teachersRes] = await Promise.allSettled([
+        const [studentClassesRes, classesRes, teachersRes] = await Promise.allSettled([
+          APIService.get<StudentClassOption[]>('/api/finance/invoice-classes/', {}, 'staff'),
           APIService.get<{ results: ClassRecord[] }>('/api/classes/', { page_size: '200' }, 'staff'),
           APIService.get<{ results: StaffSearchResult[] }>('/api/teachers/', { page_size: '200' }, 'staff'),
         ]);
-        if (classesRes.status === 'fulfilled') setClasses(classesRes.value.results || []);
+
+        // Prefer classes derived from student records to ensure filtering is by student class values.
+        if (studentClassesRes.status === 'fulfilled' && Array.isArray(studentClassesRes.value) && studentClassesRes.value.length > 0) {
+          setClasses(
+            studentClassesRes.value.map((c) => ({
+              id: c.id,
+              class_name: c.name,
+            })),
+          );
+        } else if (classesRes.status === 'fulfilled') {
+          setClasses(classesRes.value.results || []);
+        }
+
         if (teachersRes.status === 'fulfilled') setTeachers(teachersRes.value.results || []);
       } catch { /* silent */ }
     };
@@ -407,18 +432,53 @@ const BorrowingTab: React.FC = () => {
     const fetchStudents = async () => {
       setLoadingClass(true);
       try {
-        // Fetch all students of this class — iterate pages if needed
+        // Fetch all students for selected class with robust fallbacks.
+        const fetchStudentsByClassParam = async (classParam: string): Promise<StudentSearchResult[]> => {
+          let allStudents: StudentSearchResult[] = [];
+          let page = 1;
+          let hasMore = true;
+
+          while (hasMore) {
+            const data = await APIService.get<{ results: StudentSearchResult[]; next: string | null }>(
+              '/api/students/',
+              { class: classParam, page_size: '1000', page: String(page), view_all: 'true' },
+              'staff',
+            );
+            allStudents = [...allStudents, ...(data.results || [])];
+            hasMore = !!data.next;
+            page++;
+          }
+
+          return allStudents;
+        };
+
         let allStudents: StudentSearchResult[] = [];
-        let page = 1;
-        let hasMore = true;
-        while (hasMore) {
-          const data = await APIService.get<{ results: StudentSearchResult[]; next: string | null }>(
-            '/api/students/', { class: selectedClass.class_name, page_size: '1000', page: String(page), view_all: 'true' }, 'staff',
+
+        // 1) Finance helper endpoint filters by student class_field directly
+        if (allStudents.length === 0) {
+          const financeData = await APIService.get<InvoiceStudentSearchResult[]>(
+            '/api/finance/invoice-students/',
+            { class_id: selectedClass.class_name },
+            'staff',
           );
-          allStudents = [...allStudents, ...(data.results || [])];
-          hasMore = !!data.next;
-          page++;
+          allStudents = (financeData || []).map((s) => ({
+            id: s.id,
+            full_name: s.full_name,
+            admission_number: s.admission_number,
+            current_class: s.class_field,
+          }));
         }
+
+        // 2) Fallback: student endpoint by class name
+        if (allStudents.length === 0) {
+          allStudents = await fetchStudentsByClassParam(selectedClass.class_name);
+        }
+
+        // 3) Fallback: student endpoint by class id/value
+        if (allStudents.length === 0) {
+          allStudents = await fetchStudentsByClassParam(selectedClass.id);
+        }
+
         setClassStudents(allStudents);
       } catch { setClassStudents([]); }
       finally { setLoadingClass(false); }
@@ -623,7 +683,8 @@ const BorrowingTab: React.FC = () => {
       (b as any).copy_uid?.toLowerCase().includes(q) ||
       b.book.title.toLowerCase().includes(q) ||
       b.member.full_name.toLowerCase().includes(q) ||
-      b.member.admission_number?.toLowerCase().includes(q) ||
+      String(b.member.admission_number || '').toLowerCase().includes(q) ||
+      String(b.member.staff_id || '').toLowerCase().includes(q) ||
       b.book.isbn?.toLowerCase().includes(q)
     );
   });

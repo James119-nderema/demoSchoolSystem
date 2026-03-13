@@ -20,67 +20,67 @@ const FeaturesPage: React.FC = () => {
     {
       icon: <BarChart3 className="h-12 w-12 text-blue-600" />,
       title: "Result Management",
-      description: "Comprehensive student performance tracking with detailed analytics, grade calculations, and progress reports.",
+      description: "Improve academic decision quality with centralized performance data, fast reporting cycles, and board-ready analytics.",
       benefits: [
         "Automated grade calculations",
         "Progress tracking over time",
         "Customizable report cards",
-        "Performance analytics"
+        "Department and class-level analytics"
       ]
     },
     {
       icon: <CreditCard className="h-12 w-12 text-green-600" />,
       title: "Fees Payment",
-      description: "Streamlined fee collection system with online payment integration, receipts, and financial reporting.",
+      description: "Strengthen school cashflow with transparent billing, faster collections, and cleaner reconciliation workflows.",
       benefits: [
         "M-Pesa integration",
         "Automated receipts",
         "Payment reminders",
-        "Financial reports"
+        "Finance performance reports"
       ]
     },
     {
       icon: <Calendar className="h-12 w-12 text-purple-600" />,
       title: "Timetable Generation",
-      description: "Automated timetable creation with conflict resolution, resource optimization, and easy scheduling.",
+      description: "Reduce scheduling delays and protect teaching time with conflict-aware timetable automation.",
       benefits: [
         "AI-powered scheduling",
         "Conflict detection",
         "Teacher availability",
-        "Room allocation"
+        "Resource-aware allocation"
       ]
     },
     {
       icon: <Bot className="h-12 w-12 text-orange-600" />,
       title: "AI-Powered Library",
-      description: "Intelligent library management with AI recommendations, digital catalog, and smart search capabilities.",
+      description: "Control stock movement, improve borrowing accountability, and connect lost-book recovery to finance workflows.",
       benefits: [
         "Smart book recommendations",
         "Digital cataloging",
         "Borrowing management",
-        "Reading analytics"
+        "Lost-book and payment tracking"
       ]
     },
     {
       icon: <Users className="h-12 w-12 text-indigo-600" />,
       title: "Student Management",
-      description: "Complete student information system with enrollment, attendance tracking, and profile management.",
+      description: "Build one trusted student record for administration, academic coordination, and parent communication.",
       benefits: [
         "Easy enrollment",
         "Attendance tracking",
         "Profile management",
-        "Parent portal"
+        "Parent-ready visibility"
       ]
     },
     {
       icon: <Shield className="h-12 w-12 text-red-600" />,
       title: "Secure & Reliable",
-      description: "Enterprise-grade security with role-based access, data encryption, and reliable cloud infrastructure.",
+      description: "Operate with confidence using role-based controls, resilient uptime, and secure data handling.",
       benefits: [
         "Data encryption",
         "Role-based access",
         "Daily backups",
-        "99.9% uptime"
+        "99.9% service uptime"
       ]
     }
   ];
@@ -89,22 +89,22 @@ const FeaturesPage: React.FC = () => {
     {
       icon: <Zap className="h-8 w-8 text-yellow-500" />,
       title: "Fast Performance",
-      description: "Lightning-fast load times and responsive interface"
+      description: "Quick user workflows for busy school offices"
     },
     {
       icon: <Clock className="h-8 w-8 text-blue-500" />,
       title: "Real-time Updates",
-      description: "Instant synchronization across all devices"
+      description: "Immediate updates for administrators and staff"
     },
     {
       icon: <Globe className="h-8 w-8 text-green-500" />,
       title: "Cloud-Based",
-      description: "Access from anywhere, anytime on any device"
+      description: "School operations access from anywhere in Kenya"
     },
     {
       icon: <Database className="h-8 w-8 text-purple-500" />,
       title: "Data Export",
-      description: "Export data in multiple formats (PDF, Excel, CSV)"
+      description: "Export management-ready reports (PDF, Excel, CSV)"
     }
   ];
 
@@ -114,10 +114,10 @@ const FeaturesPage: React.FC = () => {
       <section className="bg-gradient-to-br from-blue-600 to-indigo-700 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Powerful Features for Modern Schools
+            Business-Ready Features for Kenyan Schools
           </h1>
           <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-            Everything you need to manage your educational institution efficiently and effectively.
+            The complete operating system for school growth: stronger academics, disciplined finance, and efficient administration.
           </p>
         </div>
       </section>
@@ -180,7 +180,7 @@ const FeaturesPage: React.FC = () => {
             Ready to Transform Your School?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of schools already using SchoolMaster Pro
+            Join Kenyan schools already improving performance and operational control with SchoolMaster Pro
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

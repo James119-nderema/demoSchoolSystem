@@ -11,6 +11,7 @@ import {
 } from '../hooks/useLibrary';
 import type { StudentRecord, StaffRecord } from '../hooks/useLibrary';
 import TablePagination, { usePagination } from '../utils/TablePagination';
+import { APIService } from '../../../services/baseUrl';
 
 type ActiveTab = 'students' | 'staff';
 
@@ -29,6 +30,28 @@ const MembersTab: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<StaffRecord | null>(null);
+  const [showStudentFormModal, setShowStudentFormModal] = useState(false);
+  const [showStaffFormModal, setShowStaffFormModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
+  const [editingStaff, setEditingStaff] = useState<StaffRecord | null>(null);
+  const [mutationLoading, setMutationLoading] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationSuccess, setMutationSuccess] = useState<string | null>(null);
+  const [studentForm, setStudentForm] = useState({
+    surname: '',
+    first_name: '',
+    other_names: '',
+    admission_number: '',
+    class_field: '',
+    gender: 'male',
+    status: 'active',
+    parent_guardian_name: '',
+    parent_guardian_phone: '',
+  });
+  const [staffForm, setStaffForm] = useState({
+    full_name: '',
+    phone_number: '',
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loading = activeTab === 'students' ? studentsLoading : staffLoading;
@@ -142,6 +165,157 @@ const MembersTab: React.FC = () => {
   const initials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
+  const resetMessages = () => {
+    setMutationError(null);
+    setMutationSuccess(null);
+  };
+
+  const openAddStudentModal = () => {
+    resetMessages();
+    setEditingStudent(null);
+    setStudentForm({
+      surname: '',
+      first_name: '',
+      other_names: '',
+      admission_number: '',
+      class_field: '',
+      gender: 'male',
+      status: 'active',
+      parent_guardian_name: '',
+      parent_guardian_phone: '',
+    });
+    setShowStudentFormModal(true);
+  };
+
+  const openEditStudentModal = (student: StudentRecord) => {
+    resetMessages();
+    setEditingStudent(student);
+    setStudentForm({
+      surname: student.surname || '',
+      first_name: student.first_name || '',
+      other_names: student.other_names || '',
+      admission_number: student.admission_number || '',
+      class_field: student.class_field || student.class_name || student.current_class || '',
+      gender: (student.gender || 'male').toLowerCase(),
+      status: student.status || 'active',
+      parent_guardian_name: student.parent_guardian_name || '',
+      parent_guardian_phone: student.parent_guardian_phone || '',
+    });
+    setShowStudentFormModal(true);
+  };
+
+  const openAddStaffModal = () => {
+    resetMessages();
+    setEditingStaff(null);
+    setStaffForm({ full_name: '', phone_number: '' });
+    setShowStaffFormModal(true);
+  };
+
+  const openEditStaffModal = (staffMember: StaffRecord) => {
+    resetMessages();
+    setEditingStaff(staffMember);
+    setStaffForm({
+      full_name: staffMember.full_name || '',
+      phone_number: staffMember.phone_number || '',
+    });
+    setShowStaffFormModal(true);
+  };
+
+  const handleSaveStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetMessages();
+    setMutationLoading(true);
+    try {
+      const payload = {
+        surname: studentForm.surname.trim(),
+        first_name: studentForm.first_name.trim(),
+        other_names: studentForm.other_names.trim() || undefined,
+        admission_number: studentForm.admission_number.trim(),
+        class_field: studentForm.class_field.trim(),
+        gender: studentForm.gender,
+        status: studentForm.status,
+        parent_guardian_name: studentForm.parent_guardian_name.trim() || undefined,
+        parent_guardian_phone: studentForm.parent_guardian_phone.trim() || undefined,
+      };
+
+      if (editingStudent) {
+        await APIService.patch(`/api/students/${editingStudent.id}/`, payload, 'staff');
+        setMutationSuccess('Student updated successfully.');
+      } else {
+        await APIService.post('/api/students/', payload, 'staff');
+        setMutationSuccess('Student added successfully.');
+      }
+
+      await fetchStudents();
+      setShowStudentFormModal(false);
+    } catch (err: any) {
+      setMutationError(err?.response?.data?.error || err?.response?.data?.detail || err.message || 'Failed to save student');
+    } finally {
+      setMutationLoading(false);
+    }
+  };
+
+  const handleSaveStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetMessages();
+    setMutationLoading(true);
+    try {
+      const payload = {
+        full_name: staffForm.full_name.trim(),
+        phone_number: staffForm.phone_number.trim(),
+      };
+
+      if (editingStaff) {
+        await APIService.patch(`/api/teachers/${editingStaff.id}/`, payload, 'staff');
+        setMutationSuccess('Staff member updated successfully.');
+      } else {
+        await APIService.post('/api/teachers/', payload, 'staff');
+        setMutationSuccess('Staff member added successfully.');
+      }
+
+      await fetchStaff();
+      setShowStaffFormModal(false);
+    } catch (err: any) {
+      setMutationError(err?.response?.data?.error || err?.response?.data?.detail || err.message || 'Failed to save staff member');
+    } finally {
+      setMutationLoading(false);
+    }
+  };
+
+  const handleDeleteStudent = async (student: StudentRecord) => {
+    const confirmDelete = window.confirm(`Delete student ${student.full_name || `${student.surname} ${student.first_name}`}?`);
+    if (!confirmDelete) return;
+    resetMessages();
+    setMutationLoading(true);
+    try {
+      await APIService.delete(`/api/students/${student.id}/`, 'staff');
+      setMutationSuccess('Student deleted successfully.');
+      if (selectedStudent?.id === student.id) setSelectedStudent(null);
+      await fetchStudents();
+    } catch (err: any) {
+      setMutationError(err?.response?.data?.error || err?.response?.data?.detail || err.message || 'Failed to delete student');
+    } finally {
+      setMutationLoading(false);
+    }
+  };
+
+  const handleDeleteStaff = async (staffMember: StaffRecord) => {
+    const confirmDelete = window.confirm(`Delete staff member ${staffMember.full_name}?`);
+    if (!confirmDelete) return;
+    resetMessages();
+    setMutationLoading(true);
+    try {
+      await APIService.delete(`/api/teachers/${staffMember.id}/`, 'staff');
+      setMutationSuccess('Staff member deleted successfully.');
+      if (selectedStaff?.id === staffMember.id) setSelectedStaff(null);
+      await fetchStaff();
+    } catch (err: any) {
+      setMutationError(err?.response?.data?.error || err?.response?.data?.detail || err.message || 'Failed to delete staff member');
+    } finally {
+      setMutationLoading(false);
+    }
+  };
+
   /* ─── Render ──────────────────────────────────────────────────────────── */
   return (
     <div className="space-y-5">
@@ -155,6 +329,24 @@ const MembersTab: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={openAddStudentModal}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Student
+          </button>
+          <button
+            onClick={openAddStaffModal}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 text-sm font-medium transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Staff
+          </button>
           <button
             onClick={() => { setShowUploadModal(true); setUploadError(null); setProgress(''); }}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors"
@@ -267,6 +459,17 @@ const MembersTab: React.FC = () => {
         </div>
       )}
 
+      {mutationError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <strong>Action failed:</strong> {mutationError}
+        </div>
+      )}
+      {mutationSuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <strong>Success:</strong> {mutationSuccess}
+        </div>
+      )}
+
       {/* Students Table */}
       {activeTab === 'students' && (
         loading ? (
@@ -294,6 +497,7 @@ const MembersTab: React.FC = () => {
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Gender</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Guardian</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -333,6 +537,23 @@ const MembersTab: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-slate-500 text-xs max-w-[150px] truncate">
                         {student.parent_guardian_name || '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditStudentModal(student); }}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student); }}
+                            disabled={mutationLoading}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -381,6 +602,7 @@ const MembersTab: React.FC = () => {
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Staff No.</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Email</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -399,7 +621,7 @@ const MembersTab: React.FC = () => {
                           <p className="font-medium text-slate-800">{member.full_name}</p>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 font-mono text-xs">{member.staff_number}</td>
+                      <td className="py-3 px-4 text-slate-600 font-mono text-xs">{member.staff_number || '—'}</td>
                       <td className="py-3 px-4 text-slate-500 text-xs">{member.email}</td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
@@ -411,6 +633,23 @@ const MembersTab: React.FC = () => {
                         }`}>
                           {member.role?.replace(/_/g, ' ')}
                         </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditStaffModal(member); }}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteStaff(member); }}
+                            disabled={mutationLoading}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -548,6 +787,74 @@ const MembersTab: React.FC = () => {
             <div className="px-6 py-4 border-t border-slate-200 flex justify-end">
               <button onClick={() => setSelectedStaff(null)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 text-sm font-medium">Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Student Form Modal ──────────────────────────────────────────── */}
+      {showStudentFormModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => !mutationLoading && setShowStudentFormModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleSaveStudent}>
+              <div className="px-6 py-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-800">{editingStudent ? 'Edit Student' : 'Add Student'}</h3>
+                <button type="button" onClick={() => !mutationLoading && setShowStudentFormModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input value={studentForm.surname} onChange={(e) => setStudentForm(prev => ({ ...prev, surname: e.target.value }))} placeholder="Surname" required className="px-3 py-2 border rounded-lg text-sm" />
+                <input value={studentForm.first_name} onChange={(e) => setStudentForm(prev => ({ ...prev, first_name: e.target.value }))} placeholder="First name" required className="px-3 py-2 border rounded-lg text-sm" />
+                <input value={studentForm.other_names} onChange={(e) => setStudentForm(prev => ({ ...prev, other_names: e.target.value }))} placeholder="Other names (optional)" className="px-3 py-2 border rounded-lg text-sm sm:col-span-2" />
+                <input value={studentForm.admission_number} onChange={(e) => setStudentForm(prev => ({ ...prev, admission_number: e.target.value }))} placeholder="Admission number" required className="px-3 py-2 border rounded-lg text-sm" />
+                <input value={studentForm.class_field} onChange={(e) => setStudentForm(prev => ({ ...prev, class_field: e.target.value }))} placeholder="Class" required className="px-3 py-2 border rounded-lg text-sm" />
+                <select value={studentForm.gender} onChange={(e) => setStudentForm(prev => ({ ...prev, gender: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm">
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+                <select value={studentForm.status} onChange={(e) => setStudentForm(prev => ({ ...prev, status: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <input value={studentForm.parent_guardian_name} onChange={(e) => setStudentForm(prev => ({ ...prev, parent_guardian_name: e.target.value }))} placeholder="Parent/Guardian name" className="px-3 py-2 border rounded-lg text-sm sm:col-span-2" />
+                <input value={studentForm.parent_guardian_phone} onChange={(e) => setStudentForm(prev => ({ ...prev, parent_guardian_phone: e.target.value }))} placeholder="Parent/Guardian phone" className="px-3 py-2 border rounded-lg text-sm sm:col-span-2" />
+              </div>
+              <div className="px-6 py-4 border-t flex justify-end gap-3">
+                <button type="button" onClick={() => !mutationLoading && setShowStudentFormModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm">Cancel</button>
+                <button type="submit" disabled={mutationLoading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {mutationLoading ? 'Saving...' : editingStudent ? 'Update Student' : 'Add Student'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Staff Form Modal ────────────────────────────────────────────── */}
+      {showStaffFormModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => !mutationLoading && setShowStaffFormModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleSaveStaff}>
+              <div className="px-6 py-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-800">{editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}</h3>
+                <button type="button" onClick={() => !mutationLoading && setShowStaffFormModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="p-6 grid grid-cols-1 gap-4">
+                <input value={staffForm.full_name} onChange={(e) => setStaffForm(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Full name" required className="px-3 py-2 border rounded-lg text-sm" />
+                <input value={staffForm.phone_number} onChange={(e) => setStaffForm(prev => ({ ...prev, phone_number: e.target.value }))} placeholder="Phone number (optional)" className="px-3 py-2 border rounded-lg text-sm" />
+                {!editingStaff && (
+                  <p className="text-xs text-slate-500">A staff account will be created in StaffAuth with a generated email and temporary password.</p>
+                )}
+              </div>
+              <div className="px-6 py-4 border-t flex justify-end gap-3">
+                <button type="button" onClick={() => !mutationLoading && setShowStaffFormModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm">Cancel</button>
+                <button type="submit" disabled={mutationLoading} className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {mutationLoading ? 'Saving...' : editingStaff ? 'Update Staff' : 'Add Staff'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

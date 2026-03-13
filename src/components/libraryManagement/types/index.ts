@@ -141,6 +141,7 @@ export interface BorrowingRecord {
   id: string;
   book: Book;
   member: LibraryMember;
+  copy_uid?: string;
   issue_date: string;
   due_date: string;
   return_date?: string;

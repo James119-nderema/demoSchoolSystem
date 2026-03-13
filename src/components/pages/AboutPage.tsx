@@ -13,6 +13,24 @@ import {
 } from 'lucide-react';
 
 const AboutPage: React.FC = () => {
+  const kenyaCurriculumBlog = [
+    {
+      title: 'CBC Reporting in Kenya: From Teacher Notes to Board-Ready Insights',
+      summary: 'How Kenyan schools can convert daily classroom data into reliable parent communication and strategic decision support.',
+      category: 'Kenya CBC'
+    },
+    {
+      title: 'School Growth in Kenya: Why Operational Discipline Beats Manual Workarounds',
+      summary: 'A practical roadmap for principals and proprietors who want stable growth, fewer leaks, and stronger accountability.',
+      category: 'Kenya Leadership'
+    },
+    {
+      title: 'Fee Confidence for Kenyan Parents: The Visibility Model That Improves Collections',
+      summary: 'How transparent invoices, payment history, and timely reminders build trust and improve collection performance.',
+      category: 'Kenya Finance'
+    }
+  ];
+
   const values = [
     {
       icon: <Target className="h-10 w-10 text-blue-600" />,
@@ -71,8 +89,7 @@ const AboutPage: React.FC = () => {
               About SchoolMaster Pro
             </h1>
             <p className="text-xl text-indigo-100 max-w-3xl mx-auto">
-              We are dedicated to transforming education through innovative technology solutions, 
-              empowering schools to achieve their full potential.
+              A Kenya-first school operations platform built to help schools strengthen performance, improve parent confidence, and scale sustainably.
             </p>
           </div>
         </div>
@@ -92,9 +109,7 @@ const AboutPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 ml-4">Our Mission</h2>
               </div>
               <p className="text-gray-700 text-lg leading-relaxed">
-                To empower educational institutions with innovative, user-friendly technology solutions 
-                that streamline administrative processes, enhance learning outcomes, and foster a 
-                collaborative educational environment.
+                To help Kenyan schools run with clarity and control by connecting academics, finance, library, and operations in one dependable system.
               </p>
             </div>
             </ScrollReveal>
@@ -109,9 +124,7 @@ const AboutPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900 ml-4">Our Vision</h2>
               </div>
               <p className="text-gray-700 text-lg leading-relaxed">
-                To be the leading school management platform in Africa and beyond, transforming how 
-                educational institutions operate and setting new standards for efficiency, 
-                accessibility, and innovation in education technology.
+                To become Kenya’s most trusted school management growth platform for owners, principals, and administrators who want measurable outcomes.
               </p>
             </div>
             </ScrollReveal>
@@ -188,7 +201,7 @@ const AboutPage: React.FC = () => {
                 Founded in 2015, SchoolMaster Pro began with a simple mission: to make school 
                 management easier and more efficient. What started as a small project to help 
                 local schools has grown into a comprehensive platform trusted by hundreds of 
-                educational institutions across Kenya and beyond.
+                educational institutions across Kenya.
               </p>
               <p className="text-lg text-gray-600 mb-6">
                 Our team of dedicated educators and technologists work tirelessly to understand 
@@ -201,11 +214,11 @@ const AboutPage: React.FC = () => {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Now serving 500+ schools across East Africa</span>
+                  <span className="text-gray-700">Now serving 500+ schools across Kenya</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Continuously innovating with AI-powered features</span>
+                  <span className="text-gray-700">Continuously improving CBC, finance, and operations workflows</span>
                 </div>
               </div>
             </div>
@@ -219,6 +232,34 @@ const AboutPage: React.FC = () => {
               />
             </div>
             </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* Kenyan Curriculum Blog */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Kenyan Curriculum Blog</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Practical insights for Kenyan school leaders who want stronger results, smoother operations, and business-ready visibility.
+            </p>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {kenyaCurriculumBlog.map((post, index) => (
+              <ScrollReveal key={index} delay={index * 120}>
+                <article className="rounded-2xl border border-gray-200 bg-gray-50 p-6 h-full hover:shadow-md transition-shadow">
+                  <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{post.category}</span>
+                  <h3 className="mt-4 text-xl font-semibold text-gray-900">{post.title}</h3>
+                  <p className="mt-3 text-gray-600">{post.summary}</p>
+                  <Link to="/contact" className="inline-flex items-center mt-5 text-blue-600 font-medium hover:text-blue-700">
+                    Learn how this works in your school
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </article>
+              </ScrollReveal>
+            ))}
           </div>
         </div>
       </section>

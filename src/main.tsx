@@ -103,6 +103,8 @@ import BorrowingTab from './components/libraryManagement/borrowing/BorrowingTab'
 import MembersTab from './components/libraryManagement/members/MembersTab'
 import CBCResourcesTab from './components/libraryManagement/cbc/CBCResourcesTab'
 import ReportsTab from './components/libraryManagement/reports/ReportsTab'
+import LostBooksPage from './components/libraryManagement/lostBooks/LostBooksPage'
+import LibraryGuide from './components/libraryManagement/guide/LibraryGuide'
 import SalaryManagement from './components/feeManagement/payroll/SalaryManagement'
 import PayrollDashboard from './components/feeManagement/payroll/PayrollDashboard'
 import PaymentProcessing from './components/feeManagement/payroll/PaymentProcessing'
@@ -139,6 +141,8 @@ const router = createBrowserRouter([
       { path: 'parent/login', element: <ParentLogin /> },
       { path: 'parent/forgot-password', element: <ParentForgotPassword /> },
       { path: 'finance/guide', element: <FinanceGuide />},
+      {
+        path: 'library/guide', element:  <LibraryGuide />},
     ],
   },
   // Main authenticated routes (dashboard, students, classes, etc.)
@@ -565,6 +569,15 @@ const router = createBrowserRouter([
           </AuthenticatedRoute>
         ) 
       },
+      {
+        path: 'library/lost-books',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <LostBooksPage />
+          </AuthenticatedRoute>
+        )
+      },
+      
       { 
         path: 'staff-management', 
         element: (
