@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import StaffSidebar from '../components/sidebars/StaffSidebar';
 import TopNavbar from '../components/layout/TopNavbar';
 import { clearAuthData } from '../utils/authUtils';
+import { normalizePackages, packageRouteAllowed, type SchoolPackage } from '../config/packageAccess';
 
 interface StaffInfo {
   id: string;
@@ -18,6 +19,7 @@ const StaffMainLayout: React.FC = () => {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [userType, setUserType] = useState<'staff' | 'school' | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check for staff login first
@@ -69,6 +71,27 @@ const StaffMainLayout: React.FC = () => {
     // No valid login found
     navigate('/login');
   }, [navigate]);
+
+  useEffect(() => {
+    if (!staffInfo) return;
+
+    const infoKey = userType === 'school' ? 'school_info' : 'staff_info';
+    const raw = localStorage.getItem(infoKey || 'staff_info');
+    let packages: SchoolPackage[] = [];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        packages = normalizePackages(parsed.selected_packages || []);
+      } catch {
+        packages = [];
+      }
+    }
+
+    const allowed = packageRouteAllowed(location.pathname, packages);
+    if (!allowed) {
+      navigate('/classes', { replace: true });
+    }
+  }, [location.pathname, navigate, staffInfo, userType]);
 
   const handleLogout = () => {
     if (userType === 'staff') {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { normalizePackages, type SchoolPackage } from '../config/packageAccess';
 
 interface StaffInfo {
   id: string;
@@ -9,6 +10,7 @@ interface StaffInfo {
   phone_number: string;
   role: string;
   permissions: string[];
+  selected_packages?: string[];
 }
 
 // Full permissions for school admin (ADMINISTRATIVE_STAFF)
@@ -31,7 +33,46 @@ const ADMIN_STAFF_PERMISSIONS = [
 export const usePermissions = () => {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [role, setRole] = useState<string>('');
+  const [selectedPackages, setSelectedPackages] = useState<SchoolPackage[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const PERMISSION_FEATURES: Record<string, SchoolPackage | 'GLOBAL'> = {
+    manage_timetable: 'TIMETABLE',
+    generate_timetable: 'TIMETABLE',
+    view_timetable: 'TIMETABLE',
+    view_all_timetables: 'TIMETABLE',
+    input_marks: 'REPORT_MANAGEMENT',
+    view_results: 'REPORT_MANAGEMENT',
+    view_all_results: 'REPORT_MANAGEMENT',
+    manage_grades: 'REPORT_MANAGEMENT',
+    view_statistics: 'REPORT_MANAGEMENT',
+    view_class_statistics: 'REPORT_MANAGEMENT',
+    view_all_statistics: 'REPORT_MANAGEMENT',
+    view_reports: 'REPORT_MANAGEMENT',
+    download_reports: 'REPORT_MANAGEMENT',
+    download_class_reports: 'REPORT_MANAGEMENT',
+    download_all_reports: 'REPORT_MANAGEMENT',
+    generate_reports: 'REPORT_MANAGEMENT',
+    view_national_results: 'REPORT_MANAGEMENT',
+    manage_national_results: 'REPORT_MANAGEMENT',
+    view_finance: 'FEE_MANAGEMENT',
+    manage_finance: 'FEE_MANAGEMENT',
+    view_fee_reports: 'FEE_MANAGEMENT',
+    generate_fee_reports: 'FEE_MANAGEMENT',
+    view_payroll: 'PAYROLL',
+    manage_payroll: 'PAYROLL',
+    view_library: 'LIBRARY_MANAGEMENT',
+    manage_library: 'LIBRARY_MANAGEMENT',
+  };
+
+  const filterPermissionsByPackages = (rawPermissions: string[], packages: SchoolPackage[]) => {
+    if (packages.length === 0) return rawPermissions;
+    return rawPermissions.filter(permission => {
+      const feature = PERMISSION_FEATURES[permission] || 'GLOBAL';
+      if (feature === 'GLOBAL') return true;
+      return packages.includes(feature);
+    });
+  };
 
   useEffect(() => {
     // First check for staff_info
@@ -39,7 +80,9 @@ export const usePermissions = () => {
     if (staffInfo) {
       try {
         const info: StaffInfo = JSON.parse(staffInfo);
-        setPermissions(info.permissions || []);
+        const packages = normalizePackages((info as any).selected_packages || []);
+        setSelectedPackages(packages);
+        setPermissions(filterPermissionsByPackages(info.permissions || [], packages));
         setRole(info.role || '');
         setLoading(false);
         return;
@@ -53,7 +96,10 @@ export const usePermissions = () => {
     if (schoolInfo) {
       try {
         // School admins get full ADMINISTRATIVE_STAFF permissions
-        setPermissions(ADMIN_STAFF_PERMISSIONS);
+        const parsed = JSON.parse(schoolInfo);
+        const packages = normalizePackages(parsed.selected_packages || []);
+        setSelectedPackages(packages);
+        setPermissions(filterPermissionsByPackages(ADMIN_STAFF_PERMISSIONS, packages));
         setRole('ADMINISTRATIVE_STAFF');
         setLoading(false);
         return;
@@ -80,7 +126,7 @@ export const usePermissions = () => {
   // Specific permission checks based on your roles
   const canManageStudents = (): boolean => hasPermission('manage_students');
   const canViewStudents = (): boolean => 
-    hasPermission('view_students') || 
+    (role !== 'LIBRARIAN' && hasPermission('view_students')) || 
     hasPermission('view_assigned_students') || 
     hasPermission('manage_students');
   
@@ -101,6 +147,20 @@ export const usePermissions = () => {
   const canManageTimetable = (): boolean => hasPermission('manage_timetable');
   const canGenerateTimetable = (): boolean => hasPermission('generate_timetable');
   const canViewTimetable = (): boolean => hasPermission('view_timetable');
+
+  const isTimetableOnlyAdmin = (): boolean =>
+    role === 'ADMINISTRATIVE_STAFF' &&
+    selectedPackages.length === 1 &&
+    selectedPackages[0] === 'TIMETABLE';
+
+  const effectiveCanManageTimetable = (): boolean =>
+    isTimetableOnlyAdmin() || canManageTimetable();
+
+  const effectiveCanGenerateTimetable = (): boolean =>
+    isTimetableOnlyAdmin() || canGenerateTimetable();
+
+  const effectiveCanViewTimetable = (): boolean =>
+    isTimetableOnlyAdmin() || canViewTimetable();
   
   const canInputMarks = (): boolean => hasPermission('input_marks');
   const canViewResults = (): boolean => hasPermission('view_results');
@@ -120,25 +180,26 @@ export const usePermissions = () => {
   
   // Full Results access - only Director of Studies, Class Teacher, and Administrative Staff
   const canViewFullResults = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'CLASS_TEACHER' || role === 'ADMINISTRATIVE_STAFF';
+    (role === 'DIRECTOR_OF_STUDIES' || role === 'CLASS_TEACHER' || role === 'ADMINISTRATIVE_STAFF') &&
+    hasPermission('view_results');
   
   // Full Results download - Director of Studies, Administrative Staff, and Class Teacher
   const canDownloadFullResults = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF' || role === 'CLASS_TEACHER';
+    (role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF' || role === 'CLASS_TEACHER') &&
+    canDownloadReports();
   
   // Report Cards access - only Director of Studies and Administrative Staff
   const canAccessReportCards = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+    (role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF') && hasPermission('view_reports');
   
   const canManageFinance = (): boolean => hasPermission('manage_finance');
-  const canViewFinance = (): boolean => 
-    hasPermission('view_finance') || role === 'ADMINISTRATIVE_STAFF';
+  const canViewFinance = (): boolean => hasPermission('view_finance');
 
   // Library permissions
   const canManageLibrary = (): boolean => 
-    hasPermission('manage_library') || role === 'LIBRARIAN' || role === 'ADMINISTRATIVE_STAFF';
+    hasPermission('manage_library');
   const canViewLibrary = (): boolean => 
-    hasPermission('view_library') || role === 'LIBRARIAN' || role === 'ADMINISTRATIVE_STAFF';
+    hasPermission('view_library');
 
   // Role checks
   const isTeacher = (): boolean => role === 'TEACHER';
@@ -167,7 +228,7 @@ export const usePermissions = () => {
     role === 'DIRECTOR_OF_STUDIES';
   
   const canAddSubjects = (): boolean => 
-    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+    role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF' || role === 'LIBRARIAN';
   
   const canEditSubjects = (): boolean => 
     role === 'DIRECTOR_OF_STUDIES';
@@ -198,6 +259,7 @@ export const usePermissions = () => {
   return {
     permissions,
     role,
+    selectedPackages,
     loading,
     hasPermission,
     hasAnyPermission,
@@ -210,9 +272,9 @@ export const usePermissions = () => {
     canManageSubjects,
     canViewSubjects,
     canManageStaff,
-    canManageTimetable,
-    canGenerateTimetable,
-    canViewTimetable,
+    canManageTimetable: effectiveCanManageTimetable,
+    canGenerateTimetable: effectiveCanGenerateTimetable,
+    canViewTimetable: effectiveCanViewTimetable,
     canInputMarks,
     canViewResults,
     canViewStatistics,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
+import { hasPackage } from '../../config/packageAccess';
 
 interface StaffSidebarProps {
   staffInfo: {
@@ -25,6 +26,11 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
   // ─── Menu Items Builder ───────────────────────────────────────────────────
   const getAllMenuItems = () => {
     const items: any[] = [];
+    const hasTimetablePackage = hasPackage(permissions.selectedPackages, 'TIMETABLE');
+    const hasReportsPackage = hasPackage(permissions.selectedPackages, 'REPORT_MANAGEMENT');
+    const hasFeesPackage = hasPackage(permissions.selectedPackages, 'FEE_MANAGEMENT');
+    const hasPayrollPackage = hasPackage(permissions.selectedPackages, 'PAYROLL');
+    const hasLibraryPackage = hasPackage(permissions.selectedPackages, 'LIBRARY_MANAGEMENT');
 
     // Dashboard
     if (permissions.isBursar()) {
@@ -45,7 +51,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Students
-    if (permissions.canViewStudents() && !permissions.isLibrarian()) {
+    if (permissions.canViewStudents()) {
       items.push({
         name: 'Students',
         path: permissions.isAdministrativeStaff() ? '/admin/students' : '/students',
@@ -72,7 +78,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Timetable
-    if (permissions.canViewTimetable()) {
+    if (hasTimetablePackage && permissions.canViewTimetable()) {
       const timetableSubItems: any[] = [];
       if (permissions.canManageTimetable()) {
         timetableSubItems.push(
@@ -104,7 +110,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Results
-    if (permissions.canViewResults() || permissions.canInputMarks()) {
+    if (hasReportsPackage && (permissions.canViewResults() || permissions.canInputMarks())) {
       const resultsSubItems: any[] = [];
       if (permissions.canInputMarks()) {
         resultsSubItems.push({ name: 'Input Marks', path: '/input-marks', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg> });
@@ -124,7 +130,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Grading
-    if (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff()) {
+    if (hasReportsPackage && (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff())) {
       items.push({
         name: 'Grading', path: '/grading',
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
@@ -132,7 +138,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // National Exams
-    if (!permissions.isBursar() && !permissions.isLibrarian()) {
+    if (hasReportsPackage && !permissions.isBursar() && !permissions.isLibrarian()) {
       items.push({
         name: 'National Exams', path: '/national-exams', hasDropdown: true,
         subItems: [
@@ -144,7 +150,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Statistics
-    if (permissions.canViewStatistics()) {
+    if (hasReportsPackage && permissions.canViewStatistics()) {
       items.push({
         name: 'Statistics', path: '/statistics', hasDropdown: true,
         subItems: [
@@ -157,7 +163,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Reports
-    if (permissions.canViewReports()) {
+    if (hasReportsPackage && permissions.canViewReports()) {
       items.push({
         name: 'Reports', path: '/reports',
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -165,7 +171,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Report Cards
-    if (permissions.canAccessReportCards()) {
+    if (hasReportsPackage && permissions.canAccessReportCards()) {
       items.push({
         name: 'Report Cards', path: '/reports/pdf', hasDropdown: true,
         subItems: [
@@ -176,7 +182,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Messaging
-    if (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff()) {
+    if (hasReportsPackage && (permissions.isDirectorOfStudies() || permissions.isAdministrativeStaff())) {
       items.push({
         name: 'Messaging', path: '/messaging',
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
@@ -184,7 +190,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Finance
-    if (permissions.canViewFinance()) {
+    if (hasFeesPackage && permissions.canViewFinance()) {
       const financeSubItems: any[] = [];
       if (permissions.isBursar() || permissions.isAdministrativeStaff()) {
         financeSubItems.push({ name: 'Dashboard', path: '/finance/dashboard', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> });
@@ -204,39 +210,25 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ staffInfo, onLogout }) => {
     }
 
     // Library Management (Librarian + Admin)
-    if (permissions.canViewLibrary()) {
+    if (hasLibraryPackage && permissions.canViewLibrary()) {
       items.push({
-        name: 'Book Catalog', path: '/library/catalog',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-      });
-      items.push({
-        name: 'Borrowing', path: '/library/borrowing',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-      });
-      items.push({
-        name: 'Members', path: '/library/members',
+        name: 'Library', path: '/library/dashboard', hasDropdown: true,
+        subItems: [
+          { name: 'Dashboard', path: '/library/dashboard', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
+          { name: 'Catalog', path: '/library/catalog', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+          { name: 'Borrowing', path: '/library/borrowing', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg> },
+          { name: 'Members', path: '/library/members', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
+          { name: 'CBC Resources', path: '/library/cbc-resources', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> },
+          { name: 'Reports', path: '/library/reports', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> },
+          { name: 'Lost Books', path: '/library/lost-books', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> },
+          { name: 'Library Guide', path: '/library/guide', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+        ],
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-      });
-      items.push({
-        name: 'Resources', path: '/library/cbc-resources',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-      });
-      items.push({
-        name: 'Lost Books', path: '/library/lost-books',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4m0 4h.01M3.05 11a9 9 0 1117.9 0A9 9 0 013.05 11z" /></svg>
-      });
-      items.push({
-        name: 'Library Guide', path: '/library/guide',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-      });
-      items.push({
-        name: 'Library Reports', path: '/library/reports',
-        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
       });
     }
 
     // Payroll Management (Bursar + Admin)
-    if (permissions.canManageFinance() || permissions.isBursar() || permissions.isAdministrativeStaff()) {
+    if (hasPayrollPackage && (permissions.canManageFinance() || permissions.isBursar() || permissions.isAdministrativeStaff())) {
       items.push({
         name: 'Payroll', path: '/payroll/dashboard', hasDropdown: true,
         subItems: [

@@ -8,19 +8,26 @@ interface PackageInfo {
   displayName: string;
   billingCycle: 'TERM' | 'YEAR';
   amount: number;
+  selectedPackages?: string[];
 }
 
 interface RegistrationData {
-  name: string;
-  school_email: string;
+  name?: string;
+  school_name?: string;
+  school_email?: string;
+  email?: string;
   password: string;
-  motto: string;
-  school_address: string;
-  school_type: string;
-  curriculum: string;
-  telephone: string;
-  country: string;
+  motto?: string;
+  school_address?: string;
+  address?: string;
+  school_type?: string;
+  curriculum?: string;
+  telephone?: string;
+  phone_number?: string;
+  country?: string;
   website?: string;
+  school_domain?: string;
+  selected_packages?: string[];
   logo?: File | null;
 }
 
@@ -61,7 +68,7 @@ export default function SubscriptionPayment() {
   useEffect(() => {
     // Redirect if no package selected
     if (!packageInfo) {
-      navigate('/pricing');
+      navigate('/package-selection');
     }
     // If from registration but no registration data, redirect to register
     if (fromRegistration && !registrationData) {
@@ -91,18 +98,21 @@ export default function SubscriptionPayment() {
     try {
       // Prepare form data for school registration
       const formData = new FormData();
-      formData.append('name', registrationData.name);
-      formData.append('school_email', registrationData.school_email);
+      formData.append('name', registrationData.name || registrationData.school_name || '');
+      formData.append('school_email', registrationData.school_email || registrationData.email || '');
       formData.append('password', registrationData.password);
       formData.append('motto', registrationData.motto || '');
-      formData.append('school_address', registrationData.school_address);
-      formData.append('school_type', registrationData.school_type);
-      formData.append('curriculum', registrationData.curriculum);
-      formData.append('telephone', registrationData.telephone);
-      formData.append('country', registrationData.country);
-      if (registrationData.website) {
-        formData.append('website', registrationData.website);
+      formData.append('school_address', registrationData.school_address || registrationData.address || '');
+      formData.append('school_type', registrationData.school_type || '');
+      formData.append('curriculum', registrationData.curriculum || '');
+      formData.append('telephone', registrationData.telephone || registrationData.phone_number || '');
+      formData.append('country', registrationData.country || '');
+      if (registrationData.website || registrationData.school_domain) {
+        formData.append('website', registrationData.website || registrationData.school_domain || '');
       }
+
+      const selectedPackages = packageInfo.selectedPackages || registrationData.selected_packages || [];
+      formData.append('selected_packages', JSON.stringify(selectedPackages));
       
       // Add subscription info
       formData.append('package_name', packageInfo.name);
@@ -163,6 +173,7 @@ export default function SubscriptionPayment() {
           phone_number: phoneNumber,
           package_name: packageInfo?.name,
           billing_cycle: packageInfo?.billingCycle,
+          amount: packageInfo?.amount,
           school_email: schoolEmail,
         }),
       });
@@ -232,7 +243,7 @@ export default function SubscriptionPayment() {
                 navigate('/login', { 
                   state: { 
                     message: 'School registered successfully! Please login to continue.',
-                    email: registrationData.school_email
+                    email: registrationData.school_email || registrationData.email
                   } 
                 });
               }, 2000);
@@ -296,7 +307,7 @@ export default function SubscriptionPayment() {
               navigate('/login', { 
                 state: { 
                   message: 'School registered successfully! Please login to continue.',
-                  email: registrationData.school_email
+                  email: registrationData.school_email || registrationData.email
                 } 
               });
             }, 2000);
@@ -333,7 +344,7 @@ export default function SubscriptionPayment() {
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/pricing')}
+          onClick={() => navigate('/package-selection')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6"
         >
           <ArrowLeft size={20} />

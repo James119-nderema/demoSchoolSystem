@@ -83,6 +83,7 @@ import ParentMainLayout from './layout/ParentMainLayout'
 import Home from './components/Home'
 import Pricing from './components/pricing'
 import SubscriptionPayment from './components/school/SubscriptionPayment'
+import PackageSelection from './components/school/PackageSelection'
 import Staff from './pages/Staff'
 import FeaturesPage from './components/pages/FeaturesPage'
 import AboutPage from './components/pages/AboutPage'
@@ -127,6 +128,7 @@ const router = createBrowserRouter([
       { path: 'about', element: <AboutPage /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'pricing', element: <Pricing /> },
+      { path: 'package-selection', element: <PackageSelection /> },
       { path: 'subscription-payment', element: <SubscriptionPayment /> },
       { path: 'create-school', element: <SchoolRegistration /> },
       { path: 'register-school', element: <SchoolRegistration /> },

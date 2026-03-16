@@ -97,7 +97,7 @@ export default function SchoolRegistration() {
       return
     }
 
-    // Store registration data in sessionStorage and redirect to pricing page
+    // Store registration data in sessionStorage and redirect to package selection page
     const registrationData = {
       school_name: formData.school_name,
       principal_name: formData.principal_name,
@@ -122,7 +122,7 @@ export default function SchoolRegistration() {
         sessionStorage.setItem('school_logo_name', formData.logo!.name)
         sessionStorage.setItem('school_logo_type', formData.logo!.type)
         // Navigate after logo is saved
-        navigate('/pricing', {
+        navigate('/package-selection', {
           state: {
             registrationData,
             fromRegistration: true
@@ -132,7 +132,7 @@ export default function SchoolRegistration() {
       reader.readAsDataURL(formData.logo)
     } else {
       // Navigate immediately if no logo
-      navigate('/pricing', {
+      navigate('/package-selection', {
         state: {
           registrationData,
           fromRegistration: true
@@ -160,12 +160,12 @@ export default function SchoolRegistration() {
             <div className="w-16 h-1 bg-gray-300"></div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">2</div>
-              <span className="text-gray-500">Choose Plan</span>
+              <span className="text-gray-500">Choose Packages</span>
             </div>
             <div className="w-16 h-1 bg-gray-300"></div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">3</div>
-              <span className="text-gray-500">Payment</span>
+              <span className="text-gray-500">Dashboard</span>
             </div>
           </div>
         </div>

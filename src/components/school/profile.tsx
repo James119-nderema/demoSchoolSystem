@@ -1,6 +1,12 @@
 ﻿import { useState, useEffect } from 'react';
 import { DataAPI } from '../../services/baseUrl';
 import { SkeletonProfile, SkeletonLines } from '../ui/Skeleton';
+import {
+  PACKAGE_LABELS,
+  PACKAGE_ORDER,
+  normalizePackages,
+  type SchoolPackage,
+} from '../../config/packageAccess';
 
 interface SchoolProfile {
   id: string;
@@ -17,6 +23,7 @@ interface SchoolProfile {
   logo_url: string | null;
   created_at: string;
   is_active: boolean;
+  selected_packages?: string[];
 }
 
 export default function SchoolProfile() {
@@ -27,6 +34,8 @@ export default function SchoolProfile() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [packageSaving, setPackageSaving] = useState(false);
+  const [selectedPackages, setSelectedPackages] = useState<SchoolPackage[]>([]);
   
   const [formData, setFormData] = useState({
     school_name: '',
@@ -87,6 +96,8 @@ export default function SchoolProfile() {
       if (response.logo_url) {
         setLogoPreview(response.logo_url);
       }
+
+      setSelectedPackages(normalizePackages(response.selected_packages || []));
     } catch (error: any) {
       console.error('Error fetching school profile:', error);
       setMessage(error.message || 'Failed to load school profile');
@@ -188,6 +199,77 @@ export default function SchoolProfile() {
     setMessage('');
   };
 
+  const getCurrentSchoolId = () => {
+    let userInfo = localStorage.getItem('school_info');
+    let schoolId: string | null = null;
+
+    if (userInfo) {
+      const user = JSON.parse(userInfo);
+      schoolId = user.id;
+    } else {
+      userInfo = localStorage.getItem('staff_info');
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        schoolId = user.school_id;
+      }
+    }
+
+    return schoolId;
+  };
+
+  const togglePackage = (pkg: SchoolPackage) => {
+    setSelectedPackages(prev => prev.includes(pkg) ? prev.filter(p => p !== pkg) : [...prev, pkg]);
+  };
+
+  const handlePackageSave = async () => {
+    if (selectedPackages.length === 0) {
+      setMessage('Please select at least one package.');
+      setMessageType('error');
+      return;
+    }
+
+    const schoolId = getCurrentSchoolId();
+    if (!schoolId) {
+      setMessage('User not authenticated');
+      setMessageType('error');
+      return;
+    }
+
+    setPackageSaving(true);
+    setMessage('');
+
+    try {
+      await DataAPI.updateSchool(schoolId.toString(), {
+        selected_packages: selectedPackages,
+      });
+
+      const updateSelectedPackagesInStorage = (key: 'school_info' | 'staff_info') => {
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw);
+          parsed.selected_packages = selectedPackages;
+          localStorage.setItem(key, JSON.stringify(parsed));
+        } catch {
+          // no-op
+        }
+      };
+
+      updateSelectedPackagesInStorage('school_info');
+      updateSelectedPackagesInStorage('staff_info');
+
+      setMessage('Packages updated successfully.');
+      setMessageType('success');
+      await fetchSchoolProfile();
+    } catch (error: any) {
+      setMessage(error.message || 'Failed to update packages');
+      setMessageType('error');
+    } finally {
+      setPackageSaving(false);
+      setTimeout(() => { setMessage(''); }, 5000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -266,6 +348,49 @@ export default function SchoolProfile() {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* ─── Package Upgrade/Downgrade ───────────────────────────── */}
+          <div className="mb-6 bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <div className="px-6 py-5 sm:px-8 sm:py-6 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800">Subscription Packages</h3>
+              <p className="text-sm text-slate-500 mt-1">Upgrade or downgrade packages whenever needed.</p>
+            </div>
+
+            <div className="px-6 py-5 sm:px-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {PACKAGE_ORDER.map(pkg => {
+                  const checked = selectedPackages.includes(pkg);
+                  return (
+                    <label
+                      key={pkg}
+                      className={`border rounded-xl p-3 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200'}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePackage(pkg)}
+                        />
+                        <span className="text-sm font-medium text-slate-800">{PACKAGE_LABELS[pkg]}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-sm text-slate-500">Selected: <span className="font-semibold text-slate-700">{selectedPackages.length}</span></p>
+                <button
+                  type="button"
+                  onClick={handlePackageSave}
+                  disabled={packageSaving}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {packageSaving ? 'Updating Packages...' : 'Save Package Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* ─── Main Profile Card ──────────────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
             {/* School header strip */}

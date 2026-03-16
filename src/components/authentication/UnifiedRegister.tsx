@@ -129,61 +129,26 @@ const UnifiedRegister: React.FC = () => {
     setLoading(true);
     setMessage(null);
 
-    try {
-      // Register school directly without subscription
-      const registrationData = {
-        name: schoolFormData.school_name,
-        school_email: schoolFormData.email,
-        password: schoolFormData.password,
-        telephone: schoolFormData.phone_number,
-        principal_name: schoolFormData.principal_name,
-        school_address: schoolFormData.address,
-        website: schoolFormData.school_domain,
-        motto: schoolFormData.motto,
-        payment_status: 'PENDING'
-      };
+    const registrationData = {
+      school_name: schoolFormData.school_name,
+      principal_name: schoolFormData.principal_name,
+      phone_number: schoolFormData.phone_number,
+      email: schoolFormData.email,
+      school_domain: schoolFormData.school_domain,
+      password: schoolFormData.password,
+      address: schoolFormData.address,
+      motto: schoolFormData.motto,
+    };
 
-      await axios.post(`${API_BASE_URL}/api/schools/`, registrationData);
-      
-      setMessage({
-        type: 'success',
-        text: 'School registered successfully! Redirecting to login...'
-      });
+    sessionStorage.setItem('pendingSchoolRegistration', JSON.stringify(registrationData));
 
-      // Redirect to login page after 2 seconds
-      setTimeout(() => {
-        navigate('/login', { 
-          state: { 
-            message: 'Registration successful! Please login to continue.',
-            email: schoolFormData.email,
-            userType: 'school_admin'
-          } 
-        });
-      }, 2000);
+    navigate('/package-selection', {
+      state: {
+        registrationData,
+        fromRegistration: true,
+      },
+    });
 
-    } catch (error: any) {
-      let errorMessage = 'Registration failed. Please try again.';
-      
-      if (error.response?.data) {
-        const errors = error.response.data;
-        if (typeof errors === 'object') {
-          const firstError = Object.values(errors)[0];
-          if (Array.isArray(firstError)) {
-            errorMessage = firstError[0];
-          } else if (typeof firstError === 'string') {
-            errorMessage = firstError;
-          }
-        } else if (typeof errors === 'string') {
-          errorMessage = errors;
-        }
-      }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
-    }
-    
     setLoading(false);
   };
 
