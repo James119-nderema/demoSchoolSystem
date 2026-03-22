@@ -110,11 +110,18 @@ import SalaryManagement from './components/feeManagement/payroll/SalaryManagemen
 import PayrollDashboard from './components/feeManagement/payroll/PayrollDashboard'
 import PaymentProcessing from './components/feeManagement/payroll/PaymentProcessing'
 import DeductionSettings from './components/feeManagement/payroll/DeductionSettings'
+import PaymentIntegrationSettingsPage from './components/feeManagement/payroll/PaymentIntegrationSettings'
 import BudgetPlanning from './components/feeManagement/finances/BudgetPlanning'
 import BalanceSheet from './components/feeManagement/finances/BalanceSheet'
 import SchoolExpenses from './components/feeManagement/finances/SchoolExpenses'
 import FinanceGuide from './components/feeManagement/finances/FinanceGuide'
 import FinanceAnalytics from './components/feeManagement/finances/FinanceAnalytics'
+import ChartOfAccounts from './components/feeManagement/finances/ChartOfAccounts'
+import JournalEntries from './components/feeManagement/finances/JournalEntries'
+import TrialBalance from './components/feeManagement/finances/TrialBalance'
+import GeneralLedger from './components/feeManagement/finances/GeneralLedger'
+import BankReconciliation from './components/feeManagement/finances/BankReconciliation'
+import FinancialStatements from './components/feeManagement/finances/FinancialStatements'
 import { RouteErrorBoundary } from './components/ErrorBoundary'
 
 const router = createBrowserRouter([
@@ -630,6 +637,14 @@ const router = createBrowserRouter([
           </AuthenticatedRoute>
         ) 
       },
+      {
+        path: 'payroll/payment-settings',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <PaymentIntegrationSettingsPage />
+          </AuthenticatedRoute>
+        )
+      },
       // Financial Management
       { 
         path: 'finance/budget', 
@@ -663,6 +678,54 @@ const router = createBrowserRouter([
             <FinanceAnalytics />
           </AuthenticatedRoute>
         ) 
+      },
+      {
+        path: 'finance/accounts',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ChartOfAccounts />
+          </AuthenticatedRoute>
+        )
+      },
+      {
+        path: 'finance/journals',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <JournalEntries />
+          </AuthenticatedRoute>
+        )
+      },
+      {
+        path: 'finance/trial-balance',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <TrialBalance />
+          </AuthenticatedRoute>
+        )
+      },
+      {
+        path: 'finance/general-ledger',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <GeneralLedger />
+          </AuthenticatedRoute>
+        )
+      },
+      {
+        path: 'finance/bank-reconciliation',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <BankReconciliation />
+          </AuthenticatedRoute>
+        )
+      },
+      {
+        path: 'finance/statements',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <FinancialStatements />
+          </AuthenticatedRoute>
+        )
       },
     ],
   },

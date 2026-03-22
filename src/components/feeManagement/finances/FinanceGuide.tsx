@@ -684,8 +684,9 @@ const FLOW_STEPS = [
   { label: 'Reconcile', icon: <CheckCircle className="w-3.5 h-3.5" />, color: 'bg-amber-50 text-amber-700 border-amber-200' },
   { label: 'Record Expenses', icon: <Receipt className="w-3.5 h-3.5" />, color: 'bg-purple-50 text-purple-700 border-purple-200' },
   { label: 'Run Payroll', icon: <Users className="w-3.5 h-3.5" />, color: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { label: 'Post Journals', icon: <BookOpen className="w-3.5 h-3.5" />, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   { label: 'Budget Plan', icon: <Target className="w-3.5 h-3.5" />, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  { label: 'Balance Sheet', icon: <Scale className="w-3.5 h-3.5" />, color: 'bg-teal-50 text-teal-700 border-teal-200' },
+  { label: 'Financial Reports', icon: <Scale className="w-3.5 h-3.5" />, color: 'bg-teal-50 text-teal-700 border-teal-200' },
 ];
 
 const SECTIONS: SectionData[] = [
@@ -1068,10 +1069,47 @@ const SECTIONS: SectionData[] = [
 
   /* ────────── 10. PAYMENT METHODS SETUP ────────── */
   {
+    id: 'accounting',
+    shortTitle: 'Accounting',
+    icon: <BookOpen className="w-5 h-5" />,
+    title: 'Step 9: Accounting & Financial Reports',
+    subtitle: 'Post journals and generate trial balance, ledger, reconciliation, and statements',
+    color: 'indigo',
+    gradient: 'from-indigo-600 to-violet-600',
+    steps: [
+      {
+        title: 'Set Up Chart of Accounts',
+        description:
+          'Open Financials → Accounts (`/finance/accounts`) and create your chart of accounts. Start with core accounts such as Cash, Bank, Tuition Income, Salary Expense, Utilities Expense, PAYE Payable, NSSF Payable, and SHA Payable.',
+        features: ['Account Codes', 'Account Type (Asset/Liability/Income/Expense)', 'Normal Balance', 'Bank/Cash Flags'],
+        screenshotAlt: 'Chart of Accounts Page Screenshot',
+        screenshotHint: 'Capture /finance/accounts showing account code, type, and active status columns',
+      },
+      {
+        title: 'Post Journal Entries',
+        description:
+          'Use `/finance/journals` to post balanced journal entries. Every entry must have equal total debit and credit. This is the source data for all accounting reports.',
+        features: ['Balanced Debits/Credits', 'Reference Field', 'Date Filters', 'Module Source Tracking'],
+        screenshotAlt: 'Journal Entries Page Screenshot',
+        screenshotHint: 'Capture /finance/journals showing line entry rows and total debit/credit validation',
+        tip: 'Example: Paying electricity bill → Dr Utilities Expense, Cr Bank. Running payroll → Dr Salary Expense, Cr statutory payables and Bank.',
+      },
+      {
+        title: 'Run Reports & Reconciliation',
+        description:
+          'Open `/finance/trial-balance` to verify debits equal credits, `/finance/general-ledger` for account movement, `/finance/bank-reconciliation` to match statement lines, and `/finance/statements` for Income Statement, Balance Sheet, and Cash Flow.',
+        features: ['Trial Balance', 'General Ledger', 'Bank Matching', 'Income Statement', 'Balance Sheet', 'Cash Flow'],
+        screenshotAlt: 'Accounting Reports Screenshot',
+        screenshotHint: 'Capture trial balance and statements pages with date filters applied',
+      },
+    ],
+  },
+
+  {
     id: 'payment-setup',
     shortTitle: 'Setup',
     icon: <Settings className="w-5 h-5" />,
-    title: 'Initial Setup: Payment Methods',
+    title: 'Step 10: Initial Setup — Payment Methods',
     subtitle: 'Configure which payment methods your school accepts and the account details',
     color: 'gray',
     gradient: 'from-gray-600 to-gray-700',
@@ -1102,6 +1140,9 @@ const ROLE_TABLE = [
   { feature: 'Create/Edit Invoices', access: [true, true, false, false, false] },
   { feature: 'Record Payments', access: [true, true, false, false, false] },
   { feature: 'Reconcile Transactions', access: [true, true, false, false, false] },
+  { feature: 'Manage Chart of Accounts', access: [true, true, false, false, false] },
+  { feature: 'Post Journal Entries', access: [true, true, false, false, false] },
+  { feature: 'View Trial Balance/Ledger/Statements', access: [true, true, true, false, false] },
   { feature: 'Manage Expenses', access: [true, true, false, false, false] },
   { feature: 'Approve Expenses', access: [true, true, true, false, false] },
   { feature: 'Pay Expenses (B2C/B2B)', access: [true, false, false, false, false] },

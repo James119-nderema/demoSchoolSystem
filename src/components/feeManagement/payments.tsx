@@ -105,35 +105,15 @@ export default function Payments() {
     try {
       setLoadingInvoices(true);
       const token = localStorage.getItem('staff_access_token');
-      const response = await axios.get(`${API_BASE_URL}/api/finance/invoices/`, {
-        params: { page_size: 200 },
+      const response = await axios.get(`${API_BASE_URL}/api/finance/invoice-student-balances/`, {
+        params: { student_id: studentId },
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Handle both paginated { results } and plain array responses
-      const invoices = Array.isArray(response.data) ? response.data : (response.data.results ?? []);
-      
-      // Filter invoice students for the selected student
-      const allInvoiceStudents: InvoiceStudent[] = [];
-      for (const invoice of invoices) {
-        for (const invStudent of invoice.invoice_students || []) {
-          if (invStudent.student === studentId) {
-            allInvoiceStudents.push({
-              id: invStudent.id,
-              student_name: invStudent.student_name,
-              admission_number: invStudent.admission_number,
-              class_name: invStudent.class_name,
-              invoice_number: invoice.invoice_number,
-              total_amount: invStudent.total_amount,
-              amount_paid: invStudent.amount_paid,
-              balance: invStudent.balance
-            });
-          }
-        }
-      }
-      setInvoiceStudents(allInvoiceStudents);
+
+      setInvoiceStudents(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error('Error fetching invoice students:', err);
+      setInvoiceStudents([]);
     } finally {
       setLoadingInvoices(false);
     }

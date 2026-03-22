@@ -149,6 +149,38 @@ export interface DeductionPreview {
   net_salary: number;
 }
 
+export interface PaymentIntegrationSettings {
+  id?: string;
+  school_id?: string;
+  provider: 'daraja' | 'bank';
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  bank_branch: string;
+  bank_swift_code: string;
+  daraja_environment: 'sandbox' | 'production';
+  daraja_paybill: string;
+  daraja_consumer_key: string;
+  daraja_consumer_secret?: string;
+  daraja_access_token?: string;
+  daraja_initiator_name: string;
+  daraja_initiator_password?: string;
+  daraja_b2c_queue_url: string;
+  daraja_b2c_result_url: string;
+  daraja_b2b_queue_url: string;
+  daraja_b2b_result_url: string;
+  jenga_api_key: string;
+  jenga_api_secret?: string;
+  jenga_merchant_code: string;
+  jenga_api_base_url: string;
+  has_daraja_consumer_secret?: boolean;
+  has_daraja_access_token?: boolean;
+  has_daraja_initiator_password?: boolean;
+  has_jenga_api_secret?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -174,6 +206,14 @@ export const payrollService = {
   // ─── Deduction Config ─────────────────────────────────────────────────
   async getDeductionConfig(): Promise<DeductionConfig> {
     return APIService.get(`${BASE}/deductions/config/`, undefined, AUTH);
+  },
+
+  async getPaymentIntegrationSettings(): Promise<PaymentIntegrationSettings> {
+    return APIService.get(`${BASE}/payment-settings/`, undefined, AUTH);
+  },
+
+  async updatePaymentIntegrationSettings(data: Partial<PaymentIntegrationSettings>): Promise<PaymentIntegrationSettings> {
+    return APIService.put(`${BASE}/payment-settings/`, data, AUTH);
   },
 
   async updateDeductionConfig(data: Partial<DeductionConfig>): Promise<DeductionConfig> {
@@ -235,7 +275,7 @@ export const payrollService = {
 
   // ─── Process / Pay ────────────────────────────────────────────────────
   async processPayrollRun(payrollRunId: number, recordIds?: string[]): Promise<PayrollRun> {
-    const payload: Record<string, unknown> = { payroll_run_id: payrollRunId };
+    const payload: Record<string, unknown> = { payroll_run_id: payrollRunId, simulate: true };
     if (recordIds && recordIds.length > 0) payload.record_ids = recordIds;
     return APIService.post(`${BASE}/process/`, payload, AUTH);
   },
@@ -247,7 +287,7 @@ export const payrollService = {
     destination: string;
     description?: string;
   }): Promise<{ success: boolean; transaction_id?: number; error?: string }> {
-    return APIService.post(`${BASE}/pay/`, data, AUTH);
+    return APIService.post(`${BASE}/pay/`, { ...data, simulate: true }, AUTH);
   },
 
   // ─── Transactions ─────────────────────────────────────────────────────
