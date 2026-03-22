@@ -5,8 +5,16 @@
       "destination": "https://bulk.ping.africa/api/:path*"
     },
     {
+      "source": "/api/:path*",
+      "destination": "http://185.181.10.160:8000/api/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "http://185.181.10.160:8000/media/:path*"
+    },
+    {
       "source": "/api/proxy-logo",
-      "destination": "185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
+      "destination": "http://185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
     },
     {
       "source": "/(.*)",
