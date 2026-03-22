@@ -1,24 +1,27 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/ping-africa/:path*",
-      "destination": "https://bulk.ping.africa/api/:path*"
+      "src": "/api/ping-africa/(.*)",
+      "dest": "https://bulk.ping.africa/api/$1"
     },
     {
-      "source": "/api/:path*",
-      "destination": "http://185.181.10.160:8000/api/:path*"
+      "src": "/api/proxy-logo",
+      "dest": "http://185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
     },
     {
-      "source": "/media/:path*",
-      "destination": "http://185.181.10.160:8000/media/:path*"
+      "src": "/api/(.*)",
+      "dest": "http://185.181.10.160:8000/api/$1"
     },
     {
-      "source": "/api/proxy-logo",
-      "destination": "http://185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
+      "src": "/media/(.*)",
+      "dest": "http://185.181.10.160:8000/media/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
