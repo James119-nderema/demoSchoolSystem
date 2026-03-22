@@ -99,6 +99,16 @@ export default function PackageSelection() {
     setSubmitting(true);
 
     try {
+      const parseJsonSafely = async (response: Response) => {
+        const responseText = await response.text();
+        if (!responseText) return null;
+        try {
+          return JSON.parse(responseText);
+        } catch {
+          return null;
+        }
+      };
+
       const formData = new FormData();
       formData.append('name', normalizedRegistrationData.school_name || '');
       formData.append('school_email', normalizedRegistrationData.email || '');
@@ -128,9 +138,13 @@ export default function PackageSelection() {
         body: formData,
       });
 
-      const createData = await createResponse.json();
+      const createData = await parseJsonSafely(createResponse);
       if (!createResponse.ok) {
-        throw new Error(createData.error || createData.message || 'Failed to create school account');
+        throw new Error(
+          (createData as any)?.error ||
+          (createData as any)?.message ||
+          `Failed to create school account (HTTP ${createResponse.status})`
+        );
       }
 
       const loginResult = await staffLogin(
