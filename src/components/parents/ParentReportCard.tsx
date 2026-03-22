@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Calendar, Filter, Loader2, AlertCircle, Printer } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { API_BASE_URL } from '../../config/environment';
 
 // Interface for API response subject performance
 interface SubjectPerformance {
@@ -109,7 +110,6 @@ const ParentReportCard: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '185.181.10.160:8000';
 
   // Fetch initial data and options
   useEffect(() => {
