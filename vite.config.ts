@@ -7,7 +7,7 @@ export default defineConfig(() => ({
   server: {
     proxy: {
       '/api': {
-        target: 'https://techhubai.pythonanywhere.com',
+        target: '185.181.10.160:8000',
         changeOrigin: true,
         secure: false,
       }

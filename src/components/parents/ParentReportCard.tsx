@@ -109,7 +109,7 @@ const ParentReportCard: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://techhubai.pythonanywhere.com';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '185.181.10.160:8000';
 
   // Fetch initial data and options
   useEffect(() => {

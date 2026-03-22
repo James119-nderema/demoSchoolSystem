@@ -35,7 +35,7 @@ export const prefetchLogo = async (
   let url = logoUrl;
   if (
     url.includes(
-      'pythonanywhere.com/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png'
+      '185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png'
     )
   ) {
     url = '/api/proxy-logo';
