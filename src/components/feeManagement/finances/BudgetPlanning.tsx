@@ -39,6 +39,7 @@ export default function BudgetPlanning() {
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [yearlyFeePerStudent, setYearlyFeePerStudent] = useState(0);
   const [salaryMonths, setSalaryMonths] = useState(12);
+  const [staffMonths, setStaffMonths] = useState<Record<string, number>>({});
 
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [showSimulation, setShowSimulation] = useState(false);
@@ -71,6 +72,9 @@ export default function BudgetPlanning() {
       try {
         const assumptionsData = await financeService.getBudgetPlanningAssumptions({ period_id: id, salary_months: salaryMonths });
         setAssumptions(assumptionsData);
+        const initialMonths: Record<string, number> = {};
+        (assumptionsData.salary_staff || []).forEach((s) => { initialMonths[s.staff_id] = s.months; });
+        setStaffMonths(initialMonths);
         if (!yearlyFeePerStudent && assumptionsData.suggestions.yearly_fee_per_student > 0) {
           setYearlyFeePerStudent(assumptionsData.suggestions.yearly_fee_per_student);
         }
@@ -89,12 +93,13 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
+        staff_months: staffMonths,
       });
       setAssumptions(assumptionsData);
     } catch {
       setAssumptions(null);
     }
-  }, [activePeriod?.id, salaryMonths, yearlyFeePerStudent]);
+  }, [activePeriod?.id, salaryMonths, yearlyFeePerStudent, staffMonths]);
 
   useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
   useEffect(() => { refreshAssumptions(); }, [refreshAssumptions]);
@@ -274,9 +279,14 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
+        staff_months: staffMonths,
       });
       setAssumptions(data);
-      setItemForm(prev => ({ ...prev, planned_amount: data.suggestions.annual_fee_projection }));
+      setItemForm(prev => ({
+        ...prev,
+        planned_amount: data.suggestions.fee_planned_projection,
+        actual_amount: data.suggestions.fee_actual_projection,
+      }));
     } catch (err: any) {
       showToast('error', err.message || 'Failed to auto-calculate fee projection');
     }
@@ -289,9 +299,14 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
+        staff_months: staffMonths,
       });
       setAssumptions(data);
-      setItemForm(prev => ({ ...prev, planned_amount: data.suggestions.salary_projection_for_months }));
+      setItemForm(prev => ({
+        ...prev,
+        planned_amount: data.suggestions.salary_planned_gross_total,
+        actual_amount: data.suggestions.salary_actual_gross_total,
+      }));
     } catch (err: any) {
       showToast('error', err.message || 'Failed to auto-calculate salary projection');
     }
@@ -670,8 +685,11 @@ export default function BudgetPlanning() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white/70" />
                   </div>
                 </div>
+                <p className="text-xs text-emerald-700/90">
+                  Planned uses 70% payer assumption and Actual uses 100% student collection.
+                </p>
                 <button onClick={applyFeeAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">
-                  Auto-calculate Planned Fee
+                  Auto-calculate Planned + Actual Fee
                 </button>
               </div>
             )}
@@ -691,8 +709,37 @@ export default function BudgetPlanning() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white/70" />
                   </div>
                 </div>
+
+                {!!assumptions?.salary_staff?.length && (
+                  <div className="rounded-lg border border-red-100 bg-white p-2 max-h-52 overflow-auto">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Months per Staff</p>
+                    <div className="space-y-1.5">
+                      {assumptions.salary_staff.map((s) => (
+                        <div key={s.staff_id} className="grid grid-cols-12 gap-2 items-center text-xs">
+                          <span className="col-span-6 text-gray-700 truncate">{s.staff_name}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="12"
+                            value={staffMonths[s.staff_id] ?? s.months}
+                            onChange={(e) => setStaffMonths((prev) => ({
+                              ...prev,
+                              [s.staff_id]: Math.max(0, Math.min(12, parseInt(e.target.value || '0', 10))),
+                            }))}
+                            className="col-span-2 px-2 py-1 border border-gray-200 rounded text-right"
+                          />
+                          <span className="col-span-4 text-right text-gray-500">KES {s.monthly_gross.toLocaleString()}/mo</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-red-700/90">
+                  Actual includes full gross salary and all staff deductions/taxes payable with +2%. Planned applies +3%.
+                </p>
                 <button onClick={applySalaryAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">
-                  Auto-calculate Planned Salary
+                  Auto-calculate Planned + Actual Salary
                 </button>
               </div>
             )}

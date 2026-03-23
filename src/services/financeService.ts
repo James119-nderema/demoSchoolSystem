@@ -98,9 +98,27 @@ export interface BudgetPlanningAssumptions {
   };
   suggestions: {
     yearly_fee_per_student: number;
-    annual_fee_projection: number;
-    salary_projection_for_months: number;
+    fee_base_full_collection: number;
+    fee_actual_projection: number;
+    fee_planned_projection: number;
+    salary_actual_gross_total: number;
+    salary_actual_deductions_total: number;
+    salary_actual_net_total: number;
+    salary_planned_gross_total: number;
+    salary_planned_deductions_total: number;
+    salary_planned_net_total: number;
   };
+  salary_staff: {
+    staff_id: string;
+    staff_name: string;
+    months: number;
+    monthly_gross: number;
+    monthly_deductions: number;
+    monthly_net: number;
+    actual_gross: number;
+    actual_deductions: number;
+    actual_net: number;
+  }[];
   generated_at: string;
 }
 
@@ -294,11 +312,13 @@ export const financeService = {
     period_id?: string;
     yearly_fee_per_student?: number;
     salary_months?: number;
+    staff_months?: Record<string, number>;
   }): Promise<BudgetPlanningAssumptions> {
     const qs = new URLSearchParams();
     if (params?.period_id) qs.set('period_id', params.period_id);
     if (typeof params?.yearly_fee_per_student === 'number') qs.set('yearly_fee_per_student', String(params.yearly_fee_per_student));
     if (typeof params?.salary_months === 'number') qs.set('salary_months', String(params.salary_months));
+    if (params?.staff_months && Object.keys(params.staff_months).length > 0) qs.set('staff_months', JSON.stringify(params.staff_months));
     const query = qs.toString() ? `?${qs.toString()}` : '';
     return APIService.get(`${BASE}/planning-assumptions/${query}`, undefined, AUTH);
   },
