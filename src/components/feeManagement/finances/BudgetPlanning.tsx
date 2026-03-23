@@ -269,11 +269,15 @@ export default function BudgetPlanning() {
   };
 
   const selectedCategory = (activePeriod?.categories || []).find(c => c.id === itemForm.category_id);
-  const isFeesItem = selectedCategory?.category_type === 'revenue' && (/fee|tuition/i.test(itemForm.name || '') || /fee|tuition/i.test(selectedCategory?.name || ''));
-  const isSalaryItem = selectedCategory?.category_type === 'expenditure' && (/salary|payroll|wage/i.test(itemForm.name || '') || /salary|payroll|wage/i.test(selectedCategory?.name || ''));
+  const isFeesItem = selectedCategory?.category_type === 'revenue';
+  const isSalaryItem = selectedCategory?.category_type === 'expenditure';
 
   const applyFeeAutoCalc = async () => {
     if (!activePeriod?.id) return;
+    if (yearlyFeePerStudent <= 0) {
+      showToast('error', 'Enter yearly fee per student first');
+      return;
+    }
     try {
       const data = await financeService.getBudgetPlanningAssumptions({
         period_id: activePeriod.id,
@@ -304,8 +308,8 @@ export default function BudgetPlanning() {
       setAssumptions(data);
       setItemForm(prev => ({
         ...prev,
-        planned_amount: data.suggestions.salary_planned_gross_total,
-        actual_amount: data.suggestions.salary_actual_gross_total,
+        planned_amount: data.suggestions.salary_planned_total_payment || data.suggestions.salary_planned_gross_total,
+        actual_amount: data.suggestions.salary_actual_total_payment || data.suggestions.salary_actual_gross_total,
       }));
     } catch (err: any) {
       showToast('error', err.message || 'Failed to auto-calculate salary projection');
@@ -728,7 +732,7 @@ export default function BudgetPlanning() {
                             }))}
                             className="col-span-2 px-2 py-1 border border-gray-200 rounded text-right"
                           />
-                          <span className="col-span-4 text-right text-gray-500">KES {s.monthly_gross.toLocaleString()}/mo</span>
+                          <span className="col-span-4 text-right text-gray-500">KES {(s.monthly_total_payment || s.monthly_gross).toLocaleString()}/mo</span>
                         </div>
                       ))}
                     </div>
@@ -736,7 +740,7 @@ export default function BudgetPlanning() {
                 )}
 
                 <p className="text-xs text-red-700/90">
-                  Actual includes full gross salary and all staff deductions/taxes payable with +2%. Planned applies +3%.
+                  Uses existing salary structures. Total = Net Pay + PAYE + deductions (without relief), then Actual = 102% and Planned = 103%.
                 </p>
                 <button onClick={applySalaryAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">
                   Auto-calculate Planned + Actual Salary

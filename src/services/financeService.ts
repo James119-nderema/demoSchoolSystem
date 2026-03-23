@@ -104,20 +104,25 @@ export interface BudgetPlanningAssumptions {
     salary_actual_gross_total: number;
     salary_actual_deductions_total: number;
     salary_actual_net_total: number;
+    salary_actual_total_payment?: number;
     salary_planned_gross_total: number;
     salary_planned_deductions_total: number;
     salary_planned_net_total: number;
+    salary_planned_total_payment?: number;
   };
   salary_staff: {
     staff_id: string;
     staff_name: string;
     months: number;
     monthly_gross: number;
+    monthly_paye_without_reliefs?: number;
     monthly_deductions: number;
     monthly_net: number;
+    monthly_total_payment?: number;
     actual_gross: number;
     actual_deductions: number;
     actual_net: number;
+    actual_total_payment?: number;
   }[];
   generated_at: string;
 }
