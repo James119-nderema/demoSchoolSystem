@@ -319,7 +319,20 @@ export const financeService = {
     salary_months?: number;
     staff_months?: Record<string, number>;
   }): Promise<BudgetPlanningAssumptions> {
-    return APIService.post(`${BASE}/planning-assumptions/`, params || {}, AUTH);
+    try {
+      return await APIService.post(`${BASE}/planning-assumptions/`, params || {}, AUTH);
+    } catch (error: any) {
+      const status = error?.status || error?.response?.status;
+      if (status !== 405) throw error;
+
+      const qs = new URLSearchParams();
+      if (params?.period_id) qs.set('period_id', params.period_id);
+      if (typeof params?.yearly_fee_per_student === 'number') qs.set('yearly_fee_per_student', String(params.yearly_fee_per_student));
+      if (typeof params?.salary_months === 'number') qs.set('salary_months', String(params.salary_months));
+      if (params?.staff_months && Object.keys(params.staff_months).length > 0) qs.set('staff_months', JSON.stringify(params.staff_months));
+      const query = qs.toString() ? `?${qs.toString()}` : '';
+      return APIService.get(`${BASE}/planning-assumptions/${query}`, undefined, AUTH);
+    }
   },
 
   /* ─── Balance Sheet ────────────────────────────────────────────────────── */
