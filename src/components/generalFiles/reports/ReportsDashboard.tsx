@@ -65,68 +65,18 @@ export interface ReportsData {
   message?: string;
 }
 
-interface DropdownOption {
-  value: string;
-  label: string;
-}
-
-interface DropdownData {
-  classes: { id: string; class_name: string; class_code: string }[];
-  subjects: { id: string; subject_name: string; subject_code: string }[];
-  exam_types: DropdownOption[];
-  terms: DropdownOption[];
-  years?: string[];
-}
-
 const ReportsDashboard: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [reportsData, setReportsData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noDataResponse, setNoDataResponse] = useState(false);
-  const [dropdownData, setDropdownData] = useState<DropdownData | null>(null);
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
 
   // Filter states
-  const [term, setTerm] = useState(searchParams.get('term') || '');
-  const [academicYear, setAcademicYear] = useState(searchParams.get('academic_year') || '');
-  const [examType, setExamType] = useState(searchParams.get('exam_type') || '');
-
-  // Fetch dropdown data on mount
-  useEffect(() => {
-    const fetchDropdownData = async () => {
-      try {
-        const response = await authFetch('/api/input-marks/dropdown-data/');
-        if (response.ok) {
-          const data = await response.json();
-          setDropdownData(data);
-          // Use years from dropdown data (returned by backend)
-          if (data.years && data.years.length > 0) {
-            setAvailableYears(data.years);
-          } else {
-            // Fallback: generate reasonable year ranges
-            const currentYear = new Date().getFullYear();
-            const fallbackYears = [];
-            for (let y = currentYear; y >= currentYear - 3; y--) {
-              fallbackYears.push(`${y}-${y + 1}`);
-            }
-            setAvailableYears(fallbackYears);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching dropdown data:', err);
-        // Fallback years
-        const currentYear = new Date().getFullYear();
-        const fallbackYears = [];
-        for (let y = currentYear; y >= currentYear - 3; y--) {
-          fallbackYears.push(`${y}-${y + 1}`);
-        }
-        setAvailableYears(fallbackYears);
-      }
-    };
-
-    fetchDropdownData();
-  }, []);
+  const term = searchParams.get('term') || '';
+  const academicYear = searchParams.get('academic_year') || '';
+  const examType = searchParams.get('exam_type') || '';
+  const selectedClassId = searchParams.get('class_id') || '';
 
   const fetchReportsData = async () => {
     try {
@@ -138,6 +88,7 @@ const ReportsDashboard: React.FC = () => {
       if (term) params.append('term', term);
       if (academicYear) params.append('academic_year', academicYear);
       if (examType) params.append('exam_type', examType);
+      if (selectedClassId) params.append('class_id', selectedClassId);
 
       const response = await authFetch(`/api/input-marks/reports-data/?${params.toString()}`);
       
@@ -174,33 +125,7 @@ const ReportsDashboard: React.FC = () => {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [term, academicYear, examType]);
-
-  const handleFilterChange = (filterType: string, value: string) => {
-    // Update URL params
-    const newSearchParams = new URLSearchParams(searchParams);
-    
-    if (value) {
-      newSearchParams.set(filterType, value);
-    } else {
-      newSearchParams.delete(filterType);
-    }
-    
-    setSearchParams(newSearchParams);
-    
-    // Update state - will trigger useEffect to fetch data
-    switch (filterType) {
-      case 'term':
-        setTerm(value);
-        break;
-      case 'academic_year':
-        setAcademicYear(value);
-        break;
-      case 'exam_type':
-        setExamType(value);
-        break;
-    }
-  };
+  }, [term, academicYear, examType, selectedClassId]);
 
   if (error) {
     return (
@@ -245,52 +170,6 @@ const ReportsDashboard: React.FC = () => {
             </svg>
             {loading ? 'Loading...' : 'Download PDF Report'}
           </button>
-        </div>
-        
-        {/* Filter Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Term</label>
-              <select
-                value={term}
-                onChange={(e) => handleFilterChange('term', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Terms</option>
-                {dropdownData?.terms?.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-              <select
-                value={academicYear}
-                onChange={(e) => handleFilterChange('academic_year', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Years</option>
-                {availableYears.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
-              <select
-                value={examType}
-                onChange={(e) => handleFilterChange('exam_type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Exam Types</option>
-                {dropdownData?.exam_types?.map((e) => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
@@ -362,52 +241,6 @@ const ReportsDashboard: React.FC = () => {
           </svg>
           {loading ? 'Loading...' : 'Download PDF Report'}
         </button>
-      </div>
-      
-      {/* Filter Controls - Always visible */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Term</label>
-            <select
-              value={term}
-              onChange={(e) => handleFilterChange('term', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Terms</option>
-              {dropdownData?.terms?.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-            <select
-              value={academicYear}
-              onChange={(e) => handleFilterChange('academic_year', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Years</option>
-              {availableYears.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
-            <select
-              value={examType}
-              onChange={(e) => handleFilterChange('exam_type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Exam Types</option>
-              {dropdownData?.exam_types?.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
 
       {/* Summary Stat Cards */}

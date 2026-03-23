@@ -195,10 +195,11 @@ export default function BalanceSheet() {
             <Info className="w-4 h-4 text-blue-600" />
             <h3 className="text-sm font-bold text-blue-800">Auto-Computed from Financial Records</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
             <ComputedCard label="Cash & Bank" value={computed.cash_and_bank} color="text-emerald-600" />
             <ComputedCard label="Receivables" value={computed.accounts_receivable} color="text-blue-600" />
             <ComputedCard label="Revenue Collected" value={computed.total_revenue_collected} color="text-emerald-600" />
+            <ComputedCard label="Total Outflow" value={computed.total_outflow || 0} color="text-red-600" />
             <ComputedCard label="Payroll Paid" value={computed.total_payroll_paid} color="text-red-600" />
             <ComputedCard label="Expenses Paid" value={computed.total_expenses_paid} color="text-red-600" />
             <ComputedCard label="Payables" value={computed.accounts_payable} color="text-amber-600" />

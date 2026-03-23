@@ -91,9 +91,9 @@ export default function FinanceAnalytics() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard
           icon={<DollarSign className="w-5 h-5" />}
-          label="Total Revenue"
-          value={fmtFull(kpi?.revenue_this_year || 0)}
-          sub={`This month: ${fmt(kpi?.revenue_this_month || 0)}`}
+          label="Net Revenue Balance"
+          value={fmtFull(kpi?.net_revenue_balance || 0)}
+          sub={`Inflow: ${fmt(kpi?.total_inflow_all_time || 0)} • Outflow: ${fmt(kpi?.total_outflow_all_time || 0)}`}
           color="blue"
         />
         <KpiCard
@@ -320,6 +320,45 @@ export default function FinanceAnalytics() {
           <HealthBar label="Fee Collection" current={kpi?.total_paid || 0} max={kpi?.total_invoiced || 1} color="#3B82F6" />
           <HealthBar label="Expense Coverage" current={kpi?.total_expenses_paid || 0} max={kpi?.total_expenses || 1} color="#F59E0B" />
           <HealthBar label="Revenue vs Expenditure" current={kpi?.revenue_this_year || 0} max={(kpi?.revenue_this_year || 0) + (kpi?.expenditure_this_year || 0) || 1} color="#10B981" />
+        </div>
+      </div>
+
+      {/* ─── Unified Revenue Ledger ──────────────────────────────────── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-900">Revenue Transaction Ledger</h3>
+          <p className="text-xs text-gray-500 mt-0.5">All inflow and outflow transactions with running balance</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50/80 text-left text-gray-500">
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Description</th>
+                <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3 text-right">In</th>
+                <th className="px-4 py-3 text-right">Out</th>
+                <th className="px-4 py-3 text-right">Running Balance</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {(data?.recent_transactions || []).map((tx) => (
+                <tr key={`${tx.source}-${tx.id}`} className="hover:bg-gray-50/60">
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{new Date(tx.transaction_date).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-gray-800">{tx.description}</td>
+                  <td className="px-4 py-3 text-gray-500 capitalize">{tx.source.replaceAll('_', ' ')}</td>
+                  <td className="px-4 py-3 text-right text-emerald-600 font-medium">{tx.amount_in ? fmtFull(tx.amount_in) : '—'}</td>
+                  <td className="px-4 py-3 text-right text-red-600 font-medium">{tx.amount_out ? fmtFull(tx.amount_out) : '—'}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-blue-700">{fmtFull(tx.running_balance)}</td>
+                </tr>
+              ))}
+              {(!data?.recent_transactions || data.recent_transactions.length === 0) && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-400">No transactions available</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

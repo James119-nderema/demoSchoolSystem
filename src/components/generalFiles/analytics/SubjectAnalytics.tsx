@@ -7,7 +7,7 @@ import {
   AreaChart, Area
 } from 'recharts';
 import { MarksAPI } from '../../../services/baseUrl';
-import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users, Filter, RefreshCw } from 'lucide-react';
+import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users } from 'lucide-react';
 import { SkeletonCards, SkeletonChart } from '../../ui/Skeleton';
 
 interface AvailableFilters {
@@ -66,16 +66,13 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Filter states
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
-  const [availableFilters, setAvailableFilters] = useState<AvailableFilters>({
-    terms: [],
-    academic_years: [],
-    exam_types: []
-  });
+  const selectedClassId = '';
 
   const EXAM_TYPE_LABELS: Record<string, string> = {
     'exam_1': 'Exam 1',
@@ -89,7 +86,10 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
     'final': 'Final Exam'
   };
 
-  const fetchSubjectData = async (useFilters = false) => {
+  const fetchSubjectData = async (
+    useFilters = false,
+    overrides?: { term?: string; academic_year?: string; exam_type?: string; class_id?: string }
+  ) => {
     try {
       setLoading(true);
       console.log('Fetching data for subject ID:', subjectId);
@@ -100,9 +100,15 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
       
       // Only add filters if explicitly requested (after initial load)
       if (useFilters) {
-        if (selectedTerm) params.term = selectedTerm;
-        if (selectedExamType) params.exam_type = selectedExamType;
-        if (selectedAcademicYear) params.academic_year = selectedAcademicYear;
+        const finalTerm = overrides?.term ?? selectedTerm;
+        const finalExamType = overrides?.exam_type ?? selectedExamType;
+        const finalAcademicYear = overrides?.academic_year ?? selectedAcademicYear;
+        const finalClassId = overrides?.class_id ?? selectedClassId;
+
+        if (finalTerm) params.term = finalTerm;
+        if (finalExamType) params.exam_type = finalExamType;
+        if (finalAcademicYear) params.academic_year = finalAcademicYear;
+        if (finalClassId) params.class_id = finalClassId;
       }
       
       const response = await MarksAPI.get('/api/input-marks/subject-analytics/', {
@@ -122,11 +128,6 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
         throw new Error('No data available in response');
       }
 
-      // Update available filters from response
-      if (data.available_filters) {
-        setAvailableFilters(data.available_filters);
-      }
-      
       // Set current filter values from response (what the backend actually used)
       if (data.filters) {
         if (!selectedTerm && data.filters.term) setSelectedTerm(data.filters.term);
@@ -194,11 +195,6 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
     }
   }, [subjectId]);
   
-  // Refetch when filters change
-  const handleApplyFilters = () => {
-    fetchSubjectData(true);
-  };
-
   const formatClassPerformanceData = () => {
     if (!subjectData?.class_performance) return [];
     
@@ -306,6 +302,10 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   }
 
   const performanceLevel = getPerformanceLevel(subjectData.overall_average);
+  const classPerformanceData = formatClassPerformanceData();
+  const filteredClassPerformanceData = classPerformanceData.filter((classData) =>
+    classData.class.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -335,99 +335,23 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Filters:</span>
+            <div className="w-full md:w-96">
+              <label className="text-sm text-gray-600 mb-1 block">Search Class</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by class name"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            
-            {/* Term Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-500 mb-1">Term</label>
-              <select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {availableFilters.terms.length > 0 ? (
-                  availableFilters.terms.map(term => (
-                    <option key={term} value={term}>Term {term}</option>
-                  ))
-                ) : (
-                  <>
-                    <option value="1">Term 1</option>
-                    <option value="2">Term 2</option>
-                    <option value="3">Term 3</option>
-                  </>
-                )}
-              </select>
-            </div>
-            
-            {/* Exam Type Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-500 mb-1">Exam Type</label>
-              <select
-                value={selectedExamType}
-                onChange={(e) => setSelectedExamType(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {availableFilters.exam_types.length > 0 ? (
-                  availableFilters.exam_types.map(examType => (
-                    <option key={examType} value={examType}>
-                      {EXAM_TYPE_LABELS[examType] || examType}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="exam_1">Exam 1</option>
-                    <option value="exam_2">Exam 2</option>
-                    <option value="exam_3">Exam 3</option>
-                    <option value="cat_1">CAT 1</option>
-                    <option value="cat_2">CAT 2</option>
-                    <option value="midterm">Mid-Term</option>
-                    <option value="endterm">End-Term</option>
-                  </>
-                )}
-              </select>
-            </div>
-            
-            {/* Academic Year Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-500 mb-1">Academic Year</label>
-              <select
-                value={selectedAcademicYear}
-                onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {availableFilters.academic_years.length > 0 ? (
-                  availableFilters.academic_years.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))
-                ) : (
-                  <>
-                    <option value="2024-2025">2024-2025</option>
-                    <option value="2025-2026">2025-2026</option>
-                  </>
-                )}
-              </select>
-            </div>
-            
-            {/* Apply Filters Button */}
-            <button
-              onClick={handleApplyFilters}
-              disabled={loading}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:bg-blue-300 transition-colors mt-5"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Apply
-            </button>
-            
-            {/* Current filter display */}
+
             {subjectData?.current_filters && (
-              <div className="ml-auto text-sm text-gray-500">
+              <div className="text-sm text-gray-500 md:ml-auto">
                 Showing: Term {subjectData.current_filters.term} | {EXAM_TYPE_LABELS[subjectData.current_filters.exam_type] || subjectData.current_filters.exam_type} | {subjectData.current_filters.academic_year}
               </div>
             )}
@@ -519,7 +443,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={formatClassPerformanceData()}>
+              <BarChart data={filteredClassPerformanceData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="class" />
                 <YAxis />
@@ -637,7 +561,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {formatClassPerformanceData().map((classData) => (
+            {filteredClassPerformanceData.map((classData) => (
               <div 
                 key={classData.class}
                 className={`p-4 border rounded-lg ${
@@ -673,6 +597,11 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
                 </div>
               </div>
             ))}
+            {filteredClassPerformanceData.length === 0 && (
+              <div className="col-span-full text-center text-sm text-gray-500 py-4">
+                No class performance records match your search.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

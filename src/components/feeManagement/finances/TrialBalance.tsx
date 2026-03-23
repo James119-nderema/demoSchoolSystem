@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { accountingService, type TrialBalanceResponse } from '../../../services/accountingService';
+import { financeService, type RevenueLedgerResponse } from '../../../services/financeService';
 
 const money = (v: number) => `KES ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -9,13 +10,18 @@ export default function TrialBalance() {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [ledger, setLedger] = useState<RevenueLedgerResponse | null>(null);
 
   const load = async () => {
     setLoading(true);
     setMessage('');
     try {
-      const data = await accountingService.getTrialBalance({ start_date: startDate || undefined, end_date: endDate || undefined });
+      const [data, ledgerData] = await Promise.all([
+        accountingService.getTrialBalance({ start_date: startDate || undefined, end_date: endDate || undefined }),
+        financeService.getRevenueLedger({ start_date: startDate || undefined, end_date: endDate || undefined, limit: 15 }),
+      ]);
       setReport(data);
+      setLedger(ledgerData);
     } catch (error: any) {
       setMessage(error?.message || 'Failed to load trial balance');
     } finally {
@@ -45,6 +51,15 @@ export default function TrialBalance() {
       </div>
 
       {message && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm">{message}</div>}
+
+      {ledger && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+          <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2">Total Inflow: <span className="font-semibold">{money(ledger.summary.total_in)}</span></div>
+          <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">Total Outflow: <span className="font-semibold">{money(ledger.summary.total_out)}</span></div>
+          <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">Net Change: <span className="font-semibold">{money(ledger.summary.net_change)}</span></div>
+          <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">Running Balance: <span className="font-semibold">{money(ledger.summary.closing_balance)}</span></div>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 overflow-x-auto">
         {loading ? <p className="text-sm text-gray-500">Loading...</p> : (

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { DataAPI, MarksAPI } from '../../../services/baseUrl';
+import { MarksAPI } from '../../../services/baseUrl';
 
 interface SubjectStatistics {
   subject_name: string;
@@ -48,44 +48,22 @@ interface ClassStatistics {
   }>;
 }
 
-interface Class {
-  id: number;
-  class_name: string;
-  class_code: string;
-  stream: string;
-  grade_level: string;
-}
-
 const ClassStatistics: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [classData, setClassData] = useState<ClassStatistics | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<string>(searchParams.get('class_id') || '');
-  const [selectedTerm, setSelectedTerm] = useState<string>('1');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024-2025');
-  const [selectedExamType, setSelectedExamType] = useState<string>('exam_1');
+  const selectedClassId = searchParams.get('class_id') || '';
+  const selectedTerm = searchParams.get('term') || '1';
+  const selectedAcademicYear = searchParams.get('academic_year') || '2024-2025';
+  const selectedExamType = searchParams.get('exam_type') || 'exam_1';
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [noDataResponse, setNoDataResponse] = useState<any>(null);
-
-  useEffect(() => {
-    fetchClasses();
-  }, []);
 
   useEffect(() => {
     if (selectedClassId) {
       fetchClassStatistics();
     }
   }, [selectedClassId, selectedTerm, selectedAcademicYear, selectedExamType]);
-
-  const fetchClasses = async () => {
-    try {
-      const data = await DataAPI.getClasses();
-      setClasses(data.results || data);
-    } catch (err) {
-      console.error('Error fetching classes:', err);
-    }
-  };
 
   const fetchClassStatistics = async () => {
     try {
@@ -146,90 +124,9 @@ const ClassStatistics: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header and Filters */}
+      {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Class Statistics</h1>
-        
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Class:
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => {
-                const classId = e.target.value;
-                setSelectedClassId(classId);
-                setClassData(null);
-                
-                // Update URL parameters
-                const newParams = new URLSearchParams(searchParams);
-                if (classId) {
-                  newParams.set('class_id', classId);
-                } else {
-                  newParams.delete('class_id');
-                }
-                setSearchParams(newParams);
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Choose a class...</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id.toString()}>
-                  {cls.class_name} - Stream {cls.stream}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Term:
-            </label>
-            <select
-              value={selectedTerm}
-              onChange={(e) => setSelectedTerm(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">Term 1</option>
-              <option value="2">Term 2</option>
-              <option value="3">Term 3</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Academic Year:
-            </label>
-            <select
-              value={selectedAcademicYear}
-              onChange={(e) => setSelectedAcademicYear(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-               <option value="2024">2024</option>
-               <option value="2025">2025</option>
-               <option value="2026">2026</option>
-               <option value="2027">2027</option>
-               <option value="2028">2028</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Exam Type:
-            </label>
-            <select
-              value={selectedExamType}
-              onChange={(e) => setSelectedExamType(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="exam_1">Exam 1</option>
-              <option value="exam_2">Exam 2</option>
-              <option value="exam_3">Exam 3</option>
-            </select>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-800">Class Statistics</h1>
       </div>
 
       {/* Loading State */}
@@ -281,8 +178,8 @@ const ClassStatistics: React.FC = () => {
       {/* No Selection Message */}
       {!classData && !loading && !error && !noDataResponse && !selectedClassId && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-center">
-          <strong className="font-bold">Select a class</strong>
-          <p className="text-sm mt-1">Choose a class from the dropdown above to view detailed statistics.</p>
+          <strong className="font-bold">No class selected</strong>
+          <p className="text-sm mt-1">Open this page from the step flow and choose a class to view detailed statistics.</p>
         </div>
       )}
 

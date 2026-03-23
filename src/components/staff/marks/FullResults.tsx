@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { APIService } from '../../../services/baseUrl';
 import { usePermissions } from '../../../hooks/usePermissions';
 import jsPDF from 'jspdf';
@@ -59,19 +60,20 @@ interface FullResultsResponse {
 }
 
 const FullResults: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const permissions = usePermissions();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [data, setData] = useState<FullResultsResponse | null>(null);
   
   // Filter states
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const selectedTerm = searchParams.get('term') || '';
+  const selectedAcademicYear = searchParams.get('academic_year') || '';
+  const selectedExamType = searchParams.get('exam_type') || '';
+  const selectedClass = searchParams.get('class_id') || '';
   
   // Search state
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('q') || '');
   
   // Download state
   const [downloading, setDownloading] = useState(false);
@@ -98,16 +100,26 @@ const FullResults: React.FC = () => {
     };
   }, [data, searchQuery]);
 
-  const fetchFullResults = async () => {
+  const fetchFullResults = async (override?: {
+    term?: string;
+    academic_year?: string;
+    exam_type?: string;
+    class_id?: string;
+  }) => {
     try {
       setLoading(true);
       setError('');
       
       const params: Record<string, string> = {};
-      if (selectedTerm) params.term = selectedTerm;
-      if (selectedAcademicYear) params.academic_year = selectedAcademicYear;
-      if (selectedExamType) params.exam_type = selectedExamType;
-      if (selectedClass) params.class_id = selectedClass;
+      const term = override?.term ?? selectedTerm;
+      const academicYear = override?.academic_year ?? selectedAcademicYear;
+      const examType = override?.exam_type ?? selectedExamType;
+      const classId = override?.class_id ?? selectedClass;
+
+      if (term) params.term = term;
+      if (academicYear) params.academic_year = academicYear;
+      if (examType) params.exam_type = examType;
+      if (classId) params.class_id = classId;
       
       const response = await APIService.get<FullResultsResponse>(
         '/api/input-marks/full-results/',
@@ -127,17 +139,26 @@ const FullResults: React.FC = () => {
     fetchFullResults();
   }, []);
 
-  const handleApplyFilters = () => {
-    fetchFullResults();
-  };
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (selectedTerm) next.set('term', selectedTerm);
+    if (selectedAcademicYear) next.set('academic_year', selectedAcademicYear);
+    if (selectedExamType) next.set('exam_type', selectedExamType);
+    if (selectedClass) next.set('class_id', selectedClass);
+    if (searchQuery) next.set('q', searchQuery);
 
-  const handleClearFilters = () => {
-    setSelectedTerm('');
-    setSelectedAcademicYear('');
-    setSelectedExamType('');
-    setSelectedClass('');
-    fetchFullResults();
-  };
+    if (searchParams.toString() !== next.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [
+    selectedTerm,
+    selectedAcademicYear,
+    selectedExamType,
+    selectedClass,
+    searchQuery,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const getExamTypeLabel = (examType: string): string => {
     const labels: { [key: string]: string } = {
@@ -333,90 +354,9 @@ const FullResults: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Term Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Term</label>
-              <select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              >
-                <option value="">All Terms</option>
-                {[...new Set(data?.filters?.terms || [])].map((term, index) => (
-                  <option key={`term-${index}-${term}`} value={term}>{getTermLabel(term)}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Academic Year Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-              <select
-                value={selectedAcademicYear}
-                onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              >
-                <option value="">All Years</option>
-                {[...new Set(data?.filters?.academic_years || [])].map((year, index) => (
-                  <option key={`year-${index}-${year}`} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Exam Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
-              <select
-                value={selectedExamType}
-                onChange={(e) => setSelectedExamType(e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              >
-                <option value="">All Exams</option>
-                {[...new Set(data?.filters?.exam_types || [])].map((type, index) => (
-                  <option key={`exam-${index}-${type}`} value={type}>{getExamTypeLabel(type)}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Class Filter - For Director of Studies, Administrative Staff, or School Admin */}
-            {(data?.user_role === 'DIRECTOR_OF_STUDIES' || data?.user_role === 'ADMINISTRATIVE_STAFF' || data?.user_type === 'school_admin') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <select
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="">All Classes</option>
-                  {data?.filters?.classes?.map((cls) => (
-                    <option key={cls.id} value={cls.id}>{cls.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Filter Buttons */}
-            <div className="flex items-end gap-2">
-              <button
-                onClick={handleApplyFilters}
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-sm font-medium"
-              >
-                Apply
-              </button>
-              <button
-                onClick={handleClearFilters}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm font-medium"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-          
-          {/* Search Box */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

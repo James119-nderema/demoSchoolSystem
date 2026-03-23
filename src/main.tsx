@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
+  Navigate,
   RouterProvider,
 } from 'react-router-dom'
 import './index.css'
@@ -34,6 +35,18 @@ import InputMarks from './components/staff/marks/InputMarks'
 import ViewResults from './components/staff/marks/ViewResults'
 import EditMarks from './components/staff/marks/EditMarks'
 import FullResults from './components/staff/marks/FullResults'
+import {
+  ViewResultsPeriodStep,
+  ViewResultsClassStep,
+  FullResultsPeriodStep,
+  FullResultsClassStep,
+  ReportsPeriodStep,
+  ReportsClassStep,
+  StudentStatisticsPeriodStep,
+  StudentStatisticsClassStep,
+  ClassStatisticsPeriodStep,
+  ClassStatisticsClassStep,
+} from './components/staff/marks/MarksFlowSteps'
 import StatisticsDashboard from './pages/StatisticsDashboard'
 import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper } from './components/staff/AnalyticsWrappers'
 import SchoolDashboard from './pages/SchoolDashboard'
@@ -204,9 +217,15 @@ const router = createBrowserRouter([
       },
       { path: 'results', element: <StaffResults /> },
       { path: 'input-marks', element: <InputMarks /> },
-      { path: 'view-results', element: <ViewResults /> },
+      { path: 'view-results', element: <Navigate to="/staff/view-results/step-1" replace /> },
+      { path: 'view-results/step-1', element: <ViewResultsPeriodStep /> },
+      { path: 'view-results/step-2', element: <ViewResultsClassStep /> },
+      { path: 'view-results/results', element: <ViewResults /> },
       { path: 'edit-marks', element: <EditMarks /> },
-      { path: 'full-results', element: <FullResults /> },
+      { path: 'full-results', element: <Navigate to="/staff/full-results/step-1" replace /> },
+      { path: 'full-results/step-1', element: <FullResultsPeriodStep /> },
+      { path: 'full-results/step-2', element: <FullResultsClassStep /> },
+      { path: 'full-results/results', element: <FullResults /> },
       { 
         path: 'statistics', 
         element: (
@@ -225,14 +244,38 @@ const router = createBrowserRouter([
       },
       { 
         path: 'statistics/students', 
+        element: <Navigate to="/staff/statistics/students/step-1" replace />
+      },
+      {
+        path: 'statistics/students/step-1',
+        element: <StudentStatisticsPeriodStep />
+      },
+      {
+        path: 'statistics/students/step-2',
+        element: <StudentStatisticsClassStep />
+      },
+      {
+        path: 'statistics/students/results',
         element: (
           <AuthenticatedRoute userType="staff">
             <StudentStatistics />
           </AuthenticatedRoute>
-        ) 
+        )
       },
       { 
         path: 'statistics/classes', 
+        element: <Navigate to="/staff/statistics/classes/step-1" replace />
+      },
+      {
+        path: 'statistics/classes/step-1',
+        element: <ClassStatisticsPeriodStep />
+      },
+      {
+        path: 'statistics/classes/step-2',
+        element: <ClassStatisticsClassStep />
+      },
+      {
+        path: 'statistics/classes/results',
         element: (
           <AuthenticatedRoute userType="staff">
             <ClassStatistics />
@@ -259,6 +302,18 @@ const router = createBrowserRouter([
       { path: 'statistics/class/:classId', element: <ClassAnalyticsWrapper /> },
       { 
         path: 'reports', 
+        element: <Navigate to="/staff/reports/step-1" replace />
+      },
+      {
+        path: 'reports/step-1',
+        element: <ReportsPeriodStep />
+      },
+      {
+        path: 'reports/step-2',
+        element: <ReportsClassStep />
+      },
+      {
+        path: 'reports/results',
         element: (
           <AuthenticatedRoute userType="staff">
             <ReportsDashboard />
@@ -724,6 +779,63 @@ const router = createBrowserRouter([
         element: (
           <AuthenticatedRoute userType="staff">
             <FinancialStatements />
+          </AuthenticatedRoute>
+        )
+      },
+    ],
+  },
+  // Staff-prefixed aliases for step flows
+  {
+    path: '/staff',
+    errorElement: <RouteErrorBoundary />,
+    element: (
+      <StaffProtectedRoute>
+        <StaffMainLayout />
+      </StaffProtectedRoute>
+    ),
+    children: [
+      { path: 'view-results', element: <Navigate to="/staff/view-results/step-1" replace /> },
+      { path: 'view-results/step-1', element: <ViewResultsPeriodStep /> },
+      { path: 'view-results/step-2', element: <ViewResultsClassStep /> },
+      { path: 'view-results/results', element: <ViewResults /> },
+
+      { path: 'full-results', element: <Navigate to="/staff/full-results/step-1" replace /> },
+      { path: 'full-results/step-1', element: <FullResultsPeriodStep /> },
+      { path: 'full-results/step-2', element: <FullResultsClassStep /> },
+      { path: 'full-results/results', element: <FullResults /> },
+
+      { path: 'reports', element: <Navigate to="/staff/reports/step-1" replace /> },
+      { path: 'reports/step-1', element: <ReportsPeriodStep /> },
+      { path: 'reports/step-2', element: <ReportsClassStep /> },
+      {
+        path: 'reports/results',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ReportsDashboard />
+          </AuthenticatedRoute>
+        )
+      },
+
+      { path: 'statistics/students', element: <Navigate to="/staff/statistics/students/step-1" replace /> },
+      { path: 'statistics/students/step-1', element: <StudentStatisticsPeriodStep /> },
+      { path: 'statistics/students/step-2', element: <StudentStatisticsClassStep /> },
+      {
+        path: 'statistics/students/results',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <StudentStatistics />
+          </AuthenticatedRoute>
+        )
+      },
+
+      { path: 'statistics/classes', element: <Navigate to="/staff/statistics/classes/step-1" replace /> },
+      { path: 'statistics/classes/step-1', element: <ClassStatisticsPeriodStep /> },
+      { path: 'statistics/classes/step-2', element: <ClassStatisticsClassStep /> },
+      {
+        path: 'statistics/classes/results',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <ClassStatistics />
           </AuthenticatedRoute>
         )
       },

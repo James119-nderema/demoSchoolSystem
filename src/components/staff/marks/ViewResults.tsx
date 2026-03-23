@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MarksAPI } from '../../../services/baseUrl';
 import { getGradeColor } from '../../../utils/gradingUtils';
 import { SkeletonTable } from '../../ui/Skeleton';
@@ -132,6 +132,7 @@ interface Statistics {
 
 const ViewResults: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filteredResults, setFilteredResults] = useState<Result[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [error, setError] = useState<string>('');
@@ -143,16 +144,12 @@ const ViewResults: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   
   // Filters
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const selectedClassId = searchParams.get('class_id') || '';
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('');
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2026');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-
-  // Generate academic year options (current year and a few years back)
-  const currentYear = new Date().getFullYear();
-  const academicYearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const selectedExamType = searchParams.get('exam_type') || '';
+  const selectedTerm = searchParams.get('term') || '';
+  const selectedAcademicYear = searchParams.get('academic_year') || '';
+  const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('q') || '');
   
   // View state
   const [showStatistics, setShowStatistics] = useState(false);
@@ -183,14 +180,52 @@ const ViewResults: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    fetchStatistics();
+  }, [selectedClassId, selectedSubject, selectedExamType, selectedTerm, selectedAcademicYear, subjects]);
+
+  useEffect(() => {
     applyFilters();
-  }, [results, selectedClass, selectedSubject, selectedExamType, selectedTerm, selectedAcademicYear, searchTerm]);
+  }, [results, classes, selectedClassId, selectedSubject, selectedExamType, selectedTerm, selectedAcademicYear, searchTerm]);
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (selectedClassId) next.set('class_id', selectedClassId);
+    if (selectedExamType) next.set('exam_type', selectedExamType);
+    if (selectedTerm) next.set('term', selectedTerm);
+    if (selectedAcademicYear) next.set('academic_year', selectedAcademicYear);
+    if (selectedSubject) {
+      const subjectObj = subjects.find((s) => s.subject_name === selectedSubject);
+      if (subjectObj) next.set('subject_id', subjectObj.id.toString());
+    }
+    if (searchTerm) next.set('q', searchTerm);
+
+    if (searchParams.toString() !== next.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [
+    selectedClassId,
+    selectedSubject,
+    selectedExamType,
+    selectedTerm,
+    selectedAcademicYear,
+    searchTerm,
+    subjects,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const fetchDropdownData = async () => {
     try {
       const data = await MarksAPI.getDropdownData();
       setClasses(data.classes);
       setSubjects(data.subjects);
+
+      const subjectIdFromQuery = searchParams.get('subject_id');
+      if (subjectIdFromQuery) {
+        const matchedSubject = data.subjects.find((s: Subject) => String(s.id) === subjectIdFromQuery);
+        if (matchedSubject) setSelectedSubject(matchedSubject.subject_name);
+      }
+
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err);
     }
@@ -209,7 +244,17 @@ const ViewResults: React.FC = () => {
 
   const fetchStatistics = async () => {
     try {
-      const data = await MarksAPI.getStatistics();
+      const params: Record<string, string> = {};
+      if (selectedClassId) params.class_id = selectedClassId;
+      if (selectedSubject) {
+        const subjectObj = subjects.find((s) => s.subject_name === selectedSubject);
+        if (subjectObj) params.subject_id = subjectObj.id.toString();
+      }
+      if (selectedExamType) params.exam_type = selectedExamType;
+      if (selectedTerm) params.term = selectedTerm;
+      if (selectedAcademicYear) params.academic_year = selectedAcademicYear;
+
+      const data = await MarksAPI.getStatistics(params);
       setStatistics(data);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
@@ -219,8 +264,11 @@ const ViewResults: React.FC = () => {
   const applyFilters = () => {
     let filtered = results;
 
-    if (selectedClass) {
-      filtered = filtered.filter(result => result.class_name.includes(selectedClass));
+    if (selectedClassId) {
+      const selectedClassObj = classes.find((cls) => cls.id.toString() === selectedClassId);
+      if (selectedClassObj) {
+        filtered = filtered.filter(result => result.class_name === selectedClassObj.class_name);
+      }
     }
 
     if (selectedSubject) {
@@ -303,10 +351,7 @@ const ViewResults: React.FC = () => {
               <button
                 onClick={() => {
                   const params = new URLSearchParams();
-                  if (selectedClass) {
-                    const cls = classes.find(c => c.class_name === selectedClass);
-                    if (cls) params.set('class_id', cls.id.toString());
-                  }
+                  if (selectedClassId) params.set('class_id', selectedClassId);
                   if (selectedSubject) {
                     const subj = subjects.find(s => s.subject_name === selectedSubject);
                     if (subj) params.set('subject_id', subj.id.toString());
@@ -396,24 +441,19 @@ const ViewResults: React.FC = () => {
         {/* Filters */}
         <div className="mb-6 bg-white rounded-lg shadow p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Search</h2>
             <button
               onClick={() => {
-                setSelectedClass('');
-                setSelectedSubject('');
-                setSelectedExamType('');
-                setSelectedTerm('');
                 setSearchTerm('');
-                setSelectedAcademicYear('');
               }}
               className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
             >
-              Clear All
+              Clear
             </button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-            <div className="sm:col-span-2 lg:col-span-1">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <input
                 type="text"
@@ -422,82 +462,6 @@ const ViewResults: React.FC = () => {
                 placeholder="Name or admission no."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="">All Classes</option>
-                {classes.map((cls) => (
-                  <option key={cls.id} value={cls.class_name}>
-                    {cls.class_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="">All Subjects</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.subject_name}>
-                    {subject.subject_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
-              <select
-                value={selectedExamType}
-                onChange={(e) => setSelectedExamType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="">All Exams</option>
-                <option value="exam_1">Exam 1</option>
-                <option value="exam_2">Exam 2</option>
-                <option value="exam_3">Exam 3</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Term</label>
-              <select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="">All Terms</option>
-                <option value="1">Term 1</option>
-                <option value="2">Term 2</option>
-                <option value="3">Term 3</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-              <select
-                value={selectedAcademicYear}
-                onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="">All Years</option>
-                {academicYearOptions.map((year) => (
-                  <option key={year} value={year.toString()}>
-                    {year}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 

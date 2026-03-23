@@ -105,6 +105,7 @@ export interface BalanceSheetComputed {
   accounts_receivable: number;
   accounts_payable: number;
   total_revenue_collected: number;
+  total_outflow?: number;
   total_payroll_paid: number;
   total_expenses_paid: number;
 }
@@ -185,6 +186,36 @@ export interface ExpenseStats {
     paid: number;
     count: number;
   }[];
+}
+
+export interface RevenueTransaction {
+  id: string;
+  transaction_date: string;
+  transaction_type: 'inflow' | 'outflow';
+  source: 'student_fee_payment' | 'expense_payment' | 'payroll_payment' | string;
+  description: string;
+  reference: string;
+  method: string;
+  student_name: string;
+  amount_in: number;
+  amount_out: number;
+  net_amount: number;
+  running_balance: number;
+}
+
+export interface RevenueLedgerSummary {
+  opening_balance: number;
+  total_in: number;
+  total_out: number;
+  net_change: number;
+  closing_balance: number;
+  transaction_count: number;
+  generated_at: string;
+}
+
+export interface RevenueLedgerResponse {
+  summary: RevenueLedgerSummary;
+  transactions: RevenueTransaction[];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -303,6 +334,21 @@ export const financeService = {
     return APIService.get(`${BASE}/expenses/stats/`, undefined, AUTH);
   },
 
+  async getRevenueLedger(filters?: {
+    start_date?: string;
+    end_date?: string;
+    year?: number;
+    limit?: number;
+  }): Promise<RevenueLedgerResponse> {
+    const params = new URLSearchParams();
+    if (filters?.start_date) params.set('start_date', filters.start_date);
+    if (filters?.end_date) params.set('end_date', filters.end_date);
+    if (typeof filters?.year === 'number') params.set('year', String(filters.year));
+    if (typeof filters?.limit === 'number') params.set('limit', String(filters.limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return APIService.get(`${BASE}/revenue-transactions/${qs}`, undefined, AUTH);
+  },
+
   /* ─── Enhanced Analytics ───────────────────────────────────────────────── */
   async getEnhancedAnalytics(year?: number): Promise<EnhancedAnalytics> {
     const params = year ? { year: String(year) } : undefined;
@@ -359,6 +405,9 @@ export interface AnalyticsKPI {
   total_expenses_paid: number;
   total_payroll: number;
   net_position: number;
+  net_revenue_balance?: number;
+  total_inflow_all_time?: number;
+  total_outflow_all_time?: number;
   yoy_growth: number;
   prev_year_revenue: number;
 }
@@ -372,4 +421,5 @@ export interface EnhancedAnalytics {
   payment_methods: PaymentMethodItem[];
   weekly_trend: WeeklyTrendItem[];
   top_outstanding: ClassCollectionItem[];
+  recent_transactions?: RevenueTransaction[];
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -55,11 +55,12 @@ const StudentStatistics: React.FC = () => {
   const [studentData, setStudentData] = useState<StudentPerformance | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<string>(searchParams.get('class_id') || '');
+  const selectedClassId = searchParams.get('class_id') || '';
   const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('student_id') || '');
-  const [selectedTerm, setSelectedTerm] = useState<string>('1');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024-2025');
-  const [selectedExamType, setSelectedExamType] = useState<string>('exam_1');
+  const selectedTerm = searchParams.get('term') || '1';
+  const selectedAcademicYear = searchParams.get('academic_year') || '2024-2025';
+  const selectedExamType = searchParams.get('exam_type') || 'exam_1';
+  const [studentSearch, setStudentSearch] = useState<string>(searchParams.get('student_q') || '');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [noDataResponse, setNoDataResponse] = useState<any>(null);
@@ -79,6 +80,24 @@ const StudentStatistics: React.FC = () => {
       fetchStudentStatistics();
     }
   }, [selectedStudentId, selectedClassId, selectedTerm, selectedAcademicYear, selectedExamType]);
+
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedStudentId) newParams.set('student_id', selectedStudentId);
+    else newParams.delete('student_id');
+
+    if (studentSearch) newParams.set('student_q', studentSearch);
+    else newParams.delete('student_q');
+
+    if (newParams.toString() !== searchParams.toString()) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [
+    selectedStudentId,
+    studentSearch,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const fetchClasses = async () => {
     try {
@@ -109,7 +128,13 @@ const StudentStatistics: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setStudents(data.students || []);
+        const fetchedStudents = data.students || [];
+        setStudents(fetchedStudents);
+
+        if (selectedStudentId && !fetchedStudents.some((student: Student) => student.id.toString() === selectedStudentId)) {
+          setSelectedStudentId('');
+          setStudentData(null);
+        }
       }
     } catch (err) {
       console.error('Error fetching students:', err);
@@ -193,6 +218,21 @@ const StudentStatistics: React.FC = () => {
     }
   };
 
+  const selectedClass = useMemo(
+    () => classes.find((cls) => cls.id.toString() === selectedClassId),
+    [classes, selectedClassId]
+  );
+
+  const filteredStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return students;
+
+    return students.filter((student) =>
+      student.full_name.toLowerCase().includes(query) ||
+      student.admission_number.toLowerCase().includes(query)
+    );
+  }, [students, studentSearch]);
+
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
   // Use centralized grading utility
@@ -202,124 +242,58 @@ const StudentStatistics: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header and Filters */}
+      {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Student Statistics</h1>
-        
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Class:
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => {
-                const classId = e.target.value;
-                setSelectedClassId(classId);
-                setSelectedStudentId(''); // Reset student selection
-                setStudentData(null);
-                
-                // Update URL parameters
-                const newParams = new URLSearchParams(searchParams);
-                if (classId) {
-                  newParams.set('class_id', classId);
-                } else {
-                  newParams.delete('class_id');
-                }
-                newParams.delete('student_id'); // Remove student_id when class changes
-                setSearchParams(newParams);
-              }}
+        <h1 className="text-2xl font-bold text-gray-800">Student Statistics</h1>
+        <p className="text-sm text-gray-600 mt-2">
+          Class: <span className="font-medium">{selectedClass ? `${selectedClass.class_name} - Stream ${selectedClass.stream}` : 'Not selected'}</span>
+        </p>
+        <p className="text-sm text-gray-600">
+          Period: Term {selectedTerm}, {selectedAcademicYear}, {selectedExamType.replace('_', ' ').toUpperCase()}
+        </p>
+      </div>
+
+      {selectedClassId && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search Student</label>
+            <input
+              type="text"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Search by student name or admission number"
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Choose a class...</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id.toString()}>
-                  {cls.class_name} - Stream {cls.stream}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Student:
-            </label>
-            <select
-              value={selectedStudentId}
-              onChange={(e) => {
-                const studentId = e.target.value;
-                setSelectedStudentId(studentId);
-                
-                // Update URL parameters
-                const newParams = new URLSearchParams(searchParams);
-                if (studentId) {
-                  newParams.set('student_id', studentId);
-                } else {
-                  newParams.delete('student_id');
-                }
-                setSearchParams(newParams);
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={!selectedClassId}
-            >
-              <option value="">Choose a student...</option>
-              {students.map(student => (
-                <option key={student.id} value={student.id.toString()}>
-                  {student.full_name} ({student.admission_number})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Term:
-            </label>
-            <select
-              value={selectedTerm}
-              onChange={(e) => setSelectedTerm(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">Term 1</option>
-              <option value="2">Term 2</option>
-              <option value="3">Term 3</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Academic Year:
-            </label>
-            <select
-              value={selectedAcademicYear}
-              onChange={(e) => setSelectedAcademicYear(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-               <option value="2024">2024</option>
-               <option value="2025">2025</option>
-               <option value="2026">2026</option>
-               <option value="2027">2027</option>
-               <option value="2028">2028</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Exam Type:
-            </label>
-            <select
-              value={selectedExamType}
-              onChange={(e) => setSelectedExamType(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="exam_1">Exam 1</option>
-              <option value="exam_2">Exam 2</option>
-              <option value="exam_3">Exam 3</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto">
+            {filteredStudents.map((student) => (
+              <button
+                key={student.id}
+                type="button"
+                onClick={() => {
+                  setSelectedStudentId(student.id.toString());
+                  setStudentData(null);
+                  setNoDataResponse(null);
+                }}
+                className={`text-left border rounded-lg p-3 transition ${
+                  selectedStudentId === student.id.toString()
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                }`}
+              >
+                <p className="font-medium text-gray-900">{student.full_name}</p>
+                <p className="text-sm text-gray-600">{student.admission_number}</p>
+              </button>
+            ))}
+            {filteredStudents.length === 0 && (
+              <p className="text-sm text-gray-500 col-span-full text-center py-4">
+                No students match your search.
+              </p>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Loading State */}
       {loading && (
@@ -369,10 +343,17 @@ const StudentStatistics: React.FC = () => {
       )}
 
       {/* No Selection Message */}
-      {!studentData && !loading && !error && !noDataResponse && (!selectedClassId || !selectedStudentId) && (
+      {!studentData && !loading && !error && !noDataResponse && !selectedClassId && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-center">
-          <strong className="font-bold">Select a class and student</strong>
-          <p className="text-sm mt-1">Choose both a class and a student from the dropdowns above to view detailed statistics.</p>
+          <strong className="font-bold">No class selected</strong>
+          <p className="text-sm mt-1">Open this page from the step flow and choose a class first.</p>
+        </div>
+      )}
+
+      {!studentData && !loading && !error && !noDataResponse && selectedClassId && !selectedStudentId && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-center">
+          <strong className="font-bold">Select a student</strong>
+          <p className="text-sm mt-1">Choose a student from the class list above to view detailed statistics.</p>
         </div>
       )}
 

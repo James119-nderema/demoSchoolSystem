@@ -16,6 +16,7 @@ import {
   Legend
 } from "recharts";
 import { FinancePageSkeleton } from '../../ui/Skeleton';
+import { financeService, type RevenueLedgerResponse } from '../../../services/financeService';
 
 interface MonthlyPayment {
   month: string;
@@ -42,11 +43,15 @@ interface FinanceAnalytics {
     students_with_balance: number;
     collections_this_year: number;
     collections_this_month: number;
+    net_revenue_balance?: number;
+    total_inflow?: number;
+    total_outflow?: number;
   };
   monthly_payments: MonthlyPayment[];
   class_payments: ClassPayment[];
   payment_methods: PaymentMethod[];
   year: number;
+  recent_transactions?: RevenueLedgerResponse['transactions'];
 }
 
 const SchoolFinance: React.FC = () => {
@@ -54,6 +59,7 @@ const SchoolFinance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<FinanceAnalytics | null>(null);
+  const [ledger, setLedger] = useState<RevenueLedgerResponse | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const navigate = useNavigate();
 
@@ -96,6 +102,8 @@ const SchoolFinance: React.FC = () => {
         }
       );
       setAnalytics(response.data);
+      const ledgerData = await financeService.getRevenueLedger({ year: selectedYear, limit: 20 });
+      setLedger(ledgerData);
       setError(null);
     } catch (err) {
       console.error("Error fetching analytics:", err);
@@ -152,6 +160,9 @@ const SchoolFinance: React.FC = () => {
     students_with_balance: 0,
     collections_this_year: 0,
     collections_this_month: 0,
+    net_revenue_balance: 0,
+    total_inflow: 0,
+    total_outflow: 0,
   };
 
   return (
@@ -196,7 +207,8 @@ const SchoolFinance: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Revenue</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(kpi.total_paid)}</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(kpi.net_revenue_balance || ledger?.summary.closing_balance || 0)}</p>
+              <p className="text-xs text-gray-500 mt-1">In: {formatCurrency(kpi.total_inflow || ledger?.summary.total_in || 0)} • Out: {formatCurrency(kpi.total_outflow || ledger?.summary.total_out || 0)}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -452,6 +464,44 @@ const SchoolFinance: React.FC = () => {
               <p className="text-sm text-gray-500">Manage fee invoices</p>
             </div>
           </button>
+        </div>
+      </div>
+
+      {/* Revenue Transactions Ledger */}
+      <div className="bg-white shadow-lg rounded-2xl p-6 mt-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Revenue Transaction Ledger</h3>
+        <p className="text-sm text-gray-500 mb-4">Every money in/out transaction with running balance</p>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">In</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Out</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Running Balance</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {(ledger?.transactions || analytics?.recent_transactions || []).map((tx) => (
+                <tr key={`${tx.source}-${tx.id}`} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{new Date(tx.transaction_date).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-800">{tx.description}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 capitalize">{tx.source.replaceAll('_', ' ')}</td>
+                  <td className="px-4 py-3 text-sm text-right text-green-600 font-medium">{tx.amount_in ? formatCurrency(tx.amount_in) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-right text-red-600 font-medium">{tx.amount_out ? formatCurrency(tx.amount_out) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-right text-blue-700 font-semibold">{formatCurrency(tx.running_balance)}</td>
+                </tr>
+              ))}
+              {(!(ledger?.transactions || analytics?.recent_transactions)?.length) && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">No transactions available</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
