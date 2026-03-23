@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { accountingService, type IncomeStatement, type StatementBalanceSheet, type CashFlowStatement } from '../../../services/accountingService';
+import { financeService, type RevenueLedgerResponse } from '../../../services/financeService';
 
 const nowDate = () => new Date().toISOString().slice(0, 10);
 const yearStart = () => `${new Date().getFullYear()}-01-01`;
@@ -13,21 +14,53 @@ export default function FinancialStatements() {
   const [incomeStatement, setIncomeStatement] = useState<IncomeStatement | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<StatementBalanceSheet | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlowStatement | null>(null);
+  const [ledger, setLedger] = useState<RevenueLedgerResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  const hasAccountingData = (income: IncomeStatement | null, balance: StatementBalanceSheet | null, cash: CashFlowStatement | null) => {
+    const incomeTotal = Math.abs(income?.income || 0) + Math.abs(income?.expenses || 0) + Math.abs(income?.profit || 0);
+    const balanceTotal = Math.abs(balance?.assets || 0) + Math.abs(balance?.liabilities || 0) + Math.abs(balance?.equity || 0);
+    const cashTotal = Math.abs(cash?.operating || 0) + Math.abs(cash?.investing || 0) + Math.abs(cash?.financing || 0) + Math.abs(cash?.net_cash_flow || 0);
+    return (incomeTotal + balanceTotal + cashTotal) > 0;
+  };
 
   const load = async () => {
     setLoading(true);
     setMessage('');
     try {
-      const [income, balance, cash] = await Promise.all([
+      const [income, balance, cash, revenueLedger] = await Promise.all([
         accountingService.getIncomeStatement({ start_date: startDate, end_date: endDate }),
         accountingService.getBalanceSheet(asOfDate),
         accountingService.getCashFlow({ start_date: startDate, end_date: endDate }),
+        financeService.getRevenueLedger({ start_date: startDate, end_date: endDate, limit: 500 }),
       ]);
       setIncomeStatement(income);
       setBalanceSheet(balance);
       setCashFlow(cash);
+
+      setLedger(revenueLedger);
+
+      const accountingReady = hasAccountingData(income, balance, cash);
+      if (!accountingReady && revenueLedger.summary.transaction_count > 0) {
+        setIncomeStatement({
+          income: revenueLedger.summary.total_in,
+          expenses: revenueLedger.summary.total_out,
+          profit: revenueLedger.summary.net_change,
+        });
+        setBalanceSheet({
+          assets: revenueLedger.summary.closing_balance,
+          liabilities: 0,
+          equity: revenueLedger.summary.closing_balance,
+          is_balanced: true,
+        });
+        setCashFlow({
+          operating: revenueLedger.summary.net_change,
+          investing: 0,
+          financing: 0,
+          net_cash_flow: revenueLedger.summary.net_change,
+        });
+      }
     } catch (error: any) {
       setMessage(error?.message || 'Failed to load financial statements');
     } finally {
@@ -42,7 +75,13 @@ export default function FinancialStatements() {
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-6 lg:p-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Financial Statements</h1>
-      <p className="text-sm text-gray-500 mb-4">Income statement, balance sheet, and cash flow from accounting journals.</p>
+      <p className="text-sm text-gray-500 mb-4">Income statement, balance sheet, and cash flow from accounting journals with revenue-ledger fallback.</p>
+
+      {!!ledger && ledger.summary.transaction_count > 0 && (
+        <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 text-sm">
+          Revenue Transaction Ledger detected {ledger.summary.transaction_count} transaction(s) in the selected period.
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 flex flex-wrap gap-2 items-end">
         <div>

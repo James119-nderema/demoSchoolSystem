@@ -33,6 +33,30 @@ export default function TrialBalance() {
     load();
   }, []);
 
+  const ledgerRows = ledger ? (() => {
+    const inDebit = ledger.summary.total_in;
+    const outCredit = ledger.summary.total_out;
+    const net = ledger.summary.net_change;
+
+    const rows = [
+      { account_id: 'rev-ledger-in', code: 'LEDGER-IN', name: 'Revenue Inflow', account_type: 'asset', debit: inDebit, credit: 0 },
+      { account_id: 'rev-ledger-out', code: 'LEDGER-OUT', name: 'Revenue Outflow', account_type: 'expense', debit: 0, credit: outCredit },
+    ];
+
+    if (net > 0) {
+      rows.push({ account_id: 'rev-ledger-net', code: 'LEDGER-NET', name: 'Net Revenue Balance', account_type: 'equity', debit: 0, credit: net });
+    } else if (net < 0) {
+      rows.push({ account_id: 'rev-ledger-net', code: 'LEDGER-NET', name: 'Net Revenue Balance', account_type: 'equity', debit: Math.abs(net), credit: 0 });
+    }
+
+    return rows;
+  })() : [];
+
+  const trialRows = (report?.rows && report.rows.length > 0) ? report.rows : ledgerRows;
+  const totalDebit = trialRows.reduce((sum, r) => sum + r.debit, 0);
+  const totalCredit = trialRows.reduce((sum, r) => sum + r.credit, 0);
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-6 lg:p-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Trial Balance</h1>
@@ -75,7 +99,7 @@ export default function TrialBalance() {
                 </tr>
               </thead>
               <tbody>
-                {(report?.rows || []).map((row) => (
+                {trialRows.map((row) => (
                   <tr key={row.account_id} className="border-b last:border-0">
                     <td className="py-2 font-medium">{row.code}</td>
                     <td>{row.name}</td>
@@ -88,10 +112,10 @@ export default function TrialBalance() {
             </table>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div className="rounded-lg bg-gray-50 border px-3 py-2">Total Debit: <span className="font-semibold">{money(report?.total_debit || 0)}</span></div>
-              <div className="rounded-lg bg-gray-50 border px-3 py-2">Total Credit: <span className="font-semibold">{money(report?.total_credit || 0)}</span></div>
-              <div className={`rounded-lg border px-3 py-2 font-semibold ${(report?.is_balanced ?? false) ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                {(report?.is_balanced ?? false) ? 'Balanced' : 'Not Balanced'}
+              <div className="rounded-lg bg-gray-50 border px-3 py-2">Total Debit: <span className="font-semibold">{money(totalDebit)}</span></div>
+              <div className="rounded-lg bg-gray-50 border px-3 py-2">Total Credit: <span className="font-semibold">{money(totalCredit)}</span></div>
+              <div className={`rounded-lg border px-3 py-2 font-semibold ${isBalanced ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                {isBalanced ? 'Balanced' : 'Not Balanced'}
               </div>
             </div>
           </>
