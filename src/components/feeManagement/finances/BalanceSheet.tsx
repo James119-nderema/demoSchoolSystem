@@ -11,7 +11,6 @@ import { FinancePageSkeleton } from '../../ui/Skeleton';
 const ENTRY_TYPES = [
   { value: 'asset', label: 'Asset', icon: <TrendingUp className="w-4 h-4" />, color: 'emerald' },
   { value: 'liability', label: 'Liability', icon: <TrendingDown className="w-4 h-4" />, color: 'red' },
-  { value: 'equity', label: 'Equity', icon: <Landmark className="w-4 h-4" />, color: 'blue' },
 ] as const;
 
 const SUB_TYPES: Record<string, { label: string; value: string }[]> = {
@@ -28,12 +27,6 @@ const SUB_TYPES: Record<string, { label: string; value: string }[]> = {
     { value: 'loan', label: 'Loans & Borrowings' },
     { value: 'accrued', label: 'Accrued Expenses' },
     { value: 'deferred', label: 'Deferred Revenue' },
-    { value: 'other', label: 'Other' },
-  ],
-  equity: [
-    { value: 'capital', label: 'Capital / Fund Balance' },
-    { value: 'retained', label: 'Retained Surplus' },
-    { value: 'reserves', label: 'Reserves' },
     { value: 'other', label: 'Other' },
   ],
 };
@@ -121,7 +114,7 @@ export default function BalanceSheet() {
     setShowForm(true);
   };
 
-  const openNew = (type: 'asset' | 'liability' | 'equity') => {
+  const openNew = (type: 'asset' | 'liability') => {
     setEditId(null);
     setForm({ ...EMPTY_FORM, entry_type: type, sub_type: SUB_TYPES[type][0].value });
     setShowForm(true);
@@ -140,12 +133,10 @@ export default function BalanceSheet() {
 
   const assets = entries.filter(e => e.entry_type === 'asset');
   const liabilities = entries.filter(e => e.entry_type === 'liability');
-  const equities = entries.filter(e => e.entry_type === 'equity');
-
   // Combined totals (manual entries + computed)
-  const totalAssets = totals.assets + (computed?.cash_and_bank || 0) + (computed?.accounts_receivable || 0);
-  const totalLiabilities = totals.liabilities + (computed?.accounts_payable || 0);
-  const totalEquity = totals.equity;
+  const totalAssets = computed?.total_assets ?? (totals.assets + (computed?.cash_and_bank || 0) + (computed?.accounts_receivable || 0));
+  const totalLiabilities = computed?.total_liabilities ?? (totals.liabilities + (computed?.accounts_payable || 0));
+  const totalEquity = computed?.auto_equity ?? (totalAssets - totalLiabilities);
   const netWorth = totalAssets - totalLiabilities;
 
   return (
@@ -195,10 +186,11 @@ export default function BalanceSheet() {
             <Info className="w-4 h-4 text-blue-600" />
             <h3 className="text-sm font-bold text-blue-800">Auto-Computed from Financial Records</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3">
             <ComputedCard label="Cash & Bank" value={computed.cash_and_bank} color="text-emerald-600" />
             <ComputedCard label="Receivables" value={computed.accounts_receivable} color="text-blue-600" />
             <ComputedCard label="Revenue Collected" value={computed.total_revenue_collected} color="text-emerald-600" />
+            <ComputedCard label="Revenue (Adj. by A/L)" value={computed.adjusted_total_revenue || computed.total_revenue_collected} color="text-violet-600" />
             <ComputedCard label="Total Outflow" value={computed.total_outflow || 0} color="text-red-600" />
             <ComputedCard label="Payroll Paid" value={computed.total_payroll_paid} color="text-red-600" />
             <ComputedCard label="Expenses Paid" value={computed.total_expenses_paid} color="text-red-600" />
@@ -208,7 +200,7 @@ export default function BalanceSheet() {
       )}
 
       {/* Three-column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Assets */}
         <EntrySection
           title="Assets"
@@ -229,18 +221,6 @@ export default function BalanceSheet() {
           color="red"
           icon={<TrendingDown className="w-5 h-5 text-white" />}
           onAdd={() => openNew('liability')}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-        />
-
-        {/* Equity */}
-        <EntrySection
-          title="Equity"
-          subtitle="Net ownership / fund balance"
-          entries={equities}
-          color="blue"
-          icon={<Landmark className="w-5 h-5 text-white" />}
-          onAdd={() => openNew('equity')}
           onEdit={openEdit}
           onDelete={handleDelete}
         />
@@ -267,12 +247,10 @@ export default function BalanceSheet() {
             <p className="text-lg font-bold text-blue-600">{fmt(totalEquity)}</p>
           </div>
         </div>
-        {Math.abs(totalAssets - totalLiabilities - totalEquity) > 0.01 && (
-          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-700">
-            <AlertCircle className="w-4 h-4" />
-            <span>The equation doesn't balance. Difference: <strong>{fmt(totalAssets - totalLiabilities - totalEquity)}</strong>. Add equity entries to reconcile.</span>
-          </div>
-        )}
+        <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2 text-xs text-emerald-700">
+          <CheckCircle className="w-4 h-4" />
+          <span>Balanced automatically: Equity is auto-calculated as Net Worth (Assets - Liabilities).</span>
+        </div>
       </div>
 
       {/* ─── Form Modal ────────────────────────────────────────────────────── */}
@@ -289,7 +267,7 @@ export default function BalanceSheet() {
               {/* Type */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-2">Entry Type</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {ENTRY_TYPES.map(t => (
                     <button
                       key={t.value}

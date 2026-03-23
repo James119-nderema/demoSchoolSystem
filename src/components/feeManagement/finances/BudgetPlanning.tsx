@@ -8,7 +8,7 @@ import {
 import { financeService } from '../../../services/financeService';
 import type {
   BudgetPeriod, BudgetPeriodListItem, BudgetCategory, BudgetItem,
-  BudgetSimulation,
+  BudgetSimulation, BudgetPlanningAssumptions,
 } from '../../../services/financeService';
 import { FinancePageSkeleton } from '../../ui/Skeleton';
 
@@ -20,6 +20,7 @@ export default function BudgetPlanning() {
   const [periods, setPeriods] = useState<BudgetPeriodListItem[]>([]);
   const [activePeriod, setActivePeriod] = useState<BudgetPeriod | null>(null);
   const [simulation, setSimulation] = useState<BudgetSimulation | null>(null);
+  const [assumptions, setAssumptions] = useState<BudgetPlanningAssumptions | null>(null);
   const [loading, setLoading] = useState(true);
   const [simLoading, setSimLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -36,6 +37,8 @@ export default function BudgetPlanning() {
   const [showItemForm, setShowItemForm] = useState(false);
   const [itemForm, setItemForm] = useState({ category_id: '', name: '', planned_amount: 0, actual_amount: 0, notes: '' });
   const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [yearlyFeePerStudent, setYearlyFeePerStudent] = useState(0);
+  const [salaryMonths, setSalaryMonths] = useState(12);
 
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [showSimulation, setShowSimulation] = useState(false);
@@ -65,12 +68,36 @@ export default function BudgetPlanning() {
       // Expand all categories by default
       const catIds = new Set((data.categories || []).map(c => c.id!));
       setExpandedCats(catIds);
+      try {
+        const assumptionsData = await financeService.getBudgetPlanningAssumptions({ period_id: id, salary_months: salaryMonths });
+        setAssumptions(assumptionsData);
+        if (!yearlyFeePerStudent && assumptionsData.suggestions.yearly_fee_per_student > 0) {
+          setYearlyFeePerStudent(assumptionsData.suggestions.yearly_fee_per_student);
+        }
+      } catch {
+        setAssumptions(null);
+      }
     } catch (err: any) {
       showToast('error', err.message || 'Failed to load period');
     }
-  }, []);
+  }, [salaryMonths, yearlyFeePerStudent]);
+
+  const refreshAssumptions = useCallback(async () => {
+    if (!activePeriod?.id) return;
+    try {
+      const assumptionsData = await financeService.getBudgetPlanningAssumptions({
+        period_id: activePeriod.id,
+        yearly_fee_per_student: yearlyFeePerStudent,
+        salary_months: salaryMonths,
+      });
+      setAssumptions(assumptionsData);
+    } catch {
+      setAssumptions(null);
+    }
+  }, [activePeriod?.id, salaryMonths, yearlyFeePerStudent]);
 
   useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
+  useEffect(() => { refreshAssumptions(); }, [refreshAssumptions]);
 
   /* ─── Simulation ───────────────────────────────────────────────────────── */
   const runSimulation = async () => {
@@ -211,6 +238,9 @@ export default function BudgetPlanning() {
   const openNewItem = (catId: string) => {
     setEditItemId(null);
     setItemForm({ category_id: catId, name: '', planned_amount: 0, actual_amount: 0, notes: '' });
+    if (assumptions?.assumptions?.period_months) {
+      setSalaryMonths(assumptions.assumptions.period_months);
+    }
     setShowItemForm(true);
   };
 
@@ -231,6 +261,40 @@ export default function BudgetPlanning() {
     draft: 'bg-gray-100 text-gray-700',
     active: 'bg-emerald-100 text-emerald-700',
     closed: 'bg-red-100 text-red-700',
+  };
+
+  const selectedCategory = (activePeriod?.categories || []).find(c => c.id === itemForm.category_id);
+  const isFeesItem = selectedCategory?.category_type === 'revenue' && (/fee|tuition/i.test(itemForm.name || '') || /fee|tuition/i.test(selectedCategory?.name || ''));
+  const isSalaryItem = selectedCategory?.category_type === 'expenditure' && (/salary|payroll|wage/i.test(itemForm.name || '') || /salary|payroll|wage/i.test(selectedCategory?.name || ''));
+
+  const applyFeeAutoCalc = async () => {
+    if (!activePeriod?.id) return;
+    try {
+      const data = await financeService.getBudgetPlanningAssumptions({
+        period_id: activePeriod.id,
+        yearly_fee_per_student: yearlyFeePerStudent,
+        salary_months: salaryMonths,
+      });
+      setAssumptions(data);
+      setItemForm(prev => ({ ...prev, planned_amount: data.suggestions.annual_fee_projection }));
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to auto-calculate fee projection');
+    }
+  };
+
+  const applySalaryAutoCalc = async () => {
+    if (!activePeriod?.id) return;
+    try {
+      const data = await financeService.getBudgetPlanningAssumptions({
+        period_id: activePeriod.id,
+        yearly_fee_per_student: yearlyFeePerStudent,
+        salary_months: salaryMonths,
+      });
+      setAssumptions(data);
+      setItemForm(prev => ({ ...prev, planned_amount: data.suggestions.salary_projection_for_months }));
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to auto-calculate salary projection');
+    }
   };
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -313,6 +377,23 @@ export default function BudgetPlanning() {
       {/* Active Period Detail */}
       {activePeriod && (
         <>
+          {!!assumptions && (
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white rounded-xl border border-gray-100 p-3">
+                <p className="text-xs text-gray-500">Active Students</p>
+                <p className="text-lg font-bold text-gray-900">{assumptions.assumptions.total_students.toLocaleString()}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-100 p-3">
+                <p className="text-xs text-gray-500">Assumed Fee Payers (70%)</p>
+                <p className="text-lg font-bold text-emerald-600">{assumptions.assumptions.assumed_fee_payers.toLocaleString()}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-100 p-3">
+                <p className="text-xs text-gray-500">Monthly Salary Base</p>
+                <p className="text-lg font-bold text-red-600">{fmt(assumptions.assumptions.monthly_salary_base)}</p>
+              </div>
+            </div>
+          )}
+
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <SummaryCard icon={<TrendingUp className="w-5 h-5" />} label="Revenue Planned" value={fmt(activePeriod.total_revenue_planned || 0)} color="emerald" />
@@ -573,6 +654,49 @@ export default function BudgetPlanning() {
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
               </div>
             </div>
+
+            {isFeesItem && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 space-y-2">
+                <p className="text-xs font-semibold text-emerald-700">Fee Auto-Calculator (Yearly)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Yearly Fee per Student (KES)</label>
+                    <input type="number" min="0" value={yearlyFeePerStudent} onChange={e => setYearlyFeePerStudent(parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Students Paying (70%)</label>
+                    <input type="text" readOnly value={assumptions?.assumptions.assumed_fee_payers || 0}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white/70" />
+                  </div>
+                </div>
+                <button onClick={applyFeeAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">
+                  Auto-calculate Planned Fee
+                </button>
+              </div>
+            )}
+
+            {isSalaryItem && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+                <p className="text-xs font-semibold text-red-700">Salary Auto-Calculator</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Months to Pay</label>
+                    <input type="number" min="1" max="12" value={salaryMonths} onChange={e => setSalaryMonths(Math.max(1, Math.min(12, parseInt(e.target.value || '1', 10))))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Monthly Salary Base (KES)</label>
+                    <input type="text" readOnly value={fmt(assumptions?.assumptions.monthly_salary_base || 0)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white/70" />
+                  </div>
+                </div>
+                <button onClick={applySalaryAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">
+                  Auto-calculate Planned Salary
+                </button>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Notes</label>
               <input type="text" value={itemForm.notes} onChange={e => setItemForm({ ...itemForm, notes: e.target.value })}
