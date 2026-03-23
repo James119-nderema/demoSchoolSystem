@@ -6,10 +6,12 @@ import {
   Calculator, Layers,
 } from 'lucide-react';
 import { financeService } from '../../../services/financeService';
+import { payrollService } from '../../../services/payrollService';
 import type {
   BudgetPeriod, BudgetPeriodListItem, BudgetCategory, BudgetItem,
   BudgetSimulation, BudgetPlanningAssumptions,
 } from '../../../services/financeService';
+import type { SalaryStructure } from '../../../services/payrollService';
 import { FinancePageSkeleton } from '../../ui/Skeleton';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -40,6 +42,8 @@ export default function BudgetPlanning() {
   const [yearlyFeePerStudent, setYearlyFeePerStudent] = useState(0);
   const [salaryMonths, setSalaryMonths] = useState(12);
   const [staffMonths, setStaffMonths] = useState<Record<string, number>>({});
+  const [payrollSalaries, setPayrollSalaries] = useState<SalaryStructure[]>([]);
+  const [payrollLoading, setPayrollLoading] = useState(false);
 
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [showSimulation, setShowSimulation] = useState(false);
@@ -246,6 +250,29 @@ export default function BudgetPlanning() {
     if (assumptions?.assumptions?.period_months) {
       setSalaryMonths(assumptions.assumptions.period_months);
     }
+
+    const cat = (activePeriod?.categories || []).find(c => c.id === catId);
+    if (cat?.category_type === 'expenditure') {
+      (async () => {
+        setPayrollLoading(true);
+        try {
+          const rows = await payrollService.getSalaryStructures();
+          setPayrollSalaries(rows || []);
+          setStaffMonths((prev) => {
+            const next = { ...prev };
+            (rows || []).forEach((r) => {
+              const sid = String(r.staff || '');
+              if (sid && typeof next[sid] !== 'number') next[sid] = salaryMonths;
+            });
+            return next;
+          });
+        } catch {
+          setPayrollSalaries([]);
+        } finally {
+          setPayrollLoading(false);
+        }
+      })();
+    }
     setShowItemForm(true);
   };
 
@@ -315,6 +342,20 @@ export default function BudgetPlanning() {
       showToast('error', err.message || 'Failed to auto-calculate salary projection');
     }
   };
+
+  const salaryRowsForModal = assumptions?.salary_staff?.length
+    ? assumptions.salary_staff.map((s) => ({
+      staff_id: s.staff_id,
+      staff_name: s.staff_name,
+      monthly_total_payment: s.monthly_total_payment || s.monthly_gross,
+      months: s.months,
+    }))
+    : payrollSalaries.map((s) => ({
+      staff_id: String(s.staff || ''),
+      staff_name: s.staff_name || 'Staff',
+      monthly_total_payment: Number(s.gross_salary || 0),
+      months: staffMonths[String(s.staff || '')] ?? salaryMonths,
+    }));
 
   /* ═══════════════════════════════════════════════════════════════════════════
      Render
@@ -714,11 +755,11 @@ export default function BudgetPlanning() {
                   </div>
                 </div>
 
-                {!!assumptions?.salary_staff?.length && (
+                {!!salaryRowsForModal.length && (
                   <div className="rounded-lg border border-red-100 bg-white p-2 max-h-52 overflow-auto">
                     <p className="text-xs font-semibold text-gray-600 mb-2">Months per Staff</p>
                     <div className="space-y-1.5">
-                      {assumptions.salary_staff.map((s) => (
+                      {salaryRowsForModal.map((s) => (
                         <div key={s.staff_id} className="grid grid-cols-12 gap-2 items-center text-xs">
                           <span className="col-span-6 text-gray-700 truncate">{s.staff_name}</span>
                           <input
@@ -732,10 +773,22 @@ export default function BudgetPlanning() {
                             }))}
                             className="col-span-2 px-2 py-1 border border-gray-200 rounded text-right"
                           />
-                          <span className="col-span-4 text-right text-gray-500">KES {(s.monthly_total_payment || s.monthly_gross).toLocaleString()}/mo</span>
+                          <span className="col-span-4 text-right text-gray-500">KES {(s.monthly_total_payment || 0).toLocaleString()}/mo</span>
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {payrollLoading && (
+                  <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading existing salary structures...
+                  </div>
+                )}
+
+                {!payrollLoading && !salaryRowsForModal.length && (
+                  <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    No existing salaries found in payroll. Please configure staff salaries first.
                   </div>
                 )}
 
