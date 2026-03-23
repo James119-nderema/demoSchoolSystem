@@ -97,7 +97,7 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
-        staff_months: staffMonths,
+        staff_months: getStaffMonthOverrides(),
       });
       setAssumptions(assumptionsData);
     } catch {
@@ -299,6 +299,17 @@ export default function BudgetPlanning() {
   const isFeesItem = selectedCategory?.category_type === 'revenue';
   const isSalaryItem = selectedCategory?.category_type === 'expenditure';
 
+  const getStaffMonthOverrides = () => {
+    const overrides: Record<string, number> = {};
+    Object.entries(staffMonths).forEach(([staffId, months]) => {
+      const m = Number(months);
+      if (Number.isFinite(m) && m !== salaryMonths) {
+        overrides[staffId] = m;
+      }
+    });
+    return overrides;
+  };
+
   const applyFeeAutoCalc = async () => {
     if (!activePeriod?.id) return;
     if (yearlyFeePerStudent <= 0) {
@@ -310,7 +321,6 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
-        staff_months: staffMonths,
       });
       setAssumptions(data);
       setItemForm(prev => ({
@@ -330,7 +340,7 @@ export default function BudgetPlanning() {
         period_id: activePeriod.id,
         yearly_fee_per_student: yearlyFeePerStudent,
         salary_months: salaryMonths,
-        staff_months: staffMonths,
+        staff_months: getStaffMonthOverrides(),
       });
       setAssumptions(data);
       setItemForm(prev => ({
