@@ -40,6 +40,7 @@ export default function BudgetPlanning() {
   const [itemForm, setItemForm] = useState({ category_id: '', name: '', planned_amount: 0, actual_amount: 0, notes: '' });
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [yearlyFeePerStudent, setYearlyFeePerStudent] = useState(0);
+  const [totalStudentsForCalc, setTotalStudentsForCalc] = useState(0);
   const [salaryMonths, setSalaryMonths] = useState(12);
   const [staffMonths, setStaffMonths] = useState<Record<string, number>>({});
   const [payrollSalaries, setPayrollSalaries] = useState<SalaryStructure[]>([]);
@@ -76,6 +77,7 @@ export default function BudgetPlanning() {
       try {
         const assumptionsData = await financeService.getBudgetPlanningAssumptions({ period_id: id, salary_months: salaryMonths });
         setAssumptions(assumptionsData);
+        setTotalStudentsForCalc(Number(assumptionsData?.assumptions?.total_students || 0));
         const initialMonths: Record<string, number> = {};
         (assumptionsData.salary_staff || []).forEach((s) => { initialMonths[s.staff_id] = s.months; });
         setStaffMonths(initialMonths);
@@ -100,6 +102,7 @@ export default function BudgetPlanning() {
         staff_months: getStaffMonthOverrides(),
       });
       setAssumptions(assumptionsData);
+      setTotalStudentsForCalc(Number(assumptionsData?.assumptions?.total_students || 0));
     } catch {
       setAssumptions(null);
     }
@@ -311,46 +314,78 @@ export default function BudgetPlanning() {
   };
 
   const applyFeeAutoCalc = async () => {
-    if (!activePeriod?.id) return;
     if (yearlyFeePerStudent <= 0) {
       showToast('error', 'Enter yearly fee per student first');
       return;
     }
-    try {
-      const data = await financeService.getBudgetPlanningAssumptions({
-        period_id: activePeriod.id,
-        yearly_fee_per_student: yearlyFeePerStudent,
-        salary_months: salaryMonths,
-      });
-      setAssumptions(data);
-      setItemForm(prev => ({
-        ...prev,
-        planned_amount: data.suggestions.fee_planned_projection,
-        actual_amount: data.suggestions.fee_actual_projection,
-      }));
-    } catch (err: any) {
-      showToast('error', err.message || 'Failed to auto-calculate fee projection');
+    if (totalStudentsForCalc <= 0) {
+      showToast('error', 'Enter total students first');
+      return;
     }
+
+    const assumedPayers = Math.round(totalStudentsForCalc * 0.7);
+    const planned = yearlyFeePerStudent * assumedPayers;
+    const actual = yearlyFeePerStudent * totalStudentsForCalc;
+
+    setItemForm(prev => ({
+      ...prev,
+      planned_amount: planned,
+      actual_amount: actual,
+    }));
+
+    showToast('success', 'Fee amounts auto-calculated from frontend');
   };
 
   const applySalaryAutoCalc = async () => {
-    if (!activePeriod?.id) return;
-    try {
-      const data = await financeService.getBudgetPlanningAssumptions({
-        period_id: activePeriod.id,
-        yearly_fee_per_student: yearlyFeePerStudent,
-        salary_months: salaryMonths,
-        staff_months: getStaffMonthOverrides(),
-      });
-      setAssumptions(data);
-      setItemForm(prev => ({
-        ...prev,
-        planned_amount: data.suggestions.salary_planned_total_payment || data.suggestions.salary_planned_gross_total,
-        actual_amount: data.suggestions.salary_actual_total_payment || data.suggestions.salary_actual_gross_total,
-      }));
-    } catch (err: any) {
-      showToast('error', err.message || 'Failed to auto-calculate salary projection');
+    let rows = payrollSalaries;
+    if (!rows.length) {
+      try {
+        rows = await payrollService.getSalaryStructures();
+        setPayrollSalaries(rows || []);
+      } catch (err: any) {
+        showToast('error', err.message || 'Failed to fetch existing salaries');
+        return;
+      }
     }
+
+    if (!rows.length) {
+      showToast('error', 'No salary structures found to calculate from');
+      return;
+    }
+
+    const baseTotal = rows.reduce((sum, s) => {
+      const sid = String(s.staff || '');
+      const months = Math.max(0, Math.min(12, Number(staffMonths[sid] ?? salaryMonths)));
+
+      const monthlyNet = Number(s.net_salary || 0);
+      const monthlyPaye = Number(s.tax_deduction || 0);
+      const monthlyDeductionsNoRelief =
+        monthlyPaye +
+        Number(s.sha_deduction || 0) +
+        Number(s.nssf_deduction || 0) +
+        Number(s.housing_levy_deduction || 0) +
+        Number(s.insurance_deduction || 0) +
+        Number(s.loan_deduction || 0) +
+        Number(s.other_deductions || 0);
+
+      let monthlyBase = monthlyNet + monthlyDeductionsNoRelief;
+      if (monthlyBase <= 0) {
+        monthlyBase = Number(s.gross_salary || 0) || (monthlyNet + Number(s.total_deductions || 0));
+      }
+
+      return sum + (monthlyBase * months);
+    }, 0);
+
+    const actual = baseTotal * 1.02;
+    const planned = baseTotal * 1.03;
+
+    setItemForm(prev => ({
+      ...prev,
+      planned_amount: planned,
+      actual_amount: actual,
+    }));
+
+    showToast('success', 'Salary amounts auto-calculated from existing payroll salaries');
   };
 
   const salaryRowsForModal = assumptions?.salary_staff?.length
@@ -735,13 +770,13 @@ export default function BudgetPlanning() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Students Paying (70%)</label>
-                    <input type="text" readOnly value={assumptions?.assumptions.assumed_fee_payers || 0}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white/70" />
+                    <label className="block text-xs text-gray-600 mb-1">Total Students</label>
+                    <input type="number" min="0" value={totalStudentsForCalc} onChange={e => setTotalStudentsForCalc(parseInt(e.target.value || '0', 10) || 0)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
                   </div>
                 </div>
                 <p className="text-xs text-emerald-700/90">
-                  Planned uses 70% payer assumption and Actual uses 100% student collection.
+                  Planned uses 70% payer assumption and Actual uses 100% student collection (frontend calculation).
                 </p>
                 <button onClick={applyFeeAutoCalc} className="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">
                   Auto-calculate Planned + Actual Fee
