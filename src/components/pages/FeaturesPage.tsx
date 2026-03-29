@@ -4,9 +4,10 @@ import {
   BarChart3, 
   CreditCard, 
   Calendar, 
-  Bot, 
+  BookOpen,
   Users, 
   Shield,
+  CircleDollarSign,
   CheckCircle,
   ArrowRight,
   Zap,
@@ -14,76 +15,18 @@ import {
   Globe,
   Database
 } from 'lucide-react';
+import { featureModules } from './featureModules';
 
 const FeaturesPage: React.FC = () => {
-  const mainFeatures = [
-    {
-      icon: <BarChart3 className="h-12 w-12 text-blue-600" />,
-      title: "Result Management",
-      description: "Improve academic decision quality with centralized performance data, fast reporting cycles, and board-ready analytics.",
-      benefits: [
-        "Automated grade calculations",
-        "Progress tracking over time",
-        "Customizable report cards",
-        "Department and class-level analytics"
-      ]
-    },
-    {
-      icon: <CreditCard className="h-12 w-12 text-green-600" />,
-      title: "Fees Payment",
-      description: "Strengthen school cashflow with transparent billing, faster collections, and cleaner reconciliation workflows.",
-      benefits: [
-        "M-Pesa integration",
-        "Automated receipts",
-        "Payment reminders",
-        "Finance performance reports"
-      ]
-    },
-    {
-      icon: <Calendar className="h-12 w-12 text-purple-600" />,
-      title: "Timetable Generation",
-      description: "Reduce scheduling delays and protect teaching time with conflict-aware timetable automation.",
-      benefits: [
-        "AI-powered scheduling",
-        "Conflict detection",
-        "Teacher availability",
-        "Resource-aware allocation"
-      ]
-    },
-    {
-      icon: <Bot className="h-12 w-12 text-orange-600" />,
-      title: "AI-Powered Library",
-      description: "Control stock movement, improve borrowing accountability, and connect lost-book recovery to finance workflows.",
-      benefits: [
-        "Smart book recommendations",
-        "Digital cataloging",
-        "Borrowing management",
-        "Lost-book and payment tracking"
-      ]
-    },
-    {
-      icon: <Users className="h-12 w-12 text-indigo-600" />,
-      title: "Student Management",
-      description: "Build one trusted student record for administration, academic coordination, and parent communication.",
-      benefits: [
-        "Easy enrollment",
-        "Attendance tracking",
-        "Profile management",
-        "Parent-ready visibility"
-      ]
-    },
-    {
-      icon: <Shield className="h-12 w-12 text-red-600" />,
-      title: "Secure & Reliable",
-      description: "Operate with confidence using role-based controls, resilient uptime, and secure data handling.",
-      benefits: [
-        "Data encryption",
-        "Role-based access",
-        "Daily backups",
-        "99.9% service uptime"
-      ]
-    }
-  ];
+  const iconMap = {
+    results: <BarChart3 className="h-12 w-12 text-blue-600" />,
+    fees: <CreditCard className="h-12 w-12 text-green-600" />,
+    timetable: <Calendar className="h-12 w-12 text-purple-600" />,
+    library: <BookOpen className="h-12 w-12 text-orange-600" />,
+    students: <Users className="h-12 w-12 text-indigo-600" />,
+    payroll: <CircleDollarSign className="h-12 w-12 text-emerald-600" />,
+    security: <Shield className="h-12 w-12 text-red-600" />,
+  } as const;
 
   const additionalFeatures = [
     {
@@ -126,16 +69,17 @@ const FeaturesPage: React.FC = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mainFeatures.map((feature, index) => (
-              <div 
+            {featureModules.map((feature, index) => (
+              <Link
                 key={index} 
+                to={`/features/${feature.slug}`}
                 className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group hover:-translate-y-1"
               >
                 <div className="mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+                  {iconMap[feature.iconKey]}
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 mb-6">{feature.description}</p>
+                <p className="text-gray-600 mb-6">{feature.shortDescription}</p>
                 <ul className="space-y-2">
                   {feature.benefits.map((benefit, i) => (
                     <li key={i} className="flex items-center text-sm text-gray-600">
@@ -144,7 +88,11 @@ const FeaturesPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-              </div>
+                <div className="mt-6 text-blue-600 text-sm font-medium inline-flex items-center">
+                  View full module details
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </div>
+              </Link>
             ))}
           </div>
         </div>

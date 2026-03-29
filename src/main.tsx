@@ -99,6 +99,9 @@ import SubscriptionPayment from './components/school/SubscriptionPayment'
 import PackageSelection from './components/school/PackageSelection'
 import Staff from './pages/Staff'
 import FeaturesPage from './components/pages/FeaturesPage'
+import FeatureModuleDetailsPage from './components/pages/FeatureModuleDetailsPage'
+import InsightsPage from './components/pages/InsightsPage'
+import InsightDetailsPage from './components/pages/InsightDetailsPage'
 import AboutPage from './components/pages/AboutPage'
 import ContactPage from './components/pages/ContactPage'
 import MessagingHub from './components/messaging/MessagingHub'
@@ -145,6 +148,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'features', element: <FeaturesPage /> },
+      { path: 'features/:moduleSlug', element: <FeatureModuleDetailsPage /> },
+      { path: 'insights', element: <InsightsPage /> },
+      { path: 'insights/:insightSlug', element: <InsightDetailsPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'pricing', element: <Pricing /> },

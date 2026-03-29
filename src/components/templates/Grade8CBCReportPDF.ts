@@ -54,7 +54,7 @@ export const generateTemplate2PDF = async ({
   let logoData = preloadedLogo ?? null;
   if (!logoData) {
     let logoUrl = schoolInfo?.logo_url || studentData.school_info?.logo_url;
-    if (logoUrl && logoUrl.includes('185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png')) {
+    if (logoUrl && logoUrl.includes('api.schoolmaster.co.ke/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png')) {
       logoUrl = '/api/proxy-logo';
     }
     if (logoUrl) {

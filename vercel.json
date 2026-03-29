@@ -6,15 +6,15 @@
     },
     {
       "src": "/api/proxy-logo",
-      "dest": "http://185.181.10.160:8000/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
+      "dest": "https://api.schoolmaster.co.ke/media/school_logos/Screenshot_2026-01-24_08_17_15_PlOmrtG.png"
     },
     {
       "src": "/api/(.*)",
-      "dest": "http://185.181.10.160:8000/api/$1"
+      "dest": "https://api.schoolmaster.co.ke/api/$1"
     },
     {
       "src": "/media/(.*)",
-      "dest": "http://185.181.10.160:8000/media/$1"
+      "dest": "https://api.schoolmaster.co.ke/media/$1"
     },
     {
       "handle": "filesystem"

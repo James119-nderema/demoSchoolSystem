@@ -17,6 +17,13 @@ export default function ParentLogin() {
   const navigate = useNavigate();
   const { login } = useParentAuth();
 
+  const previewImages = {
+    dashboard: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+    payment: 'https://images.unsplash.com/photo-1554224154-22dec7ec8818?auto=format&fit=crop&w=1200&q=80',
+    analytics: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+    invoice: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80'
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -46,18 +53,30 @@ export default function ParentLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Parent Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-blue-100">
-            Access your child's school information
-          </p>
+    <div className="min-h-screen bg-white">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <div className="hidden lg:flex bg-blue-600 text-white p-10 xl:p-14 flex-col justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-3">School Management System</h2>
+            <p className="text-blue-100">Track attendance, fees, results, and communication in one place.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <img src={previewImages.dashboard} alt="School dashboard" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.payment} alt="Payment history" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.analytics} alt="School analytics" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.invoice} alt="Fee invoices" className="rounded-xl object-cover h-36 w-full" />
+          </div>
+          <p className="text-xs text-blue-100">Parents can securely view student updates from school records.</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl p-8">
+        <div className="flex items-center justify-center py-10 px-4 sm:px-6 lg:px-10">
+          <div className="w-full max-w-md space-y-7">
+            <div>
+              <h2 className="text-center text-3xl font-extrabold text-gray-900">Parent Login</h2>
+              <p className="mt-2 text-center text-sm text-gray-500">Access your child's school information</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
               <div className="text-sm text-red-700">{error}</div>
@@ -148,6 +167,8 @@ export default function ParentLogin() {
                 <p>Your account must be verified by the school administration before you can log in. If you've just registered, please wait for verification or contact your school.</p>
               </div>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>

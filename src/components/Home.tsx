@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { blogPosts } from './pages/blogPosts';
 
 // Image URLs for the carousel - can be replaced with local imports if images are added to assets/images
 const timetableImg = '/images/timetable.jpg';
@@ -161,23 +162,7 @@ const Home: React.FC = () => {
     }
   ];
 
-  const kenyaCurriculumBlogs = [
-    {
-      title: 'CBC in Kenya: How Schools Can Track Competencies Without Manual Chaos',
-      excerpt: 'A practical guide for Kenyan school leaders on mapping CBC learning areas, grading evidence, and parent-ready reporting inside one platform.',
-      tag: 'Kenya CBC',
-    },
-    {
-      title: 'Kenya School Finance Playbook: Fee Collection, Reconciliation, and Visibility',
-      excerpt: 'How Kenyan schools can reduce fee leakage, improve cashflow predictability, and give parents trusted payment visibility.',
-      tag: 'Kenya Finance',
-    },
-    {
-      title: 'From Timetable Conflicts to Teaching Time: A Kenyan Operations Blueprint',
-      excerpt: 'How to move from manual scheduling bottlenecks to stable, conflict-free timetables that protect instructional time.',
-      tag: 'Kenya Operations',
-    },
-  ];
+  const kenyaCurriculumBlogs = blogPosts;
 
   return (
     <div className="min-h-screen bg-white pt-16">
@@ -439,16 +424,20 @@ const Home: React.FC = () => {
               <div className="space-y-3">
                 {kenyaCurriculumBlogs.map((blog, idx) => (
                   <div key={idx} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{blog.tag}</span>
+                    <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{blog.category}</span>
                     <h4 className="mt-2 text-sm font-semibold text-gray-900">{blog.title}</h4>
-                    <p className="mt-1 text-sm text-gray-600">{blog.excerpt}</p>
-                    <Link to="/about" className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                    <p className="mt-1 text-sm text-gray-600">{blog.summary}</p>
+                    <Link to={`/insights/${blog.slug}`} className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
                       Read article
                       <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                   </div>
                 ))}
               </div>
+              <Link to="/insights" className="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700 mt-4">
+                View all insights
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </div>
             </ScrollReveal>
           </div>

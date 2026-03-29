@@ -7,7 +7,7 @@ export default defineConfig(() => ({
   server: {
     proxy: {
       '/api': {
-        target: '185.181.10.160:8000',
+        target: 'https://api.schoolmaster.co.ke',
         changeOrigin: true,
         secure: false,
       }

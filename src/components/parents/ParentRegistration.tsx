@@ -63,6 +63,13 @@ export default function ParentRegistration() {
   const [success, setSuccess] = useState<string>('');
   const navigate = useNavigate();
 
+  const previewImages = {
+    dashboard: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+    payment: 'https://images.unsplash.com/photo-1554224154-22dec7ec8818?auto=format&fit=crop&w=1200&q=80',
+    analytics: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+    invoice: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80'
+  };
+
   const handleNext = () => {
     // Validate step 1 fields
     if (!formData.full_name || !formData.email || !formData.phone_number || !formData.password || !formData.confirm_password) {
@@ -150,14 +157,30 @@ export default function ParentRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <div className="hidden lg:flex bg-blue-600 text-white p-10 xl:p-14 flex-col justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-3">Parent Portal</h2>
+            <p className="text-blue-100">Register once and follow your child’s performance, payments, and reports.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <img src={previewImages.dashboard} alt="School dashboard" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.payment} alt="Payments" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.analytics} alt="Analytics" className="rounded-xl object-cover h-36 w-full" />
+            <img src={previewImages.invoice} alt="Invoices" className="rounded-xl object-cover h-36 w-full" />
+          </div>
+          <p className="text-xs text-blue-100">Simple and secure access for parents.</p>
+        </div>
+
+        <div className="py-6 px-4 sm:px-6 lg:px-10">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-4xl font-extrabold text-white mb-2">
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-2">
             Parent Registration
           </h2>
-          <p className="text-lg text-blue-100">
+          <p className="text-lg text-gray-500">
             Register to access your child's school information
           </p>
         </div>
@@ -167,24 +190,24 @@ export default function ParentRegistration() {
           <div className="flex items-center justify-center space-x-8">
             <div className="flex items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                currentStep >= 1 ? 'bg-white text-blue-600' : 'bg-blue-300 text-blue-600'
+                currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
               }`}>
                 1
               </div>
-              <div className="ml-3 text-white">
+              <div className="ml-3 text-gray-700">
                 <p className="text-sm font-medium">Parent Information</p>
               </div>
             </div>
             
-            <div className={`w-16 h-1 ${currentStep >= 2 ? 'bg-white' : 'bg-blue-300'}`}></div>
+            <div className={`w-16 h-1 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
             
             <div className="flex items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                currentStep >= 2 ? 'bg-white text-blue-600' : 'bg-blue-300 text-blue-600'
+                currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
               }`}>
                 2
               </div>
-              <div className="ml-3 text-white">
+              <div className="ml-3 text-gray-700">
                 <p className="text-sm font-medium">Student Information</p>
               </div>
             </div>
@@ -421,10 +444,10 @@ export default function ParentRegistration() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`px-8 py-3 rounded-lg font-medium text-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`px-8 py-3 rounded-lg font-medium text-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       isSubmitting
-                        ? 'bg-green-400 cursor-not-allowed text-white'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
+                        ? 'bg-blue-400 cursor-not-allowed text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}
                   >
                     {isSubmitting ? (
@@ -452,6 +475,8 @@ export default function ParentRegistration() {
               </p>
             </div>
           </form>
+        </div>
+      </div>
         </div>
       </div>
     </div>

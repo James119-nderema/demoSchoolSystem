@@ -11,25 +11,10 @@ import {
   CheckCircle,
   ArrowRight
 } from 'lucide-react';
+import { blogPosts } from './blogPosts';
 
 const AboutPage: React.FC = () => {
-  const kenyaCurriculumBlog = [
-    {
-      title: 'CBC Reporting in Kenya: From Teacher Notes to Board-Ready Insights',
-      summary: 'How Kenyan schools can convert daily classroom data into reliable parent communication and strategic decision support.',
-      category: 'Kenya CBC'
-    },
-    {
-      title: 'School Growth in Kenya: Why Operational Discipline Beats Manual Workarounds',
-      summary: 'A practical roadmap for principals and proprietors who want stable growth, fewer leaks, and stronger accountability.',
-      category: 'Kenya Leadership'
-    },
-    {
-      title: 'Fee Confidence for Kenyan Parents: The Visibility Model That Improves Collections',
-      summary: 'How transparent invoices, payment history, and timely reminders build trust and improve collection performance.',
-      category: 'Kenya Finance'
-    }
-  ];
+  const kenyaCurriculumBlog = blogPosts;
 
   const values = [
     {
@@ -253,13 +238,19 @@ const AboutPage: React.FC = () => {
                   <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{post.category}</span>
                   <h3 className="mt-4 text-xl font-semibold text-gray-900">{post.title}</h3>
                   <p className="mt-3 text-gray-600">{post.summary}</p>
-                  <Link to="/contact" className="inline-flex items-center mt-5 text-blue-600 font-medium hover:text-blue-700">
-                    Learn how this works in your school
+                  <Link to={`/insights/${post.slug}`} className="inline-flex items-center mt-5 text-blue-600 font-medium hover:text-blue-700">
+                    Read full article
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </article>
               </ScrollReveal>
             ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link to="/insights" className="inline-flex items-center text-blue-600 font-semibold hover:text-blue-700">
+              Browse all school growth insights
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
