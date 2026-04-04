@@ -34,7 +34,7 @@ export default function ParentSidebar({ parentName, studentName, isOpen, onToggl
   const handleLogout = () => {
     localStorage.removeItem('parent_access_token');
     localStorage.removeItem('parent_refresh_token');
-    navigate('/parent/login');
+    navigate('/');
   };
 
   const menuItems = [

@@ -32,16 +32,16 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
     // Redirect based on current user type
     switch (currentUserType) {
       case 'school':
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
         break;
       case 'staff':
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
         break;
       case 'parent':
-        navigate('/parent/login', { replace: true });
+        navigate('/', { replace: true });
         break;
       default:
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
     }
   };
 

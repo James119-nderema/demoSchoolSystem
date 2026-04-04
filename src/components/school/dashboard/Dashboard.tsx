@@ -301,7 +301,7 @@ const SchoolDashboard: React.FC = () => {
     localStorage.removeItem('school_info');
     localStorage.removeItem('staff_access_token');
     localStorage.removeItem('staff_info');
-    navigate('/login');
+    navigate('/');
   };
 
   const handleRefresh = () => {

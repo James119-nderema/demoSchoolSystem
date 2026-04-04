@@ -26,24 +26,24 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children, requiredAuth }) => {
     if (requiredAuth === 'none') return;
 
     let isAuthorized = false;
-    let redirectPath = '/login';
+    let redirectPath = '/';
 
     switch (requiredAuth) {
       case 'school':
         isAuthorized = isSchoolAuth;
-        redirectPath = '/login';
+        redirectPath = '/';
         break;
       case 'staff':
         isAuthorized = isStaffAuth;
-        redirectPath = '/login';
+        redirectPath = '/';
         break;
       case 'parent':
         isAuthorized = isParentAuth;
-        redirectPath = '/parent/login';
+        redirectPath = '/';
         break;
       case 'any':
         isAuthorized = isSchoolAuth || isStaffAuth || isParentAuth;
-        redirectPath = '/login';
+        redirectPath = '/';
         break;
     }
 

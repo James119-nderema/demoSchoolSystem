@@ -104,7 +104,7 @@ const StaffMainLayout: React.FC = () => {
     localStorage.removeItem('staff_info');
     localStorage.removeItem('access_token');
     localStorage.removeItem('school_info');
-    navigate('/login');
+    navigate('/');
   };
 
   if (!staffInfo) {

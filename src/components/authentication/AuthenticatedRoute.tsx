@@ -41,7 +41,7 @@ const AuthenticatedRoute: React.FC<AuthenticatedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    const redirectPath = fallbackPath || (userType === 'staff' ? '/login' : '/parent/login');
+    const redirectPath = fallbackPath || (userType === 'staff' ? '/' : '/');
     return <Navigate to={redirectPath} replace />;
   }
 

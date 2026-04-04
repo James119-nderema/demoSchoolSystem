@@ -180,7 +180,7 @@ const StaffDashboard: React.FC = () => {
     localStorage.removeItem('staff_access_token');
     localStorage.removeItem('staff_refresh_token');
     localStorage.removeItem('staff_info');
-    navigate('/login');
+    navigate('/');
   };
 
   if (loading) {

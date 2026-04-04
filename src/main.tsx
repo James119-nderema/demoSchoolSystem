@@ -94,6 +94,7 @@ import AttendanceContent from './components/parents/AttendanceContent'
 import MessagesContent from './components/parents/MessagesContent'
 import ParentMainLayout from './layout/ParentMainLayout'
 import Home from './components/Home'
+import RoleQuickAccessLanding from './components/authentication/RoleQuickAccessLanding'
 import Pricing from './components/pricing'
 import SubscriptionPayment from './components/school/SubscriptionPayment'
 import PackageSelection from './components/school/PackageSelection'
@@ -146,7 +147,8 @@ const router = createBrowserRouter([
     element: <LandingLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
-      { index: true, element: <Home /> },
+      { index: true, element: <RoleQuickAccessLanding /> },
+      { path: 'home', element: <Home /> },
       { path: 'features', element: <FeaturesPage /> },
       { path: 'features/:moduleSlug', element: <FeatureModuleDetailsPage /> },
       { path: 'insights', element: <InsightsPage /> },

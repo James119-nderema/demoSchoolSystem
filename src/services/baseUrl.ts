@@ -78,11 +78,11 @@ export class APIService {
     // Redirect to appropriate login page based on current route
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/staff')) {
-      window.location.href = '/login';
+      window.location.href = '/';
     } else if (currentPath.startsWith('/parent')) {
-      window.location.href = '/parent/login';
+      window.location.href = '/';
     } else {
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   }
   
