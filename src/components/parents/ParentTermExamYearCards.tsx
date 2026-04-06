@@ -11,6 +11,14 @@ interface FilterOptionsData {
   academic_years?: FilterOption[];
   terms?: FilterOption[];
   exam_types?: FilterOption[];
+  period_combinations?: Array<{
+    academic_year: string;
+    term: string;
+    exam_type: string;
+    academic_year_label?: string;
+    term_label?: string;
+    exam_type_label?: string;
+  }>;
 }
 
 interface AnalyticsResponse {
@@ -50,6 +58,37 @@ const ParentTermExamYearCards: React.FC<ParentTermExamYearCardsProps> = ({ title
 
         const data = await ParentsAPI.getStudentAnalytics() as AnalyticsResponse;
         const options = data?.filter_options;
+        const periodCombinations = options?.period_combinations || [];
+
+        if (periodCombinations.length > 0) {
+          const cardsFromPeriods = periodCombinations
+            .map((period) => ({
+              year: {
+                value: String(period.academic_year),
+                label: period.academic_year_label || String(period.academic_year),
+              },
+              term: {
+                value: String(period.term),
+                label: period.term_label || `Term ${period.term}`,
+              },
+              examType: {
+                value: String(period.exam_type),
+                label: period.exam_type_label || String(period.exam_type).replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()),
+              },
+            }))
+            .sort((a, b) => {
+              if (String(a.year.value) !== String(b.year.value)) {
+                return String(b.year.value).localeCompare(String(a.year.value));
+              }
+              if (String(a.term.value) !== String(b.term.value)) {
+                return String(a.term.value).localeCompare(String(b.term.value), undefined, { numeric: true });
+              }
+              return String(a.examType.value).localeCompare(String(b.examType.value));
+            });
+
+          setCards(cardsFromPeriods);
+          return;
+        }
 
         const termsList = options?.terms || [];
         const examTypesList = options?.exam_types || [];
@@ -67,35 +106,7 @@ const ParentTermExamYearCards: React.FC<ParentTermExamYearCardsProps> = ({ title
           }
         }
 
-        const candidateCombos = Array.from(candidateComboMap.values());
-
-        const comboChecks = await Promise.all(
-          candidateCombos.map(async (combo) => {
-            try {
-              const comboData = await ParentsAPI.getStudentAnalytics({
-                term: combo.term.value,
-                exam_type: combo.examType.value,
-                academic_year: combo.year.value,
-              }) as AnalyticsResponse;
-
-              const hasData = Array.isArray(comboData?.subject_performance) && comboData.subject_performance.length > 0;
-              return hasData ? combo : null;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        const uniqueValidMap = new Map<string, PeriodCard>();
-        comboChecks.forEach((item) => {
-          if (!item) return;
-          const key = buildPeriodKey(item.term.value, item.examType.value, item.year.value);
-          if (!uniqueValidMap.has(key)) {
-            uniqueValidMap.set(key, item);
-          }
-        });
-
-        const uniqueValidCards = Array.from(uniqueValidMap.values()).sort((a, b) => {
+        const uniqueValidCards = Array.from(candidateComboMap.values()).sort((a, b) => {
           if (String(a.year.value) !== String(b.year.value)) {
             return String(b.year.value).localeCompare(String(a.year.value));
           }

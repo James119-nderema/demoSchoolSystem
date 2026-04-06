@@ -27,10 +27,23 @@ interface PeriodStatsResponse {
   period_stats?: PeriodStat[];
 }
 
-const usePeriodStats = () => {
+interface UsePeriodStatsOptions {
+  term?: string;
+  academicYear?: string;
+  examType?: string;
+  includeClasses?: boolean;
+}
+
+const usePeriodStats = (options: UsePeriodStatsOptions = {}) => {
   const [periods, setPeriods] = useState<PeriodStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const {
+    term = '',
+    academicYear = '',
+    examType = '',
+    includeClasses = false,
+  } = options;
 
   useEffect(() => {
     const run = async () => {
@@ -38,7 +51,13 @@ const usePeriodStats = () => {
         setLoading(true);
         setError('');
 
-        const response = await authFetch('/api/input-marks/period-stats/');
+        const params = new URLSearchParams();
+        params.set('include_classes', includeClasses ? '1' : '0');
+        if (term) params.set('term', term);
+        if (academicYear) params.set('academic_year', academicYear);
+        if (examType) params.set('exam_type', examType);
+
+        const response = await authFetch(`/api/input-marks/period-stats/?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`Failed to load period stats (HTTP ${response.status})`);
         }
@@ -53,14 +72,14 @@ const usePeriodStats = () => {
     };
 
     run();
-  }, []);
+  }, [term, academicYear, examType, includeClasses]);
 
   return { periods, loading, error };
 };
 
 const PeriodStepPage: React.FC<{ title: string; step2Path: string }> = ({ title, step2Path }) => {
   const navigate = useNavigate();
-  const { periods, loading, error } = usePeriodStats();
+  const { periods, loading, error } = usePeriodStats({ includeClasses: false });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -115,11 +134,17 @@ const ClassStepPage: React.FC<{ title: string; resultsPath: string; periodStepPa
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { periods, loading, error } = usePeriodStats();
 
   const term = searchParams.get('term') || '';
   const academicYear = searchParams.get('academic_year') || '';
   const examType = searchParams.get('exam_type') || '';
+
+  const { periods, loading, error } = usePeriodStats({
+    term,
+    academicYear,
+    examType,
+    includeClasses: true,
+  });
 
   const selectedPeriod = useMemo(() => {
     if (!term || !academicYear || !examType) return null;
