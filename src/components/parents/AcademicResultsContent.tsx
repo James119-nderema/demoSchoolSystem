@@ -1,5 +1,11 @@
-import ParentReportCard from './ParentReportCard';
+import ParentTermExamYearCards from './ParentTermExamYearCards';
 
 export default function AcademicResultsContent() {
-  return <ParentReportCard />;
+  return (
+    <ParentTermExamYearCards
+      title="Academic Results"
+      subtitle="Select a term, exam, and year card to open the exact filtered report."
+      targetPath="/parent/results/view"
+    />
+  );
 }

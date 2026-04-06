@@ -87,7 +87,9 @@ import ParentLogin from './components/parents/ParentLogin'
 import ParentForgotPassword from './components/parents/ParentForgotPassword'
 import ParentDashboardContent from './components/parents/ParentDashboardContent'
 import StudentAnalytics from './components/parents/StudentAnalytics'
+import StudentAnalyticsSelectionContent from './components/parents/StudentAnalyticsSelectionContent'
 import AcademicResultsContent from './components/parents/AcademicResultsContent'
+import ParentReportCard from './components/parents/ParentReportCard'
 import StudentProfileContent from './components/parents/StudentProfileContent'
 import FeeInformation from './components/parents/FeeInformation'
 import AttendanceContent from './components/parents/AttendanceContent'
@@ -871,6 +873,16 @@ const router = createBrowserRouter([
         element: (
           <ParentProtectedRoute>
             <ParentMainLayout title="Student Analytics">
+              <StudentAnalyticsSelectionContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'analytics/view', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Student Analytics">
               <StudentAnalytics />
             </ParentMainLayout>
           </ParentProtectedRoute>
@@ -887,11 +899,31 @@ const router = createBrowserRouter([
         ) 
       },
       { 
+        path: 'results/view', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Academic Results">
+              <ParentReportCard />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
         path: 'profile', 
         element: (
           <ParentProtectedRoute>
             <ParentMainLayout title="Student Profile">
               <StudentProfileContent />
+            </ParentMainLayout>
+          </ParentProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'profile/:studentId', 
+        element: (
+          <ParentProtectedRoute>
+            <ParentMainLayout title="Student Profile">
+              <StudentProfile />
             </ParentMainLayout>
           </ParentProtectedRoute>
         ) 

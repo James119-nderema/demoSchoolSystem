@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Calendar, Filter, Loader2, AlertCircle, Printer } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Download, Filter, Loader2, AlertCircle, Printer } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { API_BASE_URL } from '../../config/environment';
 
@@ -72,6 +73,7 @@ interface ReportData {
   school: School;
   term: string;
   academic_year: string;
+  exam_type?: string;
   subjects: Subject[];
   overall_performance: OverallPerformance;
   progress_per_term: ProgressTerm[];
@@ -90,6 +92,11 @@ interface YearOption {
   label: string;
 }
 
+interface ExamTypeOption {
+  value: string;
+  label: string;
+}
+
 interface SchoolInfo {
   name: string;
   principal_name?: string;
@@ -100,16 +107,23 @@ interface SchoolInfo {
 }
 
 const ParentReportCard: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [availableTerms, setAvailableTerms] = useState<TermOption[]>([]);
   const [availableYears, setAvailableYears] = useState<YearOption[]>([]);
+  const [availableExamTypes, setAvailableExamTypes] = useState<ExamTypeOption[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  const queryTerm = searchParams.get('term') || '';
+  const queryYear = searchParams.get('academic_year') || '';
+  const queryExamType = searchParams.get('exam_type') || '';
 
   // Fetch initial data and options
   useEffect(() => {
@@ -118,10 +132,10 @@ const ParentReportCard: React.FC = () => {
 
   // Fetch report when term/year changes
   useEffect(() => {
-    if (selectedTerm && selectedYear) {
+    if (selectedTerm && selectedYear && selectedExamType) {
       fetchReportData();
     }
-  }, [selectedTerm, selectedYear]);
+  }, [selectedTerm, selectedYear, selectedExamType]);
 
   const fetchInitialData = async () => {
     try {
@@ -162,61 +176,92 @@ const ParentReportCard: React.FC = () => {
         // Set available terms from filter_options
         if (data.filter_options?.terms && data.filter_options.terms.length > 0) {
           setAvailableTerms(data.filter_options.terms);
-          setSelectedTerm(data.filter_options.terms[0].value);
+          setSelectedTerm(queryTerm || data.filter_options.terms[0].value);
         } else {
-          setAvailableTerms([
+          const defaultTerms = [
             { value: '1', label: 'Term 1' },
             { value: '2', label: 'Term 2' },
             { value: '3', label: 'Term 3' },
-          ]);
-          setSelectedTerm('1');
+          ];
+          setAvailableTerms(defaultTerms);
+          setSelectedTerm(queryTerm || defaultTerms[0].value);
+        }
+
+        // Set available exam types from filter_options
+        if (data.filter_options?.exam_types && data.filter_options.exam_types.length > 0) {
+          setAvailableExamTypes(data.filter_options.exam_types);
+          setSelectedExamType(queryExamType || data.filter_options.exam_types[0].value);
+        } else {
+          const defaultExamTypes = [
+            { value: 'Mid Term', label: 'Mid Term' },
+            { value: 'End Term', label: 'End Term' },
+          ];
+          setAvailableExamTypes(defaultExamTypes);
+          setSelectedExamType(queryExamType || defaultExamTypes[0].value);
         }
         
         // Set available years from filter_options
         if (data.filter_options?.academic_years && data.filter_options.academic_years.length > 0) {
           setAvailableYears(data.filter_options.academic_years);
-          setSelectedYear(data.filter_options.academic_years[0].value);
+          setSelectedYear(queryYear || data.filter_options.academic_years[0].value);
         } else {
-          setAvailableYears([
+          const defaultYears = [
             { value: '2024', label: '2024' },
             { value: '2023', label: '2023' },
             { value: '2025', label: '2025' },
             { value: '2026', label: '2026' },
-          ]);
-          setSelectedYear('2026');
+          ];
+          setAvailableYears(defaultYears);
+          setSelectedYear(queryYear || defaultYears[0].value);
         }
       } else {
         // Use defaults
-        setAvailableTerms([
+        const defaultTerms = [
           { value: '1', label: 'Term 1' },
           { value: '2', label: 'Term 2' },
           { value: '3', label: 'Term 3' },
-        ]);
-        setAvailableYears([
+        ];
+        const defaultExamTypes = [
+          { value: 'Mid Term', label: 'Mid Term' },
+          { value: 'End Term', label: 'End Term' },
+        ];
+        const defaultYears = [
             { value: '2024', label: '2024' },
             { value: '2023', label: '2023' },
             { value: '2025', label: '2025' },
             { value: '2026', label: '2026' },
-        ]);
-        setSelectedTerm('1');
-        setSelectedYear('2024-2025');
+        ];
+        setAvailableTerms(defaultTerms);
+        setAvailableExamTypes(defaultExamTypes);
+        setAvailableYears(defaultYears);
+        setSelectedTerm(queryTerm || defaultTerms[0].value);
+        setSelectedExamType(queryExamType || defaultExamTypes[0].value);
+        setSelectedYear(queryYear || defaultYears[0].value);
       }
     } catch (err) {
       console.error('Error fetching options:', err);
       // Use defaults
-      setAvailableTerms([
+      const defaultTerms = [
         { value: '1', label: 'Term 1' },
         { value: '2', label: 'Term 2' },
         { value: '3', label: 'Term 3' },
-      ]);
-      setAvailableYears([
+      ];
+      const defaultExamTypes = [
+        { value: 'Mid Term', label: 'Mid Term' },
+        { value: 'End Term', label: 'End Term' },
+      ];
+      const defaultYears = [
             { value: '2024', label: '2024' },
             { value: '2023', label: '2023' },
             { value: '2025', label: '2025' },
             { value: '2026', label: '2026' },
-      ]);
-      setSelectedTerm('1');
-      setSelectedYear('2024-2025');
+      ];
+      setAvailableTerms(defaultTerms);
+      setAvailableExamTypes(defaultExamTypes);
+      setAvailableYears(defaultYears);
+      setSelectedTerm(queryTerm || defaultTerms[0].value);
+      setSelectedExamType(queryExamType || defaultExamTypes[0].value);
+      setSelectedYear(queryYear || defaultYears[0].value);
     }
   };
 
@@ -232,9 +277,14 @@ const ParentReportCard: React.FC = () => {
         return;
       }
 
-      // Use student_analytics endpoint with term and academic_year filters
+      // Use student_analytics endpoint with term, exam type and academic year filters
+      const query = new URLSearchParams();
+      query.set('term', selectedTerm);
+      query.set('academic_year', selectedYear);
+      query.set('exam_type', selectedExamType);
+
       const response = await fetch(
-        `${API_BASE_URL}/api/parents/student_analytics/?term=${selectedTerm}&academic_year=${selectedYear}`,
+        `${API_BASE_URL}/api/parents/student_analytics/?${query.toString()}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -267,6 +317,7 @@ const ParentReportCard: React.FC = () => {
           },
           term: selectedTerm,
           academic_year: selectedYear,
+          exam_type: selectedExamType,
           subjects: (data.subject_performance || []).map((subj: SubjectPerformance, index: number) => ({
             id: index,
             name: subj.subject,
@@ -384,7 +435,7 @@ const ParentReportCard: React.FC = () => {
       y += 8;
 
       // Report Title
-      centerText(`TERM ${reportData.term} - ${reportData.academic_year} REPORT CARD`, y, 14, 'bold');
+      centerText(`${reportData.exam_type || 'Exam'} - TERM ${reportData.term} - ${reportData.academic_year} REPORT CARD`, y, 14, 'bold');
       y += 10;
 
       // Student Info Box
@@ -530,7 +581,8 @@ const ParentReportCard: React.FC = () => {
       }
 
       // Save PDF
-      const fileName = `${reportData.student.full_name.replace(/\s+/g, '_')}_Report_Term${selectedTerm}_${selectedYear}.pdf`;
+      const safeExamType = selectedExamType.replace(/\s+/g, '_');
+      const fileName = `${reportData.student.full_name.replace(/\s+/g, '_')}_Report_${safeExamType}_Term${selectedTerm}_${selectedYear}.pdf`;
       pdf.save(fileName);
     } catch (err) {
       console.error('Error generating PDF:', err);
@@ -557,46 +609,23 @@ const ParentReportCard: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
-      {/* Filter Controls */}
+      {/* Period Header */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Report Card</h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Report Card</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Selected period: Term {selectedTerm || '—'} • {selectedExamType || '—'} • {selectedYear || '—'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Available in database: {availableTerms.length} terms • {availableExamTypes.length} exams • {availableYears.length} years
+              </p>
+            </div>
           </div>
           
           <div className="flex flex-wrap items-center gap-4">
-            {/* Term Select */}
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {availableTerms.map((term) => (
-                  <option key={term.value} value={term.value}>
-                    {term.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Year Select */}
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {availableYears.map((year) => (
-                  <option key={year.value} value={year.value}>
-                    {year.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <button

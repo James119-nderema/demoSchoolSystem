@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { clearAuthData, redirectToLogin } from './authUtils';
+import { API_BASE_URL } from '../config/environment';
 
 // Create axios interceptor for handling authentication errors
 export const setupAxiosInterceptors = () => {
@@ -79,7 +80,7 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
   const currentPath = window.location.pathname;
   
   // Build full URL using environment variable for production
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const baseUrl = API_BASE_URL || '';
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
   
   // Add appropriate token based on current user context (path) first, then URL pattern

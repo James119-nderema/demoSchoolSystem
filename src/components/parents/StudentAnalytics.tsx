@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import StudentAnalyticsFilters from './StudentAnalyticsFilters';
 import { ParentsAPI } from '../../services/baseUrl';
 import { getGradeColorFromMarks } from '../../utils/gradingUtils';
 import { SkeletonCards, SkeletonChart } from '../ui/Skeleton';
@@ -79,15 +79,42 @@ interface FilterOptions {
 }
 
 export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
+  const [searchParams] = useSearchParams();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const urlTerm = searchParams.get('term') || 'all';
+  const urlExamType = searchParams.get('exam_type') || 'all';
+  const urlAcademicYear = searchParams.get('academic_year') || 'all';
+
   const [filters, setFilters] = useState<FilterOptions>({
-    term: 'all',
-    examType: 'all',
-    academicYear: 'all',
+    term: urlTerm,
+    examType: urlExamType,
+    academicYear: urlAcademicYear,
     subject: 'all'
   });
+
+  useEffect(() => {
+    setFilters((prev) => {
+      const next: FilterOptions = {
+        ...prev,
+        term: urlTerm,
+        examType: urlExamType,
+        academicYear: urlAcademicYear,
+      };
+
+      if (
+        prev.term === next.term &&
+        prev.examType === next.examType &&
+        prev.academicYear === next.academicYear
+      ) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [urlTerm, urlExamType, urlAcademicYear]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -123,48 +150,7 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
     }
   };
 
-  const getAvailableSubjects = (): FilterOption[] => {
-    if (!analyticsData?.filter_options?.subjects) return [];
-    return analyticsData.filter_options.subjects;
-  };
-
-  const getAvailableTerms = (): FilterOption[] => {
-    if (!analyticsData?.filter_options?.terms) return [];
-    return analyticsData.filter_options.terms;
-  };
-
-  const getAvailableExamTypes = (): FilterOption[] => {
-    if (!analyticsData?.filter_options?.exam_types) return [];
-    return analyticsData.filter_options.exam_types;
-  };
-
-  const getAvailableAcademicYears = (): FilterOption[] => {
-    if (!analyticsData?.filter_options?.academic_years) return [];
-    return analyticsData.filter_options.academic_years;
-  };
-
-  const handleFiltersChange = (newFilters: FilterOptions) => {
-    setFilters(newFilters);
-  };
-
-  const handleRefresh = () => {
-    fetchAnalytics();
-  };
-
-  const filterSubjectPerformance = () => {
-    if (!analyticsData?.subject_performance) return [];
-    
-    let filtered = analyticsData.subject_performance;
-    
-    // Filter by subject
-    if (filters.subject !== 'all') {
-      filtered = filtered.filter(subject => subject.subject === filters.subject);
-    }
-    
-
-    
-    return filtered;
-  };
+  const filterSubjectPerformance = () => analyticsData?.subject_performance || [];
 
 
 
@@ -255,6 +241,9 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Student Analysis & Statistics</h1>
               <p className="text-gray-600 mt-2">Comprehensive academic performance analysis</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Period: {filters.term !== 'all' ? `Term ${filters.term}` : 'All Terms'} • {filters.examType !== 'all' ? filters.examType : 'All Exams'} • {filters.academicYear !== 'all' ? filters.academicYear : 'All Years'}
+              </p>
             </div>
             {onBack && (
               <button
@@ -269,18 +258,6 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
             )}
           </div>
         </div>
-
-        {/* Filters */}
-        <StudentAnalyticsFilters
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          availableSubjects={getAvailableSubjects()}
-          availableTerms={getAvailableTerms()}
-          availableExamTypes={getAvailableExamTypes()}
-          availableAcademicYears={getAvailableAcademicYears()}
-          onRefresh={handleRefresh}
-          loading={loading}
-        />
 
         {/* Student Info Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">

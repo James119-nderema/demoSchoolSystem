@@ -1,4 +1,22 @@
 // Environment configuration
+const resolveDefaultApiBaseUrl = () => {
+  const explicitUrl = import.meta.env.VITE_API_BASE_URL;
+  if (explicitUrl && explicitUrl.trim().length > 0) {
+    return explicitUrl;
+  }
+
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1';
+
+  if (isLocal) {
+    return '';
+  }
+
+  return 'https://api.schoolmaster.co.ke';
+};
+
+const DEFAULT_API_BASE_URL = resolveDefaultApiBaseUrl();
+
 export const ENV = {
   // Current environment from Vite or fallback to development
   NODE_ENV: import.meta.env.VITE_APP_ENV || import.meta.env.MODE || 'development',
@@ -11,7 +29,7 @@ export const ENV = {
   API: {
     // Development environment (local backend)
     development: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL ?? '',
+      BASE_URL: DEFAULT_API_BASE_URL,
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
       UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Local Development',
@@ -19,7 +37,7 @@ export const ENV = {
     
     // Staging environment 
     staging: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL ?? '',
+      BASE_URL: DEFAULT_API_BASE_URL,
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
       UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Staging Server',
@@ -27,7 +45,7 @@ export const ENV = {
     
     // Production environment
     production: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL ?? '',
+      BASE_URL: DEFAULT_API_BASE_URL,
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 45000,
       UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for uploads
       NAME: 'Production Server',
@@ -35,7 +53,7 @@ export const ENV = {
     
     // Testing environment (for running tests)
     test: {
-      BASE_URL: import.meta.env.VITE_API_BASE_URL ?? '',
+      BASE_URL: DEFAULT_API_BASE_URL,
       TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
       UPLOAD_TIMEOUT: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT) || 120000, // 2 minutes for test uploads
       NAME: 'Test Environment',

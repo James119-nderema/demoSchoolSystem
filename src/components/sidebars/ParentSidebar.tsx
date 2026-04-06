@@ -16,14 +16,14 @@ export default function ParentSidebar({ parentName, studentName, isOpen, onToggl
     const path = location.pathname;
     
     // Handle direct routes
-    if (path === '/parent/analytics') return 'analytics';
+    if (path.startsWith('/parent/analytics')) return 'analytics';
     if (path === '/parent/attendance') return 'attendance';
     if (path === '/parent/fees') return 'fees';
     if (path === '/parent/payment-history') return 'payment-history';
     if (path.startsWith('/parent/pay-fees')) return 'pay-fees';
     if (path === '/parent/messages') return 'messages';
-    if (path === '/parent/results') return 'results';
-    if (path === '/parent/profile') return 'student-profile';
+    if (path.startsWith('/parent/results')) return 'results';
+    if (path.startsWith('/parent/profile')) return 'student-profile';
     if (path === '/parent/dashboard') return 'dashboard';
     
     return 'dashboard';

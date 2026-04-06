@@ -1,48 +1,47 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ParentsAPI } from '../../services/baseUrl';
+
+interface ParentDashboardResponse {
+  student?: {
+    id?: number | string;
+  };
+}
+
 export default function StudentProfileContent() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resolveStudentAndRedirect = async () => {
+      try {
+        const data = await ParentsAPI.getDashboard() as ParentDashboardResponse;
+        const studentId = data?.student?.id;
+
+        if (!studentId) {
+          setError('Student profile is not linked to this parent account.');
+          return;
+        }
+
+        navigate(`/parent/profile/${studentId}`, { replace: true });
+      } catch (err) {
+        console.error('Error loading parent profile student:', err);
+        setError('Unable to open student profile. Please refresh and try again.');
+      }
+    };
+
+    resolveStudentAndRedirect();
+  }, [navigate]);
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Profile</h3>
-        <p className="text-gray-600">Student profile information will be displayed here.</p>
-        
-        {/* Placeholder content */}
-        <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div className="sm:col-span-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <div className="mt-1 p-3 border border-gray-300 rounded-md bg-gray-50">
-              <span className="text-gray-900">Loading...</span>
-            </div>
-          </div>
-          
-          <div className="sm:col-span-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Admission Number
-            </label>
-            <div className="mt-1 p-3 border border-gray-300 rounded-md bg-gray-50">
-              <span className="text-gray-900">Loading...</span>
-            </div>
-          </div>
-          
-          <div className="sm:col-span-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Class
-            </label>
-            <div className="mt-1 p-3 border border-gray-300 rounded-md bg-gray-50">
-              <span className="text-gray-900">Loading...</span>
-            </div>
-          </div>
-          
-          <div className="sm:col-span-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Date of Birth
-            </label>
-            <div className="mt-1 p-3 border border-gray-300 rounded-md bg-gray-50">
-              <span className="text-gray-900">Loading...</span>
-            </div>
-          </div>
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Student Profile</h3>
+        {error ? (
+          <p className="text-sm text-red-600">{error}</p>
+        ) : (
+          <p className="text-sm text-gray-600">Opening linked student profile...</p>
+        )}
       </div>
     </div>
   );

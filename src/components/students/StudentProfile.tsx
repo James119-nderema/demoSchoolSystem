@@ -135,23 +135,67 @@ const StudentProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'fees'>('overview');
 
   // Determine back path from current route
+  const isParentRoute = location.pathname.startsWith('/parent');
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const backPath = isAdminRoute ? '/admin/students' : '/students';
+  const backPath = isParentRoute ? '/parent/dashboard' : (isAdminRoute ? '/admin/students' : '/students');
 
   useEffect(() => {
     if (studentId) {
       fetchStudent();
-      fetchDropdownData();
-      fetchInvoices();
+
+      // Parent route uses dedicated parent pages for results/fees,
+      // so keep profile page focused on overview details only.
+      if (!isParentRoute) {
+        fetchDropdownData();
+        fetchInvoices();
+      }
     }
-  }, [studentId]);
+  }, [studentId, isParentRoute]);
 
   const fetchStudent = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await APIService.get(`/api/students/${studentId}/`);
-      setStudent(data);
+
+      try {
+        const data = await APIService.get(`/api/students/${studentId}/`, undefined, isParentRoute ? 'parent' : 'staff');
+        setStudent(data);
+      } catch (primaryErr) {
+        // Parent fallback: use parent dashboard student payload when direct student endpoint is restricted
+        if (!isParentRoute) {
+          throw primaryErr;
+        }
+
+        const dashboardData: any = await APIService.get('/api/parents/dashboard/', undefined, 'parent');
+        if (!dashboardData?.student) {
+          throw primaryErr;
+        }
+
+        const parentStudent = dashboardData.student;
+        setStudent({
+          id: String(parentStudent.id || studentId || ''),
+          surname: parentStudent.surname || '',
+          first_name: parentStudent.first_name || '',
+          other_names: parentStudent.other_names || '',
+          full_name: parentStudent.full_name || [parentStudent.first_name, parentStudent.surname].filter(Boolean).join(' '),
+          gender: parentStudent.gender || '',
+          date_of_birth: parentStudent.date_of_birth || '',
+          admission_number: parentStudent.admission_number || '',
+          class_field: parentStudent.class_field,
+          class_name: parentStudent.class_name,
+          current_class: parentStudent.current_class || parentStudent.admission_class || '',
+          admission_class: parentStudent.admission_class,
+          parent_guardian_name: dashboardData?.parent?.full_name || '',
+          parent_guardian_phone: dashboardData?.parent?.phone_number || '',
+          parent_guardian_email: dashboardData?.parent?.email || '',
+          address: parentStudent.address || '',
+          status: parentStudent.status || 'active',
+          date_added: parentStudent.date_added || '',
+          date_updated: parentStudent.date_updated,
+          age: parentStudent.age,
+          school_name: parentStudent.school_name,
+        });
+      }
     } catch (err: any) {
       console.error('Error fetching student:', err);
       setError(err.message || 'Failed to load student information');
@@ -195,10 +239,10 @@ const StudentProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    if (selectedTerm && selectedYear && selectedExamType && studentId) {
+    if (!isParentRoute && selectedTerm && selectedYear && selectedExamType && studentId) {
       fetchResults();
     }
-  }, [selectedTerm, selectedYear, selectedExamType]);
+  }, [selectedTerm, selectedYear, selectedExamType, studentId, isParentRoute]);
 
   const fetchInvoices = async () => {
     try {
@@ -408,7 +452,7 @@ const StudentProfile: React.FC = () => {
                 { key: 'overview' as const, label: 'Overview', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
                 { key: 'results' as const, label: 'Academic Results', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
                 { key: 'fees' as const, label: 'Fees & Payments', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
-              ].map(tab => (
+              ].filter(tab => !isParentRoute || tab.key === 'overview').map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}

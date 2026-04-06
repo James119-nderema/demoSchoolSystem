@@ -159,15 +159,6 @@ export default function ParentLogin() {
               </p>
             </div>
           </form>
-
-          <div className="mt-6 border-t pt-6">
-            <div className="bg-blue-50 rounded-md p-4">
-              <div className="text-sm text-blue-700">
-                <p className="font-medium">Note:</p>
-                <p>Your account must be verified by the school administration before you can log in. If you've just registered, please wait for verification or contact your school.</p>
-              </div>
-            </div>
-          </div>
         </div>
           </div>
         </div>
