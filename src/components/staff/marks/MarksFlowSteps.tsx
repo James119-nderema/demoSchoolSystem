@@ -32,6 +32,7 @@ interface UsePeriodStatsOptions {
   academicYear?: string;
   examType?: string;
   includeClasses?: boolean;
+  includeMetrics?: boolean;
 }
 
 const usePeriodStats = (options: UsePeriodStatsOptions = {}) => {
@@ -43,6 +44,7 @@ const usePeriodStats = (options: UsePeriodStatsOptions = {}) => {
     academicYear = '',
     examType = '',
     includeClasses = false,
+    includeMetrics = true,
   } = options;
 
   useEffect(() => {
@@ -53,6 +55,7 @@ const usePeriodStats = (options: UsePeriodStatsOptions = {}) => {
 
         const params = new URLSearchParams();
         params.set('include_classes', includeClasses ? '1' : '0');
+        params.set('include_metrics', includeMetrics ? '1' : '0');
         if (term) params.set('term', term);
         if (academicYear) params.set('academic_year', academicYear);
         if (examType) params.set('exam_type', examType);
@@ -72,14 +75,14 @@ const usePeriodStats = (options: UsePeriodStatsOptions = {}) => {
     };
 
     run();
-  }, [term, academicYear, examType, includeClasses]);
+  }, [term, academicYear, examType, includeClasses, includeMetrics]);
 
   return { periods, loading, error };
 };
 
 const PeriodStepPage: React.FC<{ title: string; step2Path: string }> = ({ title, step2Path }) => {
   const navigate = useNavigate();
-  const { periods, loading, error } = usePeriodStats({ includeClasses: false });
+  const { periods, loading, error } = usePeriodStats({ includeClasses: false, includeMetrics: false });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -144,6 +147,7 @@ const ClassStepPage: React.FC<{ title: string; resultsPath: string; periodStepPa
     academicYear,
     examType,
     includeClasses: true,
+    includeMetrics: true,
   });
 
   const selectedPeriod = useMemo(() => {
