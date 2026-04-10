@@ -46,7 +46,7 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
 
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select CSV or XML file
+                  Select CSV, XML, or Excel file
                 </label>
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
                   <div className="space-y-1 text-center">
@@ -74,14 +74,14 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                           id="file-upload"
                           name="file-upload"
                           type="file"
-                          accept=".csv,.xml"
+                          accept=".csv,.xml,.xlsx,.xls"
                           className="sr-only"
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                         />
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
-                    <p className="text-xs text-gray-500">CSV, XML up to 10MB</p>
+                    <p className="text-xs text-gray-500">CSV, XML, XLSX up to 50MB</p>
                   </div>
                 </div>
                 
