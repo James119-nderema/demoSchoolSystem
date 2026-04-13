@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { authFetch } from '../../../utils/apiInterceptors';
 import { generateReportsPDF } from '../../../utils/pdfGenerator';
-import { getGrade as calculateGradeFromPercent, getGradeColor } from '../../../utils/gradingUtils';
+import { fetchGradeScale, getGrade as calculateGradeFromPercent, getGradeColor, GRADING_NOT_CONFIGURED_MESSAGE, type GradeDefinition } from '../../../utils/gradingUtils';
 
 export interface Student {
   student_name: string;
@@ -71,6 +71,7 @@ const ReportsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noDataResponse, setNoDataResponse] = useState(false);
+  const [gradeScale, setGradeScale] = useState<GradeDefinition[]>([]);
 
   // Filter states
   const term = searchParams.get('term') || '';
@@ -83,6 +84,9 @@ const ReportsDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       setNoDataResponse(false);
+
+      const fetchedGradeScale = await fetchGradeScale(selectedClassId || undefined);
+      setGradeScale(fetchedGradeScale);
 
       const params = new URLSearchParams();
       if (term) params.append('term', term);
@@ -159,7 +163,7 @@ const ReportsDashboard: React.FC = () => {
                   term,
                   academicYear,
                   examType
-                });
+                }, gradeScale);
               }
             }}
             disabled={!reportsData || loading}
@@ -219,6 +223,15 @@ const ReportsDashboard: React.FC = () => {
     summaryStats.overallAvg = allAvgs.length ? Number((allAvgs.reduce((a, b) => a + b, 0) / allAvgs.length).toFixed(1)) : 0;
   }
 
+  const getGradeForAverage = (average: number): string => {
+    if (!gradeScale.length) return GRADING_NOT_CONFIGURED_MESSAGE;
+    try {
+      return calculateGradeFromPercent(average || 0, gradeScale);
+    } catch {
+      return GRADING_NOT_CONFIGURED_MESSAGE;
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -230,7 +243,7 @@ const ReportsDashboard: React.FC = () => {
                 term,
                 academicYear,
                 examType
-              });
+              }, gradeScale);
             }
           }}
           disabled={!reportsData || loading}
@@ -592,7 +605,7 @@ const ReportsDashboard: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {classData.streams?.map((streamRank, streamIndex) => {
-                      const gradeForAverage = calculateGradeFromPercent(streamRank.average || 0);
+                      const gradeForAverage = getGradeForAverage(streamRank.average || 0);
 
                       return (
                         <tr key={streamIndex} className={streamIndex === 0 ? 'bg-green-50' : ''}>
@@ -630,7 +643,7 @@ const ReportsDashboard: React.FC = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-3">
                 {classData.streams?.map((streamRank, streamIndex) => {
-                  const gradeForAverage = calculateGradeFromPercent(streamRank.average || 0);
+                  const gradeForAverage = getGradeForAverage(streamRank.average || 0);
 
                   return (
                     <div key={streamIndex} className={`rounded-lg border p-4 ${streamIndex === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>

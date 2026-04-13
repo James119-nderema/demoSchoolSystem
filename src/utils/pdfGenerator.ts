@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ReportsData } from '../components/generalFiles/reports/ReportsDashboard';
-import { getGrade } from './gradingUtils';
+import { getGrade, type GradeDefinition } from './gradingUtils';
 
 interface Filters {
   term: string;
@@ -9,7 +9,7 @@ interface Filters {
   examType: string;
 }
 
-export const generateReportsPDF = (reportsData: ReportsData, filters: Filters): void => {
+export const generateReportsPDF = (reportsData: ReportsData, filters: Filters, gradeScale?: GradeDefinition[]): void => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
 
@@ -136,7 +136,7 @@ export const generateReportsPDF = (reportsData: ReportsData, filters: Filters): 
           `${stream.class_name} (${stream.stream})`,
           `${stream.average?.toFixed(2)}%`,
           stream.total_students,
-          getGrade(stream.average || 0)
+          gradeScale && gradeScale.length > 0 ? getGrade(stream.average || 0, gradeScale) : 'N/A'
         ]),
         theme: 'grid',
         styles: { fontSize: 8 },

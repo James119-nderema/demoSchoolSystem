@@ -242,7 +242,7 @@ const FullResults: React.FC = () => {
           
           classData.subjects.forEach(subject => {
             const mark = student.subject_marks[subject.id];
-            row.push(mark ? mark.marks.toString() : '-');
+            row.push(mark ? `${mark.grade} ${mark.marks}` : '-');
           });
           
           row.push(student.total_marks.toString());
@@ -482,7 +482,7 @@ const FullResults: React.FC = () => {
                                     mark.percentage >= 40 ? 'text-yellow-600' :
                                     'text-red-600'
                                   }`}>
-                                    {mark.marks}
+                                    {mark.grade} {mark.marks}
                                   </span>
                                 ) : (
                                   <span className="text-gray-400">-</span>
@@ -543,11 +543,8 @@ const FullResults: React.FC = () => {
                                     : 'text-red-600'
                                     : 'text-gray-400'
                                 }`}>
-                                  {mark ? mark.marks : '-'}
+                                  {mark ? `${mark.grade} ${mark.marks}` : '-'}
                                 </div>
-                                {mark && (
-                                  <div className="text-xs text-gray-400">{mark.grade}</div>
-                                )}
                               </div>
                             );
                           })}

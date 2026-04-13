@@ -146,6 +146,7 @@ const ViewResults: React.FC = () => {
   // Filters
   const selectedClassId = searchParams.get('class_id') || '';
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const selectedSubjectId = searchParams.get('subject_id') || '';
   const selectedExamType = searchParams.get('exam_type') || '';
   const selectedTerm = searchParams.get('term') || '';
   const selectedAcademicYear = searchParams.get('academic_year') || '';
@@ -160,6 +161,8 @@ const ViewResults: React.FC = () => {
   const {
     data: results,
     loading,
+    loadingMore,
+    error: progressiveError,
     totalCount,
     loadedCount,
     progress,
@@ -167,12 +170,28 @@ const ViewResults: React.FC = () => {
     refresh: refreshResults,
   } = useProgressiveLoad<Result>(
     async (page, pageSize) => {
-      const data = await MarksAPI.getResults({ page: String(page), page_size: String(pageSize) });
+      const params: Record<string, string> = {
+        page: String(page),
+        page_size: String(pageSize),
+      };
+      if (selectedClassId) params.class_id = selectedClassId;
+      if (selectedSubjectId) params.subject_id = selectedSubjectId;
+      if (selectedExamType) params.exam_type = selectedExamType;
+      if (selectedTerm) params.term = selectedTerm;
+      if (selectedAcademicYear) params.academic_year = selectedAcademicYear;
+
+      const data = await MarksAPI.getResults(params);
       return data as PaginatedResponse<Result>;
     },
-    [],
+    [selectedClassId, selectedSubjectId, selectedExamType, selectedTerm, selectedAcademicYear],
     { pageSize: 100 }
   );
+
+  useEffect(() => {
+    if (progressiveError) {
+      setError(progressiveError);
+    }
+  }, [progressiveError]);
 
   useEffect(() => {
     fetchDropdownData();
@@ -246,7 +265,9 @@ const ViewResults: React.FC = () => {
     try {
       const params: Record<string, string> = {};
       if (selectedClassId) params.class_id = selectedClassId;
-      if (selectedSubject) {
+      if (selectedSubjectId) {
+        params.subject_id = selectedSubjectId;
+      } else if (selectedSubject) {
         const subjectObj = subjects.find((s) => s.subject_name === selectedSubject);
         if (subjectObj) params.subject_id = subjectObj.id.toString();
       }
@@ -263,29 +284,6 @@ const ViewResults: React.FC = () => {
 
   const applyFilters = () => {
     let filtered = results;
-
-    if (selectedClassId) {
-      const selectedClassObj = classes.find((cls) => cls.id.toString() === selectedClassId);
-      if (selectedClassObj) {
-        filtered = filtered.filter(result => result.class_name === selectedClassObj.class_name);
-      }
-    }
-
-    if (selectedSubject) {
-      filtered = filtered.filter(result => result.subject_name.includes(selectedSubject));
-    }
-
-    if (selectedExamType) {
-      filtered = filtered.filter(result => result.exam_type === selectedExamType);
-    }
-
-    if (selectedTerm) {
-      filtered = filtered.filter(result => result.term === selectedTerm);
-    }
-
-    if (selectedAcademicYear) {
-      filtered = filtered.filter(result => result.academic_year === selectedAcademicYear);
-    }
 
     if (searchTerm) {
       filtered = filtered.filter(result =>
@@ -312,24 +310,6 @@ const ViewResults: React.FC = () => {
   const startIndex = (currentPage - 1) * resultsPerPage;
   const endIndex = startIndex + resultsPerPage;
   const currentResults = filteredResults.slice(startIndex, endIndex);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Student Results</h1>
-            <p className="mt-2 text-gray-600">View and manage examination results</p>
-          </div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="animate-pulse bg-gray-200 rounded-lg h-10 flex-1 max-w-sm" />
-            <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-28" />
-          </div>
-          <SkeletonTable rows={8} cols={6} />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -468,6 +448,7 @@ const ViewResults: React.FC = () => {
           <div className="mt-4 text-sm text-gray-600">
             Showing {filteredResults.length} of {results.length} results
             {!isComplete && totalCount > 0 && ` (loading from ${totalCount.toLocaleString()} total)`}
+            {loadingMore && ' • loading more...'}
           </div>
           <LoadingProgress
             loadedCount={loadedCount}
@@ -511,7 +492,13 @@ const ViewResults: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentResults.length === 0 ? (
+                {loading && currentResults.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-4">
+                      <SkeletonTable rows={6} cols={6} />
+                    </td>
+                  </tr>
+                ) : currentResults.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                       No results found. Try adjusting your filters.
@@ -579,7 +566,11 @@ const ViewResults: React.FC = () => {
 
           {/* Mobile Card View */}
           <div className="lg:hidden">
-            {currentResults.length === 0 ? (
+            {loading && currentResults.length === 0 ? (
+              <div className="px-4 py-4">
+                <SkeletonTable rows={5} cols={2} />
+              </div>
+            ) : currentResults.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
                 No results found. Try adjusting your filters.
               </div>
