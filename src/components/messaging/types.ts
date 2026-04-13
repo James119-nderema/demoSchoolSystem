@@ -82,7 +82,5 @@ export interface TopUpPackage {
   label: string;
 }
 
-export const gradeFromAvg = (a: number): string =>
-  a >= 80 ? 'A' : a >= 75 ? 'A-' : a >= 70 ? 'B+' : a >= 65 ? 'B'
-  : a >= 60 ? 'B-' : a >= 55 ? 'C+' : a >= 50 ? 'C' : a >= 45 ? 'C-'
-  : a >= 40 ? 'D+' : a >= 35 ? 'D' : a >= 30 ? 'D-' : 'E';
+export const gradeFromAvg = (_a: number): string =>
+  'you need to add you grading system for a particular school';

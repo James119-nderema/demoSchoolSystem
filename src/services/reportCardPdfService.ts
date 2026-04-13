@@ -23,6 +23,7 @@ export interface SubjectResult {
   marks_obtained: number;
   total_marks: number;
   grade: string;
+  points?: number;
   remarks: string;
   position?: number;
   teacher_initials?: string;
@@ -56,36 +57,16 @@ export interface GeneratePDFOptions {
 }
 
 // Grade calculation utilities
-export const getGrade = (percentage: number): string => {
-  if (percentage >= 80) return 'A';
-  if (percentage >= 75) return 'A-';
-  if (percentage >= 70) return 'B+';
-  if (percentage >= 65) return 'B';
-  if (percentage >= 60) return 'B-';
-  if (percentage >= 55) return 'C+';
-  if (percentage >= 50) return 'C';
-  if (percentage >= 45) return 'C-';
-  if (percentage >= 40) return 'D+';
-  if (percentage >= 35) return 'D';
-  if (percentage >= 30) return 'D-';
-  return 'E';
+export const getGrade = (_percentage: number): string => {
+  throw new Error('you need to add you grading system for a particular school');
 };
 
-export const getGradePoints = (grade: string): number => {
-  const gradePoints: Record<string, number> = {
-    'A': 12, 'A-': 11, 'B+': 10, 'B': 9, 'B-': 8,
-    'C+': 7, 'C': 6, 'C-': 5, 'D+': 4, 'D': 3, 'D-': 2, 'E': 1
-  };
-  return gradePoints[grade] || 0;
+export const getGradePoints = (_grade: string): number => {
+  throw new Error('you need to add you grading system for a particular school');
 };
 
-export const getRemarks = (percentage: number): string => {
-  if (percentage >= 80) return 'Excellent, Keep up';
-  if (percentage >= 70) return 'Good, can do better';
-  if (percentage >= 60) return 'Satisfactory, aim higher';
-  if (percentage >= 50) return 'Can do better, aim high';
-  if (percentage >= 40) return 'Put in More Effort';
-  return 'Needs Improvement';
+export const getRemarks = (_percentage: number): string => {
+  throw new Error('you need to add you grading system for a particular school');
 };
 
 export const getCBCRating = (percentage: number): { rating: string; column: number } => {
@@ -271,10 +252,12 @@ export const generateHighSchoolPDF = async (
     doc.rect(margin, y, pageWidth - 2 * margin, 6);
 
     tableX = margin;
-    const percentage = (result.marks_obtained / result.total_marks) * 100;
-    const grade = result.grade || getGrade(percentage);
-    const points = getGradePoints(grade);
-    const remarks = result.remarks || getRemarks(percentage);
+    const grade = result.grade;
+    if (!grade) {
+      throw new Error('you need to add you grading system for a particular school');
+    }
+    const points = typeof result.points === 'number' ? result.points : 0;
+    const remarks = result.remarks || '';
 
     const rowData = [
       result.subject_code || '',

@@ -312,7 +312,7 @@ const MessagingPage: React.FC = () => {
   // Helpers
   // ═══════════════════════════════════════════════════════════════════════════
 
-  const gradeFromAvg = (a: number) => a >= 80 ? 'A' : a >= 75 ? 'A-' : a >= 70 ? 'B+' : a >= 65 ? 'B' : a >= 60 ? 'B-' : a >= 55 ? 'C+' : a >= 50 ? 'C' : a >= 45 ? 'C-' : a >= 40 ? 'D+' : a >= 35 ? 'D' : a >= 30 ? 'D-' : 'E';
+  const gradeFromAvg = (_a: number) => 'you need to add you grading system for a particular school';
 
   const selectAllStudents = () => { setSelectedStudents(filteredStudents.filter(s => s.parent_guardian_phone).map(s => s.id.toString())); };
   const deselectAllStudents = () => setSelectedStudents([]);

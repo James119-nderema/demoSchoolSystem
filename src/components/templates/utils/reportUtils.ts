@@ -9,67 +9,64 @@ export interface GradeScaleEntry {
   remarks?: string;
 }
 
-// Default grade scale (matches backend Grading/utils.py DEFAULT_GRADE_SCALE)
-export const DEFAULT_GRADE_SCALE: GradeScaleEntry[] = [
-  { grade: 'A', min_marks: 80, max_marks: 100, points: 12, remarks: 'Excellent' },
-  { grade: 'A-', min_marks: 75, max_marks: 79.99, points: 11, remarks: 'Very Good' },
-  { grade: 'B+', min_marks: 70, max_marks: 74.99, points: 10, remarks: 'Good' },
-  { grade: 'B', min_marks: 65, max_marks: 69.99, points: 9, remarks: 'Good' },
-  { grade: 'B-', min_marks: 60, max_marks: 64.99, points: 8, remarks: 'Satisfactory' },
-  { grade: 'C+', min_marks: 55, max_marks: 59.99, points: 7, remarks: 'Satisfactory' },
-  { grade: 'C', min_marks: 50, max_marks: 54.99, points: 6, remarks: 'Average' },
-  { grade: 'C-', min_marks: 45, max_marks: 49.99, points: 5, remarks: 'Below Average' },
-  { grade: 'D+', min_marks: 40, max_marks: 44.99, points: 4, remarks: 'Below Average' },
-  { grade: 'D', min_marks: 35, max_marks: 39.99, points: 3, remarks: 'Poor' },
-  { grade: 'D-', min_marks: 30, max_marks: 34.99, points: 2, remarks: 'Poor' },
-  { grade: 'E', min_marks: 0, max_marks: 29.99, points: 1, remarks: 'Very Poor' },
-];
+export const GRADING_NOT_CONFIGURED_MESSAGE = 'you need to add you grading system for a particular school';
 
 /**
- * Get grade from custom grade scale or use default
+ * Get grade from custom grade scale
  * @param percentage - The percentage score
  * @param gradeScale - Optional custom grade scale from database
  * @returns The grade letter
  */
 export const getGradeFromScale = (percentage: number, gradeScale?: GradeScaleEntry[]): string => {
-  const scale = gradeScale || DEFAULT_GRADE_SCALE;
+  const scale = gradeScale || [];
+  if (scale.length === 0) {
+    throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
+  }
   for (const entry of scale) {
     if (percentage >= entry.min_marks && percentage <= entry.max_marks) {
       return entry.grade;
     }
   }
-  return 'E'; // Fallback
+  throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
 };
 
 /**
- * Get grade points from custom grade scale or use default
+ * Get grade points from custom grade scale
  * @param grade - The grade letter
  * @param gradeScale - Optional custom grade scale from database
  * @returns The grade points
  */
 export const getPointsFromScale = (grade: string, gradeScale?: GradeScaleEntry[]): number => {
-  const scale = gradeScale || DEFAULT_GRADE_SCALE;
+  const scale = gradeScale || [];
+  if (scale.length === 0) {
+    throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
+  }
   const entry = scale.find(e => e.grade === grade);
-  return entry?.points || 0;
+  if (!entry) {
+    throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
+  }
+  return entry.points;
 };
 
 /**
- * Get remarks from custom grade scale or use default
+ * Get remarks from custom grade scale
  * @param percentage - The percentage score
  * @param gradeScale - Optional custom grade scale from database
  * @returns The remarks string
  */
 export const getRemarksFromScale = (percentage: number, gradeScale?: GradeScaleEntry[]): string => {
-  const scale = gradeScale || DEFAULT_GRADE_SCALE;
+  const scale = gradeScale || [];
+  if (scale.length === 0) {
+    throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
+  }
   for (const entry of scale) {
     if (percentage >= entry.min_marks && percentage <= entry.max_marks) {
       return entry.remarks || '';
     }
   }
-  return 'Needs Improvement';
+  throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
 };
 
-// Legacy functions that use default grade scale
 export const getGrade = (percentage: number): string => {
   return getGradeFromScale(percentage);
 };

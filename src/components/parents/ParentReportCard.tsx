@@ -323,8 +323,8 @@ const ParentReportCard: React.FC = () => {
             name: subj.subject,
             max_score: subj.max_marks,
             score: subj.marks,
-            grade: subj.grade,
-            remarks: getSubjectRemark(subj.percentage),
+            grade: subj.grade || 'you need to add you grading system for a particular school',
+            remarks: (subj as SubjectPerformance & { remarks?: string }).remarks || '',
             position: null,
           })),
           overall_performance: {
@@ -332,7 +332,7 @@ const ParentReportCard: React.FC = () => {
             average: data.overall_performance?.average_marks || 0,
             position: data.overall_performance?.class_position || null,
             out_of: data.overall_performance?.class_size || 0,
-            grade: calculateOverallGrade(data.overall_performance?.average_marks || 0),
+            grade: data.overall_performance?.grade || 'you need to add you grading system for a particular school',
           },
           progress_per_term: [],
           performance_per_exam: [],
@@ -357,26 +357,6 @@ const ParentReportCard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to get remarks based on percentage
-  const getSubjectRemark = (percentage: number): string => {
-    if (percentage >= 80) return 'Excellent';
-    if (percentage >= 70) return 'Very Good';
-    if (percentage >= 60) return 'Good';
-    if (percentage >= 50) return 'Fair';
-    if (percentage >= 40) return 'Pass';
-    return 'Needs Improvement';
-  };
-
-  // Helper function to calculate overall grade
-  const calculateOverallGrade = (average: number): string => {
-    if (average >= 80) return 'A';
-    if (average >= 70) return 'B';
-    if (average >= 60) return 'C';
-    if (average >= 50) return 'D';
-    if (average >= 40) return 'E';
-    return 'F';
   };
 
   const handleDownloadPDF = () => {

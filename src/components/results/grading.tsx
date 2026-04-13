@@ -20,18 +20,6 @@ import gradingService, {
 } from '../../services/gradingService';
 import { SkeletonTable } from '../ui/Skeleton';
 
-// Default grade template
-const DEFAULT_GRADES: GradeDefinition[] = [
-  { grade: 'EE1', min_marks: 90, max_marks: 99, points: 8, remarks: 'Excellent' },
-  { grade: 'EE2', min_marks: 75, max_marks: 89, points: 7, remarks: 'Very Good' },
-  { grade: 'ME1', min_marks: 58, max_marks: 74, points: 6, remarks: 'Good' },
-  { grade: 'ME2', min_marks: 41, max_marks: 57, points: 5, remarks: 'Fair' },
-  { grade: 'AE1', min_marks: 31, max_marks: 40, points: 4, remarks: 'Average' },
-  { grade: 'AE2', min_marks: 21, max_marks: 30, points: 3, remarks: 'Below Average' },
-  { grade: 'BE1', min_marks: 11, max_marks: 20, points: 2, remarks: 'Well Bellow Average' },
-  { grade: 'BE2', min_marks: 1, max_marks: 10, points: 1, remarks: 'Fail' },
-];
-
 const Grading: React.FC = () => {
   // State
   const [gradeScales, setGradeScales] = useState<GradeScaleGrouped[]>([]);
@@ -46,7 +34,9 @@ const Grading: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
   const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set());
-  const [grades, setGrades] = useState<GradeDefinition[]>(DEFAULT_GRADES);
+  const [grades, setGrades] = useState<GradeDefinition[]>([
+    { grade: '', min_marks: 0, max_marks: 0, points: 0, remarks: '' }
+  ]);
   const [submitting, setSubmitting] = useState(false);
   
   // Filter state
@@ -93,7 +83,7 @@ const Grading: React.FC = () => {
   const handleOpenModal = () => {
     setSelectedSubjects(new Set());
     setSelectedClasses(new Set());
-    setGrades([...DEFAULT_GRADES]);
+    setGrades([{ grade: '', min_marks: 0, max_marks: 0, points: 0, remarks: '' }]);
     setIsModalOpen(true);
   };
 

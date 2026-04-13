@@ -20,21 +20,7 @@ export interface GradeResult {
   remarks: string;
 }
 
-// Default grade scale (fallback when API fails)
-const DEFAULT_GRADE_SCALE: GradeDefinition[] = [
-  { grade: 'A', min_marks: 80, max_marks: 100, points: 12, remarks: 'Excellent' },
-  { grade: 'A-', min_marks: 75, max_marks: 79.99, points: 11, remarks: 'Very Good' },
-  { grade: 'B+', min_marks: 70, max_marks: 74.99, points: 10, remarks: 'Good' },
-  { grade: 'B', min_marks: 65, max_marks: 69.99, points: 9, remarks: 'Good' },
-  { grade: 'B-', min_marks: 60, max_marks: 64.99, points: 8, remarks: 'Satisfactory' },
-  { grade: 'C+', min_marks: 55, max_marks: 59.99, points: 7, remarks: 'Satisfactory' },
-  { grade: 'C', min_marks: 50, max_marks: 54.99, points: 6, remarks: 'Average' },
-  { grade: 'C-', min_marks: 45, max_marks: 49.99, points: 5, remarks: 'Below Average' },
-  { grade: 'D+', min_marks: 40, max_marks: 44.99, points: 4, remarks: 'Below Average' },
-  { grade: 'D', min_marks: 35, max_marks: 39.99, points: 3, remarks: 'Poor' },
-  { grade: 'D-', min_marks: 30, max_marks: 34.99, points: 2, remarks: 'Poor' },
-  { grade: 'E', min_marks: 0, max_marks: 29.99, points: 1, remarks: 'Very Poor' },
-];
+export const GRADING_NOT_CONFIGURED_MESSAGE = 'you need to add you grading system for a particular school';
 
 // Cache for grade scales
 const gradeScaleCache: Map<string, { scale: GradeDefinition[]; timestamp: number }> = new Map();
@@ -76,16 +62,16 @@ export const fetchGradeScale = async (
     
     const response = await APIService.get(url, undefined, authType);
     
-    if (response.success && response.grade_scale) {
+    if (response.success && response.grade_scale && response.grade_scale.length > 0) {
       const scale = response.grade_scale;
       gradeScaleCache.set(cacheKey, { scale, timestamp: Date.now() });
       return scale;
     }
-    
-    return DEFAULT_GRADE_SCALE;
+
+    throw new Error(response.error || GRADING_NOT_CONFIGURED_MESSAGE);
   } catch (error) {
     console.error('Error fetching grade scale:', error);
-    return DEFAULT_GRADE_SCALE;
+    throw error instanceof Error ? error : new Error(GRADING_NOT_CONFIGURED_MESSAGE);
   }
 };
 
@@ -94,10 +80,14 @@ export const fetchGradeScale = async (
  */
 export const calculateGrade = (
   percentage: number,
-  gradeScale: GradeDefinition[] = DEFAULT_GRADE_SCALE
+  gradeScale?: GradeDefinition[]
 ): GradeResult => {
   if (percentage === null || percentage === undefined || isNaN(percentage)) {
     return { grade: '', points: 0, remarks: '' };
+  }
+
+  if (!gradeScale || gradeScale.length === 0) {
+    throw new Error(GRADING_NOT_CONFIGURED_MESSAGE);
   }
   
   // Ensure percentage is within bounds
@@ -127,7 +117,7 @@ export const calculateGrade = (
  */
 export const getGrade = (
   percentage: number,
-  gradeScale: GradeDefinition[] = DEFAULT_GRADE_SCALE
+  gradeScale?: GradeDefinition[]
 ): string => {
   return calculateGrade(percentage, gradeScale).grade;
 };
@@ -158,7 +148,7 @@ export const getGradeColor = (grade: string): string => {
  */
 export const getGradeColorFromMarks = (
   percentage: number,
-  gradeScale: GradeDefinition[] = DEFAULT_GRADE_SCALE
+  gradeScale?: GradeDefinition[]
 ): string => {
   const { grade } = calculateGrade(percentage, gradeScale);
   return getGradeColor(grade);
@@ -175,7 +165,6 @@ export const clearGradeCache = (): void => {
  * Default export with all functions
  */
 export default {
-  DEFAULT_GRADE_SCALE,
   fetchGradeScale,
   calculateGrade,
   getGrade,
