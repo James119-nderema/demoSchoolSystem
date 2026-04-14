@@ -51,6 +51,7 @@ export default function Payments() {
   const [invoiceStudents, setInvoiceStudents] = useState<InvoiceStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [showStudentSuggestions, setShowStudentSuggestions] = useState(false);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   
   // Form states
@@ -142,6 +143,7 @@ export default function Payments() {
     fetchStudents();
     setSelectedStudent('');
     setStudentSearchTerm('');
+    setShowStudentSuggestions(false);
     setInvoiceStudents([]);
     setPaymentAmount('');
     setPaymentMethod('cash');
@@ -196,8 +198,10 @@ export default function Payments() {
 
     try {
       const token = localStorage.getItem('staff_access_token');
+      const trimmedReference = referenceNumber.trim();
 
       let remaining = amountToPay;
+      let allocationIndex = 0;
       for (const inv of outstandingInvoices) {
         if (remaining <= 0) break;
 
@@ -205,6 +209,10 @@ export default function Payments() {
         if (invoiceBalance <= 0) continue;
 
         const allocation = Math.min(remaining, invoiceBalance);
+        allocationIndex += 1;
+        const allocationReference = trimmedReference
+          ? `${trimmedReference}-${allocationIndex}`
+          : '';
 
         await axios.post(
           `${API_BASE_URL}/api/finance/payments/record/`,
@@ -212,7 +220,7 @@ export default function Payments() {
             invoice_student_id: inv.id,
             amount: allocation,
             payment_method: paymentMethod,
-            reference_number: referenceNumber,
+            reference_number: allocationReference,
             notes: paymentNotes
           },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -269,12 +277,17 @@ export default function Payments() {
     );
   };
 
+  const getDisplayReferenceNumber = (reference?: string): string => {
+    if (!reference) return '-';
+    return reference.replace(/-\d+$/, '');
+  };
+
   const filteredPayments = payments.filter(payment => {
     const matchesSearch = 
       payment.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase());
+      getDisplayReferenceNumber(payment.reference_number).toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesMethod = filterMethod === 'all' || payment.payment_method === filterMethod;
     
@@ -289,6 +302,12 @@ export default function Payments() {
       student.admission_number.toLowerCase().includes(q)
     );
   });
+
+  const getStudentLabel = (student: Student): string =>
+    `${student.full_name} (${student.admission_number}) - ${student.class_field}`;
+
+  const selectedStudentRecord = students.find((s) => s.id === selectedStudent);
+  const selectedStudentLabel = selectedStudentRecord ? getStudentLabel(selectedStudentRecord) : '';
 
   if (loading) {
     return (
@@ -440,7 +459,7 @@ export default function Payments() {
                       {getPaymentMethodBadge(payment.payment_method)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 font-mono">
-                      {payment.reference_number || '-'}
+                      {getDisplayReferenceNumber(payment.reference_number)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {payment.recorded_by}
@@ -491,25 +510,47 @@ export default function Payments() {
                 <input
                   type="text"
                   value={studentSearchTerm}
-                  onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  onFocus={() => setShowStudentSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowStudentSuggestions(false), 120)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setStudentSearchTerm(value);
+                    setShowStudentSuggestions(true);
+
+                    if (selectedStudent && value !== selectedStudentLabel) {
+                      handleStudentChange('');
+                    }
+                  }}
                   placeholder="Search by student name or admission number..."
                   className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <select
-                  value={selectedStudent}
-                  onChange={(e) => handleStudentChange(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">-- Select a student --</option>
-                  {filteredStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.full_name} ({student.admission_number}) - {student.class_field}
-                    </option>
-                  ))}
-                </select>
-                {!filteredStudents.length && (
+
+                {showStudentSuggestions && studentSearchTerm.trim() && filteredStudents.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-white shadow-sm">
+                    {filteredStudents.map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        onMouseDown={() => {
+                          const label = getStudentLabel(student);
+                          setStudentSearchTerm(label);
+                          setShowStudentSuggestions(false);
+                          handleStudentChange(student.id);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                      >
+                        {getStudentLabel(student)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {showStudentSuggestions && studentSearchTerm.trim() && !filteredStudents.length && (
                   <p className="text-xs text-gray-500 mt-2">No students found for your search.</p>
+                )}
+
+                {selectedStudent && (
+                  <p className="text-xs text-green-700 mt-2">Selected: {selectedStudentLabel}</p>
                 )}
               </div>
 
