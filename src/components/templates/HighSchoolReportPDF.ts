@@ -5,7 +5,6 @@
 
 import jsPDF from 'jspdf';
 import type { StudentReportData, SchoolInfo, SubjectResult } from './utils/reportTypes';
-import { getGrade, getGradePoints, getRemarks } from './utils/reportUtils';
 import { loadImageAsBase64 } from './utils/imageUtils';
 
 interface ProgressData {
@@ -171,15 +170,15 @@ export const generateTemplate1PDF = async ({
     
     subjectsWithMarks.forEach(result => {
       const percentage = result.percentage ?? ((result.marks_obtained / result.total_marks) * 100);
-      // Use points from grading app (backend) if available, otherwise calculate
-      const points = result.points ?? getGradePoints(result.grade || getGrade(percentage));
+      // Use points from grading app (backend) if available
+      const points = result.points ?? 0;
       totalPercentage += percentage;
       totalPoints += points;
     });
     
     const mean = totalPercentage / subjectsWithMarks.length;
     // Use overall grade from backend if available
-    const meanGrade = studentData.overall?.grade || getGrade(mean);
+    const meanGrade = studentData.overall?.grade || '-';
     
     return { totalPercentage, totalPoints, mean, meanGrade };
   };
@@ -329,11 +328,11 @@ export const generateTemplate1PDF = async ({
     } else {
       percentage = result.percentage ?? ((result.marks_obtained / result.total_marks) * 100);
     }
-    const grade = result.grade || getGrade(percentage);
-    // Use points from grading app (backend), fallback to calculated
-    const points = result.points ?? getGradePoints(grade);
-    // Use remarks from grading app (backend), fallback to calculated
-    const remarks = result.remarks || getRemarks(percentage);
+    const grade = result.grade || '--';
+    // Use points from grading app (backend)
+    const points = result.points ?? 0;
+    // Use remarks from grading app (backend)
+    const remarks = result.remarks || '';
 
     // Build row data
     const rowData: string[] = [
@@ -355,7 +354,7 @@ export const generateTemplate1PDF = async ({
       
       if (examResult && examResult.marks !== undefined && examResult.marks !== null) {
         // Show the marks with grade from the matching exam result
-        const examGrade = examResult.grade || getGrade(examResult.marks);
+        const examGrade = examResult.grade || '--';
         rowData.push(`${Math.round(examResult.marks)}${examGrade}`);
       } else {
         rowData.push('-');
@@ -468,7 +467,6 @@ export const generateTemplate1PDF = async ({
         
         let examTotalPoints = 0;
         let examSubjectCount = 0;
-        let examTotalMarks = 0;
         
         const subjectData = studentData.results.map(r => {
           // Find the matching exam result for this subject and exam type
@@ -479,11 +477,10 @@ export const generateTemplate1PDF = async ({
           
           if (examResult && examResult.marks !== undefined && examResult.marks !== null) {
             // Get grade from grading app based on marks
-            const examGrade = examResult.grade || getGrade(examResult.marks);
-            // Get points from grading app based on grade (same as main table)
-            const examPoints = getGradePoints(examGrade);
+            const examGrade = examResult.grade || '--';
+            // Get points from grading app (same as main table)
+            const examPoints = r.points ?? 0;
             examTotalPoints += examPoints;
-            examTotalMarks += examResult.marks;
             examSubjectCount++;
             return `${Math.round(examResult.marks)} ${examGrade}`;
           }
@@ -493,10 +490,10 @@ export const generateTemplate1PDF = async ({
         // Calculate summary values for this specific exam type using grading app
         // MPt = Mean Points = Total Points / Number of Subjects (same formula as main table)
         const examMeanPoints = examSubjectCount > 0 ? examTotalPoints / examSubjectCount : 0;
-        // Calculate average marks for this exam type
-        const examAvgMarks = examSubjectCount > 0 ? examTotalMarks / examSubjectCount : 0;
-        // MG = Mean Grade = Grade from grading app based on average marks
-        const examMeanGrade = examSubjectCount > 0 ? getGrade(examAvgMarks) : '--';
+        // MG = Mean Grade from grading app where available
+        const examMeanGrade = examSubjectCount > 0
+          ? (studentData.overall?.grade || '--')
+          : '--';
         // CP = Class Position for this exam type (use overall position as fallback)
         const classPosition = position || '-';
         // OP = Overall Position (out of total students)
