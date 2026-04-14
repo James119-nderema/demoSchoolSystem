@@ -4,7 +4,6 @@ import jsPDF from 'jspdf';
 import { APIService, DataAPI, MarksAPI, API_ENDPOINTS } from '../../services/baseUrl';
 import { generateTemplate1PDF } from './HighSchoolReportPDF';
 import { generateTemplate2PDF } from './Grade8CBCReportPDF';
-import { getRemarks } from './utils/reportUtils';
 import { prefetchLogo } from './utils/imageUtils';
 import { 
   sendBulkSms, 
@@ -44,7 +43,7 @@ const transformBackendToFrontend = (backendData: BackendStudentReport, examType?
       percentage: subj.percentage,
       grade: subj.grade,
       points: subj.points || 0,
-      remarks: subj.remarks || getRemarks(subj.percentage),
+      remarks: subj.remarks || '',
       subject_position: subj.subject_position || 0,
       exam_results: examType ? [{
         exam_name: examType,
