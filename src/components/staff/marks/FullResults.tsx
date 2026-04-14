@@ -242,7 +242,7 @@ const FullResults: React.FC = () => {
           
           classData.subjects.forEach(subject => {
             const mark = student.subject_marks[subject.id];
-            row.push(mark ? `${mark.grade} ${mark.marks}` : '-');
+            row.push(mark ? `${mark.marks} ${mark.grade}` : '-');
           });
           
           row.push(student.total_marks.toString());

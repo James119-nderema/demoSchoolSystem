@@ -28,6 +28,7 @@ interface Student {
 
 interface InvoiceStudent {
   id: string;
+  student: string;
   student_name: string;
   admission_number: string;
   class_name: string;
@@ -49,7 +50,7 @@ export default function Payments() {
   const [students, setStudents] = useState<Student[]>([]);
   const [invoiceStudents, setInvoiceStudents] = useState<InvoiceStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
-  const [selectedInvoiceStudent, setSelectedInvoiceStudent] = useState('');
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   
   // Form states
@@ -92,12 +93,29 @@ export default function Payments() {
   const fetchStudents = async () => {
     try {
       const token = localStorage.getItem('staff_access_token');
-      const response = await axios.get(`${API_BASE_URL}/api/finance/invoice-students/`, {
+      const response = await axios.get(`${API_BASE_URL}/api/finance/invoice-student-balances/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setStudents(response.data);
+
+      const rows: InvoiceStudent[] = Array.isArray(response.data) ? response.data : [];
+      const uniqueStudents = new Map<string, Student>();
+
+      rows.forEach((row) => {
+        if (!uniqueStudents.has(row.student)) {
+          uniqueStudents.set(row.student, {
+            id: row.student,
+            full_name: row.student_name,
+            admission_number: row.admission_number,
+            class_field: row.class_name,
+          });
+        }
+      });
+
+      const result = Array.from(uniqueStudents.values()).sort((a, b) => a.full_name.localeCompare(b.full_name));
+      setStudents(result);
     } catch (err) {
       console.error('Error fetching students:', err);
+      setStudents([]);
     }
   };
 
@@ -123,7 +141,7 @@ export default function Payments() {
     setShowAddModal(true);
     fetchStudents();
     setSelectedStudent('');
-    setSelectedInvoiceStudent('');
+    setStudentSearchTerm('');
     setInvoiceStudents([]);
     setPaymentAmount('');
     setPaymentMethod('cash');
@@ -134,7 +152,7 @@ export default function Payments() {
 
   const handleStudentChange = (studentId: string) => {
     setSelectedStudent(studentId);
-    setSelectedInvoiceStudent('');
+    setFormError(null);
     if (studentId) {
       fetchInvoiceStudents(studentId);
     } else {
@@ -142,11 +160,34 @@ export default function Payments() {
     }
   };
 
+  const outstandingInvoices = invoiceStudents.filter(inv => Number(inv.balance) > 0);
+  const totalStudentBalance = outstandingInvoices.reduce((sum, inv) => sum + Number(inv.balance || 0), 0);
+  const paymentAmountValue = parseFloat(paymentAmount) || 0;
+
+  let remainingPreview = paymentAmountValue;
+  const allocationPreview = outstandingInvoices
+    .map((inv) => {
+      if (remainingPreview <= 0) return null;
+      const allocation = Math.min(remainingPreview, Number(inv.balance || 0));
+      remainingPreview -= allocation;
+      return allocation > 0
+        ? { invoiceId: inv.id, invoiceNumber: inv.invoice_number, amount: allocation }
+        : null;
+    })
+    .filter((item): item is { invoiceId: string; invoiceNumber: string; amount: number } => item !== null);
+
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedInvoiceStudent || !paymentAmount || parseFloat(paymentAmount) <= 0) {
-      setFormError('Please select a student invoice and enter a valid amount');
+
+    const amountToPay = parseFloat(paymentAmount);
+
+    if (!selectedStudent || !paymentAmount || amountToPay <= 0) {
+      setFormError('Please select a student and enter a valid amount');
+      return;
+    }
+
+    if (outstandingInvoices.length === 0) {
+      setFormError('This student has no outstanding invoice balance');
       return;
     }
 
@@ -155,17 +196,30 @@ export default function Payments() {
 
     try {
       const token = localStorage.getItem('staff_access_token');
-      await axios.post(
-        `${API_BASE_URL}/api/finance/payments/record/`,
-        {
-          invoice_student_id: selectedInvoiceStudent,
-          amount: parseFloat(paymentAmount),
-          payment_method: paymentMethod,
-          reference_number: referenceNumber,
-          notes: paymentNotes
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+
+      let remaining = amountToPay;
+      for (const inv of outstandingInvoices) {
+        if (remaining <= 0) break;
+
+        const invoiceBalance = Number(inv.balance || 0);
+        if (invoiceBalance <= 0) continue;
+
+        const allocation = Math.min(remaining, invoiceBalance);
+
+        await axios.post(
+          `${API_BASE_URL}/api/finance/payments/record/`,
+          {
+            invoice_student_id: inv.id,
+            amount: allocation,
+            payment_method: paymentMethod,
+            reference_number: referenceNumber,
+            notes: paymentNotes
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        remaining -= allocation;
+      }
       
       setShowAddModal(false);
       refreshPayments(); // Refresh the list
@@ -225,6 +279,15 @@ export default function Payments() {
     const matchesMethod = filterMethod === 'all' || payment.payment_method === filterMethod;
     
     return matchesSearch && matchesMethod;
+  });
+
+  const filteredStudents = students.filter((student) => {
+    const q = studentSearchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      student.full_name.toLowerCase().includes(q) ||
+      student.admission_number.toLowerCase().includes(q)
+    );
   });
 
   if (loading) {
@@ -423,8 +486,15 @@ export default function Payments() {
               {/* Student Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Student
+                  Select Student (With Outstanding Balance)
                 </label>
+                <input
+                  type="text"
+                  value={studentSearchTerm}
+                  onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  placeholder="Search by student name or admission number..."
+                  className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
                 <select
                   value={selectedStudent}
                   onChange={(e) => handleStudentChange(e.target.value)}
@@ -432,20 +502,20 @@ export default function Payments() {
                   required
                 >
                   <option value="">-- Select a student --</option>
-                  {students.map((student) => (
+                  {filteredStudents.map((student) => (
                     <option key={student.id} value={student.id}>
                       {student.full_name} ({student.admission_number}) - {student.class_field}
                     </option>
                   ))}
                 </select>
+                {!filteredStudents.length && (
+                  <p className="text-xs text-gray-500 mt-2">No students found for your search.</p>
+                )}
               </div>
 
               {/* Invoice Selection */}
               {selectedStudent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Invoice
-                  </label>
                   {loadingInvoices ? (
                     <div className="flex items-center justify-center py-4">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -453,19 +523,14 @@ export default function Payments() {
                   ) : invoiceStudents.length === 0 ? (
                     <p className="text-sm text-gray-500 py-2">No invoices found for this student</p>
                   ) : (
-                    <select
-                      value={selectedInvoiceStudent}
-                      onChange={(e) => setSelectedInvoiceStudent(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">-- Select an invoice --</option>
-                      {invoiceStudents.map((inv) => (
-                        <option key={inv.id} value={inv.id}>
-                          {inv.invoice_number} - Balance: {formatCurrency(inv.balance)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs text-amber-800">
+                        <span className="font-semibold">Total Student Balance:</span> {formatCurrency(totalStudentBalance)}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Outstanding invoices: {outstandingInvoices.length}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -483,7 +548,20 @@ export default function Payments() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   min="1"
+                  step="0.01"
                 />
+                {selectedStudent && paymentAmountValue > 0 && allocationPreview.length > 0 && (
+                  <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-blue-800 mb-1">Auto-allocation preview</p>
+                    <div className="space-y-1 max-h-28 overflow-y-auto">
+                      {allocationPreview.map((item) => (
+                        <p key={item.invoiceId} className="text-xs text-blue-700">
+                          {item.invoiceNumber}: {formatCurrency(item.amount)}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Payment Method */}
@@ -543,7 +621,7 @@ export default function Payments() {
                 </button>
                 <button
                   type="submit"
-                  disabled={addingPayment || !selectedInvoiceStudent}
+                  disabled={addingPayment || !selectedStudent || paymentAmountValue <= 0 || totalStudentBalance <= 0}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {addingPayment ? (
