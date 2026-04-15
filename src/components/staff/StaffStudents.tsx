@@ -7,6 +7,8 @@ import UploadStudentModal from '../generalFiles/students/modals/UploadStudentMod
 
 interface Student {
   id: number;
+  photo?: string | null;
+  photo_url?: string | null;
   upi_no?: string;
   assessment_no?: string;
   surname?: string;
@@ -71,6 +73,9 @@ const StaffStudents: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDefaultPhoto, setUploadDefaultPhoto] = useState<File | null>(null);
+  const [studentPhoto, setStudentPhoto] = useState<File | null>(null);
+  const [studentPhotoPreview, setStudentPhotoPreview] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<string>('');
   
   // Form data for add student modal
@@ -105,6 +110,46 @@ const StaffStudents: React.FC = () => {
   useEffect(() => {
     fetchStudents();
   }, [currentPage, searchTerm, selectedClass, selectedStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (studentPhotoPreview) {
+        URL.revokeObjectURL(studentPhotoPreview);
+      }
+    };
+  }, [studentPhotoPreview]);
+
+  const clearStudentPhotoState = () => {
+    if (studentPhotoPreview) {
+      URL.revokeObjectURL(studentPhotoPreview);
+    }
+    setStudentPhoto(null);
+    setStudentPhotoPreview('');
+  };
+
+  const buildStudentFormPayload = () => {
+    const payload = new FormData();
+    payload.append('upi_no', formData.upi_no || '');
+    payload.append('assessment_no', formData.assessment_no || '');
+    payload.append('surname', formData.surname || '');
+    payload.append('first_name', formData.first_name || '');
+    payload.append('other_names', formData.other_names || '');
+    payload.append('gender', formData.gender || '');
+    payload.append('date_of_birth', formData.date_of_birth || '');
+    payload.append('birth_entry_no', formData.birth_entry_no || '');
+    payload.append('disability', formData.disability || '');
+    payload.append('admission_number', formData.admission_number || '');
+    payload.append('class_field', formData.class || '');
+    payload.append('parent_guardian_name', formData.parent_guardian_name || '');
+    payload.append('parent_guardian_phone', formData.parent_guardian_phone || '');
+    payload.append('parent_guardian_email', formData.parent_guardian_email || '');
+    payload.append('address', formData.address || '');
+    payload.append('status', formData.status || 'active');
+    if (studentPhoto) {
+      payload.append('photo', studentPhoto);
+    }
+    return payload;
+  };
 
   const fetchStudents = async () => {
     try {
@@ -176,7 +221,8 @@ const StaffStudents: React.FC = () => {
     setError('');
     
     try {
-      await DataAPI.createStudent(formData);
+      const payload = buildStudentFormPayload();
+      await DataAPI.createStudent(payload);
       setSuccessMessage('Student added successfully!');
       setShowAddModal(false);
       setFormData({
@@ -197,6 +243,7 @@ const StaffStudents: React.FC = () => {
         address: '',
         status: 'active'
       });
+      clearStudentPhotoState();
       fetchStudents();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
@@ -222,6 +269,9 @@ const StaffStudents: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', uploadFile);
+      if (uploadDefaultPhoto) {
+        formData.append('default_photo', uploadDefaultPhoto);
+      }
       
       const result = await DataAPI.bulkUploadStudents(formData, (progress) => {
         setUploadProgress(`Uploading... ${progress}%`);
@@ -239,6 +289,7 @@ const StaffStudents: React.FC = () => {
       setSuccessMessage(successMessage);
       setShowUploadModal(false);
       setUploadFile(null);
+      setUploadDefaultPhoto(null);
       setUploadProgress('');
       fetchStudents();
       setTimeout(() => setSuccessMessage(''), 5000);
@@ -257,6 +308,7 @@ const StaffStudents: React.FC = () => {
   // Edit student handler
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
+    clearStudentPhotoState();
     setFormData({
       upi_no: student.upi_no || '',
       assessment_no: student.assessment_no || '',
@@ -286,16 +338,7 @@ const StaffStudents: React.FC = () => {
     setError('');
     
     try {
-      const studentData = {
-        ...formData,
-        upi_no: formData.upi_no || null,
-        assessment_no: formData.assessment_no || null,
-        other_names: formData.other_names || null,
-        birth_entry_no: formData.birth_entry_no || null,
-        disability: formData.disability || null,
-        parent_guardian_email: formData.parent_guardian_email || null,
-        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
-      };
+      const studentData = buildStudentFormPayload();
       
       await APIService.put(`${API_ENDPOINTS.STUDENTS}${selectedStudent.id}/`, studentData, 'staff');
       
@@ -307,6 +350,7 @@ const StaffStudents: React.FC = () => {
         admission_number: '', class: '', parent_guardian_name: '',
         parent_guardian_phone: '', parent_guardian_email: '', address: '', status: 'active'
       });
+      clearStudentPhotoState();
       
       await fetchStudents();
       setSuccessMessage('Student updated successfully!');
@@ -951,9 +995,16 @@ const StaffStudents: React.FC = () => {
       {/* Add Student Modal */}
       <AddStudentModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          clearStudentPhotoState();
+        }}
         formData={formData}
         setFormData={setFormData}
+        studentPhoto={studentPhoto}
+        setStudentPhoto={setStudentPhoto}
+        studentPhotoPreview={studentPhotoPreview}
+        setStudentPhotoPreview={setStudentPhotoPreview}
         onSubmit={handleAddStudent}
         isSubmitting={isSubmitting}
         title="Add New Student"
@@ -962,9 +1013,14 @@ const StaffStudents: React.FC = () => {
       {/* Upload Students Modal */}
       <UploadStudentModal
         isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
+        onClose={() => {
+          setShowUploadModal(false);
+          setUploadDefaultPhoto(null);
+        }}
         uploadFile={uploadFile}
         setUploadFile={setUploadFile}
+        defaultPhoto={uploadDefaultPhoto}
+        setDefaultPhoto={setUploadDefaultPhoto}
         onSubmit={handleUploadStudents}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
@@ -973,9 +1029,18 @@ const StaffStudents: React.FC = () => {
       {/* Edit Student Modal */}
       <AddStudentModal
         isOpen={showEditModal}
-        onClose={() => { setShowEditModal(false); setSelectedStudent(null); }}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedStudent(null);
+          clearStudentPhotoState();
+        }}
         formData={formData}
         setFormData={setFormData}
+        studentPhoto={studentPhoto}
+        setStudentPhoto={setStudentPhoto}
+        studentPhotoPreview={studentPhotoPreview}
+        setStudentPhotoPreview={setStudentPhotoPreview}
+        existingPhotoUrl={selectedStudent?.photo_url || null}
         onSubmit={handleUpdateStudent}
         isSubmitting={isSubmitting}
         title="Edit Student"
