@@ -5,6 +5,8 @@ interface UploadStudentModalProps {
   onClose: () => void;
   uploadFile: File | null;
   setUploadFile: React.Dispatch<React.SetStateAction<File | null>>;
+  defaultPhoto: File | null;
+  setDefaultPhoto: React.Dispatch<React.SetStateAction<File | null>>;
   onSubmit: (e: React.FormEvent) => void;
   isUploading: boolean;
   uploadProgress: string;
@@ -15,6 +17,8 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
   onClose,
   uploadFile,
   setUploadFile,
+  defaultPhoto,
+  setDefaultPhoto,
   onSubmit,
   isUploading,
   uploadProgress
@@ -99,6 +103,31 @@ const UploadStudentModal: React.FC<UploadStudentModalProps> = ({
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Optional Default Student Photo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setDefaultPhoto(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+                <p className="mt-1 text-xs text-gray-500">If provided, this photo will be applied to all uploaded students.</p>
+                {defaultPhoto && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                    <span className="truncate">{defaultPhoto.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setDefaultPhoto(null)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remove
                     </button>
                   </div>
                 )}

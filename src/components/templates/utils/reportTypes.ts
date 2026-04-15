@@ -47,6 +47,7 @@ export interface StudentReportData {
     full_name: string;
     admission_number: string;
     current_class: string;
+    photo_url?: string | null;
     gender?: string;
     kcpe_marks?: number;
     kcpe_position?: number;
@@ -152,6 +153,7 @@ export interface BackendStudentReport {
     admission_number: string;
     class?: string;
     class_name?: string;
+    photo_url?: string | null;
     position?: number;
     total_students?: number;
   };

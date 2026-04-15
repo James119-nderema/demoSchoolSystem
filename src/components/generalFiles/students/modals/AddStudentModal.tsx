@@ -24,6 +24,11 @@ interface AddStudentModalProps {
   onClose: () => void;
   formData: AddStudentFormData;
   setFormData: React.Dispatch<React.SetStateAction<AddStudentFormData>>;
+  studentPhoto: File | null;
+  setStudentPhoto: React.Dispatch<React.SetStateAction<File | null>>;
+  studentPhotoPreview: string;
+  setStudentPhotoPreview: React.Dispatch<React.SetStateAction<string>>;
+  existingPhotoUrl?: string | null;
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   title?: string;
@@ -35,6 +40,11 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
   onClose,
   formData,
   setFormData,
+  studentPhoto,
+  setStudentPhoto,
+  studentPhotoPreview,
+  setStudentPhotoPreview,
+  existingPhotoUrl,
   onSubmit,
   isSubmitting,
   title = "Add New Student",
@@ -66,6 +76,62 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Student Photo */}
+                <div className="md:col-span-2 lg:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700">Student Photo</label>
+                  <div className="mt-1 flex items-start gap-3">
+                    <div className="h-20 w-20 rounded-md border border-gray-300 bg-gray-50 overflow-hidden flex items-center justify-center">
+                      {studentPhotoPreview || existingPhotoUrl ? (
+                        <img
+                          src={studentPhotoPreview || existingPhotoUrl || ''}
+                          alt="Student"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-400">No Photo</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-indigo-700 hover:file:bg-indigo-100"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (studentPhotoPreview) {
+                            URL.revokeObjectURL(studentPhotoPreview);
+                          }
+                          setStudentPhoto(file);
+                          if (file) {
+                            const previewUrl = URL.createObjectURL(file);
+                            setStudentPhotoPreview(previewUrl);
+                          } else {
+                            setStudentPhotoPreview('');
+                          }
+                        }}
+                      />
+                      {(studentPhotoPreview || existingPhotoUrl) && (
+                        <button
+                          type="button"
+                          className="mt-2 text-xs text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            if (studentPhotoPreview) {
+                              URL.revokeObjectURL(studentPhotoPreview);
+                            }
+                            setStudentPhoto(null);
+                            setStudentPhotoPreview('');
+                          }}
+                        >
+                          Remove photo
+                        </button>
+                      )}
+                      {studentPhoto && (
+                        <p className="mt-1 text-xs text-gray-500 truncate">{studentPhoto.name}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* UPI Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">UPI Number</label>

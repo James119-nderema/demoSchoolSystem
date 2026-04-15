@@ -61,6 +61,10 @@ export const generateTemplate1PDF = async ({
   const logoHeight = 32;
   const logoX = margin;
   const logoY = y;
+  const studentPhotoWidth = 24;
+  const studentPhotoHeight = 30;
+  const studentPhotoX = pageWidth - margin - studentPhotoWidth;
+  const studentPhotoY = y + 1;
   
   // Draw logo placeholder box
   doc.setDrawColor(0);
@@ -105,9 +109,33 @@ export const generateTemplate1PDF = async ({
     doc.text(logoText, logoX + (logoWidth - logoTextWidth) / 2, logoY + logoHeight - 2);
   }
 
+  // Student photo on right side (opposite school logo)
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.5);
+  doc.rect(studentPhotoX, studentPhotoY, studentPhotoWidth, studentPhotoHeight);
+  const studentPhotoUrl = studentData.student.photo_url;
+  if (studentPhotoUrl) {
+    const studentPhotoData = await loadImageAsBase64(studentPhotoUrl);
+    if (studentPhotoData) {
+      try {
+        const format = studentPhotoData.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(
+          studentPhotoData,
+          format,
+          studentPhotoX + 1,
+          studentPhotoY + 1,
+          studentPhotoWidth - 2,
+          studentPhotoHeight - 2
+        );
+      } catch {
+        // Keep empty frame when photo render fails
+      }
+    }
+  }
+
   // School Header (centered, to the right of logo)
   const headerStartX = logoX + logoWidth + 15;
-  const headerWidth = pageWidth - headerStartX - margin;
+  const headerWidth = pageWidth - headerStartX - margin - studentPhotoWidth - 6;
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');

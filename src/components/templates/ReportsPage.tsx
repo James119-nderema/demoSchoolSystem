@@ -32,6 +32,7 @@ const transformBackendToFrontend = (backendData: BackendStudentReport, examType?
       full_name: backendData.student_info.name,
       admission_number: backendData.student_info.admission_number,
       current_class: backendData.student_info.class || backendData.student_info.class_name || '',
+      photo_url: backendData.student_info.photo_url || null,
       position: backendData.summary.position,
       total_students: backendData.summary.total_students
     },

@@ -9,6 +9,8 @@ import { SkeletonTable } from '../../ui/Skeleton';
 interface Student {
   current_class: string;
   id: number;
+  photo?: string | null;
+  photo_url?: string | null;
   upi_no?: string;
   assessment_no?: string;
   surname: string;
@@ -103,6 +105,9 @@ export default function Students() {
     status: 'active'
   });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDefaultPhoto, setUploadDefaultPhoto] = useState<File | null>(null);
+  const [studentPhoto, setStudentPhoto] = useState<File | null>(null);
+  const [studentPhotoPreview, setStudentPhotoPreview] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   
@@ -139,6 +144,9 @@ export default function Students() {
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
+      if (studentPhotoPreview) {
+        URL.revokeObjectURL(studentPhotoPreview);
+      }
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
@@ -146,7 +154,7 @@ export default function Students() {
         clearTimeout(admissionTimeoutRef.current);
       }
     };
-  }, []);
+  }, [studentPhotoPreview]);
 
   const updateUrlParams = (page: number, _search: string, classFilter: string, _admission: string) => {
     const params = new URLSearchParams();
@@ -486,23 +494,45 @@ export default function Students() {
     femaleStudents: 0
   });
 
+  const clearStudentPhotoState = () => {
+    if (studentPhotoPreview) {
+      URL.revokeObjectURL(studentPhotoPreview);
+    }
+    setStudentPhoto(null);
+    setStudentPhotoPreview('');
+  };
+
+  const buildStudentFormPayload = () => {
+    const payload = new FormData();
+    payload.append('upi_no', formData.upi_no || '');
+    payload.append('assessment_no', formData.assessment_no || '');
+    payload.append('surname', formData.surname || '');
+    payload.append('first_name', formData.first_name || '');
+    payload.append('other_names', formData.other_names || '');
+    payload.append('gender', formData.gender || '');
+    payload.append('date_of_birth', formData.date_of_birth || '');
+    payload.append('birth_entry_no', formData.birth_entry_no || '');
+    payload.append('disability', formData.disability || '');
+    payload.append('admission_number', formData.admission_number || '');
+    payload.append('class_field', formData.class || '');
+    payload.append('parent_guardian_name', formData.parent_guardian_name || '');
+    payload.append('parent_guardian_phone', formData.parent_guardian_phone || '');
+    payload.append('parent_guardian_email', formData.parent_guardian_email || '');
+    payload.append('address', formData.address || '');
+    payload.append('status', formData.status || 'active');
+    if (studentPhoto) {
+      payload.append('photo', studentPhoto);
+    }
+    return payload;
+  };
+
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
     
     try {
-      // Prepare the data, converting empty strings to null for optional fields
-      const studentData = {
-        ...formData,
-        upi_no: formData.upi_no || null,
-        assessment_no: formData.assessment_no || null,
-        other_names: formData.other_names || null,
-        birth_entry_no: formData.birth_entry_no || null,
-        disability: formData.disability || null,
-        parent_guardian_email: formData.parent_guardian_email || null,
-        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
-      };
+      const studentData = buildStudentFormPayload();
       
       // Use appropriate user type based on route
       const isSchoolRoute = window.location.pathname.startsWith('/school');
@@ -530,6 +560,7 @@ export default function Students() {
         address: '',
         status: 'active'
       });
+      clearStudentPhotoState();
       
       // Refresh the list immediately to show the new student
       await fetchStudents(currentPage);
@@ -558,6 +589,9 @@ export default function Students() {
 
     const formDataUpload = new FormData();
     formDataUpload.append('file', uploadFile);
+    if (uploadDefaultPhoto) {
+      formDataUpload.append('default_photo', uploadDefaultPhoto);
+    }
 
     try {
       setUploadProgress('Uploading and processing file...');
@@ -593,6 +627,7 @@ export default function Students() {
       setUploadProgress(successMessage);
       setShowUploadModal(false);
       setUploadFile(null);
+      setUploadDefaultPhoto(null);
       fetchStudents();
     } catch (err: any) {
       
@@ -617,6 +652,7 @@ export default function Students() {
 
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
+    clearStudentPhotoState();
     setFormData({
       upi_no: student.upi_no || '',
       assessment_no: student.assessment_no || '',
@@ -646,17 +682,7 @@ export default function Students() {
     setError('');
     
     try {
-      // Prepare the data, converting empty strings to null for optional fields
-      const studentData = {
-        ...formData,
-        upi_no: formData.upi_no || null,
-        assessment_no: formData.assessment_no || null,
-        other_names: formData.other_names || null,
-        birth_entry_no: formData.birth_entry_no || null,
-        disability: formData.disability || null,
-        parent_guardian_email: formData.parent_guardian_email || null,
-        full_name: `${formData.surname} ${formData.first_name} ${formData.other_names}`.trim()
-      };
+      const studentData = buildStudentFormPayload();
       
       // Optimistic update - update the local state immediately
       const updatedStudent: Student = { 
@@ -693,6 +719,7 @@ export default function Students() {
         address: '',
         status: 'active'
       });
+      clearStudentPhotoState();
       
       // Refresh the list to ensure consistency with server
       await fetchStudents(currentPage);
@@ -1239,9 +1266,16 @@ export default function Students() {
       {/* Add Student Modal */}
       <AddStudentModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          clearStudentPhotoState();
+        }}
         formData={formData}
         setFormData={setFormData}
+        studentPhoto={studentPhoto}
+        setStudentPhoto={setStudentPhoto}
+        studentPhotoPreview={studentPhotoPreview}
+        setStudentPhotoPreview={setStudentPhotoPreview}
         onSubmit={handleAddStudent}
         isSubmitting={isSubmitting}
       />
@@ -1252,6 +1286,7 @@ export default function Students() {
         onClose={() => {
           setShowEditModal(false);
           setSelectedStudent(null);
+          clearStudentPhotoState();
           setFormData({
             upi_no: '',
             assessment_no: '',
@@ -1273,6 +1308,11 @@ export default function Students() {
         }}
         formData={formData}
         setFormData={setFormData}
+        studentPhoto={studentPhoto}
+        setStudentPhoto={setStudentPhoto}
+        studentPhotoPreview={studentPhotoPreview}
+        setStudentPhotoPreview={setStudentPhotoPreview}
+        existingPhotoUrl={selectedStudent?.photo_url || null}
         onSubmit={handleUpdateStudent}
         isSubmitting={isSubmitting}
         isEditMode={true}
@@ -1382,9 +1422,14 @@ export default function Students() {
       {/* Upload Student Modal */}
       <UploadStudentModal
         isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
+        onClose={() => {
+          setShowUploadModal(false);
+          setUploadDefaultPhoto(null);
+        }}
         uploadFile={uploadFile}
         setUploadFile={setUploadFile}
+        defaultPhoto={uploadDefaultPhoto}
+        setDefaultPhoto={setUploadDefaultPhoto}
         onSubmit={handleFileUpload}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
