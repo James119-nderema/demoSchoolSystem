@@ -75,6 +75,28 @@ interface ReportData {
   class_teacher_name?: string;
 }
 
+interface StudentResultRecord {
+  id: string;
+  student: string;
+  subject_name: string;
+  subject_code?: string;
+  exam_type: string;
+  term: string;
+  academic_year: string;
+  marks_obtained: number;
+  total_marks: number;
+  percentage: number;
+  grade: string;
+}
+
+interface PeriodOption {
+  key: string;
+  term: string;
+  academic_year: string;
+  exam_type: string;
+  label: string;
+}
+
 interface InvoiceStudent {
   id: string;
   student: string;
@@ -101,13 +123,6 @@ interface Invoice {
   invoice_students?: InvoiceStudent[];
 }
 
-interface DropdownData {
-  classes: { id: string; class_name: string }[];
-  exam_types: string[];
-  terms: string[];
-  years: string[];
-}
-
 const StudentProfile: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
@@ -119,12 +134,11 @@ const StudentProfile: React.FC = () => {
 
   // Results state
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [studentResults, setStudentResults] = useState<StudentResultRecord[]>([]);
+  const [periodOptions, setPeriodOptions] = useState<PeriodOption[]>([]);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
-  const [dropdownData, setDropdownData] = useState<DropdownData | null>(null);
-  const [selectedTerm, setSelectedTerm] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedExamType, setSelectedExamType] = useState('');
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState('');
 
   // Finance state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -146,11 +160,73 @@ const StudentProfile: React.FC = () => {
       // Parent route uses dedicated parent pages for results/fees,
       // so keep profile page focused on overview details only.
       if (!isParentRoute) {
-        fetchDropdownData();
         fetchInvoices();
       }
     }
   }, [studentId, isParentRoute]);
+
+  useEffect(() => {
+    if (!isParentRoute && activeTab === 'results' && studentId && studentResults.length === 0) {
+      fetchStudentPeriodsAndResults();
+    }
+  }, [activeTab, isParentRoute, studentId, studentResults.length]);
+
+  useEffect(() => {
+    if (!selectedPeriodKey) {
+      setReportData(null);
+      return;
+    }
+
+    const [term, academic_year, exam_type] = selectedPeriodKey.split('|');
+    const periodResults = studentResults.filter(
+      r => r.term === term && r.academic_year === academic_year && r.exam_type === exam_type
+    );
+
+    if (!periodResults.length) {
+      setReportData(null);
+      return;
+    }
+
+    const totalMarksObtained = periodResults.reduce((sum, r) => sum + (Number(r.marks_obtained) || 0), 0);
+    const totalPossibleMarks = periodResults.reduce((sum, r) => sum + (Number(r.total_marks) || 0), 0);
+    const overallPercentage = totalPossibleMarks > 0 ? (totalMarksObtained / totalPossibleMarks) * 100 : 0;
+
+    const gradeCounts: Record<string, number> = {};
+    periodResults.forEach(r => {
+      const g = (r.grade || '-').toUpperCase();
+      gradeCounts[g] = (gradeCounts[g] || 0) + 1;
+    });
+    const overallGrade = Object.entries(gradeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+
+    setReportData({
+      student_info: {
+        name: student?.full_name || '',
+        admission_number: student?.admission_number || '',
+        class_name: student?.current_class || student?.class_field || student?.admission_class || '',
+      },
+      exam_info: {
+        term,
+        academic_year,
+        exam_type,
+      },
+      subjects: periodResults.map(r => ({
+        subject: r.subject_name,
+        subject_code: r.subject_code,
+        marks_obtained: Number(r.marks_obtained) || 0,
+        total_marks: Number(r.total_marks) || 0,
+        percentage: Number(r.percentage) || 0,
+        grade: r.grade || '-',
+      })),
+      summary: {
+        total_marks_obtained: totalMarksObtained,
+        total_possible_marks: totalPossibleMarks,
+        overall_percentage: overallPercentage,
+        overall_grade: overallGrade,
+        total_subjects: periodResults.length,
+        average: overallPercentage,
+      },
+    });
+  }, [selectedPeriodKey, studentResults, student]);
 
   const fetchStudent = async () => {
     try {
@@ -204,45 +280,59 @@ const StudentProfile: React.FC = () => {
     }
   };
 
-  const fetchDropdownData = async () => {
-    try {
-      const data = await APIService.get('/api/input-marks/dropdown-data/');
-      setDropdownData(data);
-      // Auto-select first available values
-      if (data.terms?.length) setSelectedTerm(data.terms[0]);
-      if (data.years?.length) setSelectedYear(data.years[0]);
-      if (data.exam_types?.length) setSelectedExamType(data.exam_types[0]);
-    } catch (err) {
-      console.error('Error fetching dropdown data:', err);
-    }
-  };
-
-  const fetchResults = async () => {
-    if (!studentId || !selectedTerm || !selectedYear || !selectedExamType) return;
+  const fetchStudentPeriodsAndResults = async () => {
+    if (!studentId) return;
     try {
       setResultsLoading(true);
       setResultsError(null);
-      const data = await APIService.get('/api/input-marks/student-report-data/', {
+      const response = await APIService.get('/api/input-marks/results/', {
         student_id: studentId,
-        term: selectedTerm,
-        academic_year: selectedYear,
-        exam_type: selectedExamType,
       });
-      setReportData(data);
+
+      const records: StudentResultRecord[] = response?.results || response || [];
+      setStudentResults(records);
+
+      if (!records.length) {
+        setPeriodOptions([]);
+        setSelectedPeriodKey('');
+        setReportData(null);
+        setResultsError('No results found for this student');
+        return;
+      }
+
+      const uniquePeriods = new Map<string, PeriodOption>();
+      records.forEach(r => {
+        const key = `${r.term}|${r.academic_year}|${r.exam_type}`;
+        if (!uniquePeriods.has(key)) {
+          uniquePeriods.set(key, {
+            key,
+            term: r.term,
+            academic_year: r.academic_year,
+            exam_type: r.exam_type,
+            label: `${r.term} • ${r.academic_year} • ${r.exam_type}`,
+          });
+        }
+      });
+
+      const periods = Array.from(uniquePeriods.values()).sort((a, b) => {
+        const ay = b.academic_year.localeCompare(a.academic_year);
+        if (ay !== 0) return ay;
+        const bt = Number(String(b.term).replace(/\D/g, '')) || 0;
+        const at = Number(String(a.term).replace(/\D/g, '')) || 0;
+        if (bt !== at) return bt - at;
+        return a.exam_type.localeCompare(b.exam_type);
+      });
+
+      setPeriodOptions(periods);
+      setSelectedPeriodKey(periods[0]?.key || '');
     } catch (err: any) {
       console.error('Error fetching results:', err);
-      setResultsError(err.message || 'No results found for the selected criteria');
+      setResultsError(err.message || 'No results found for the selected student');
       setReportData(null);
     } finally {
       setResultsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!isParentRoute && selectedTerm && selectedYear && selectedExamType && studentId) {
-      fetchResults();
-    }
-  }, [selectedTerm, selectedYear, selectedExamType, studentId, isParentRoute]);
 
   const fetchInvoices = async () => {
     try {
@@ -605,33 +695,27 @@ const StudentProfile: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                   </div>
-                  <h3 className="text-base font-bold text-slate-800">Filter Results</h3>
+                  <h3 className="text-base font-bold text-slate-800">Select Period</h3>
                 </div>
                 <div className="px-6 py-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Term</label>
-                      <select value={selectedTerm} onChange={e => setSelectedTerm(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-                        <option value="">Select Term</option>
-                        {dropdownData?.terms?.map(t => <option key={t} value={t}>{t}</option>)}
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Available Periods</label>
+                      <select
+                        value={selectedPeriodKey}
+                        onChange={e => setSelectedPeriodKey(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      >
+                        <option value="">Select Period</option>
+                        {periodOptions.map(period => (
+                          <option key={period.key} value={period.key}>{period.label}</option>
+                        ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Year</label>
-                      <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-                        <option value="">Select Year</option>
-                        {dropdownData?.years?.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Exam Type</label>
-                      <select value={selectedExamType} onChange={e => setSelectedExamType(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-                        <option value="">Select Exam</option>
-                        {dropdownData?.exam_types?.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
+                    <div className="flex items-end">
+                      <div className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+                        Loaded <span className="font-semibold text-slate-800">{studentResults.length}</span> subject records for this student
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -651,7 +735,7 @@ const StudentProfile: React.FC = () => {
                     </svg>
                   </div>
                   <p className="text-slate-600 font-medium">No Results Found</p>
-                  <p className="text-sm text-slate-400 mt-1">Try selecting different filter criteria</p>
+                  <p className="text-sm text-slate-400 mt-1">No academic records available for this student yet</p>
                 </div>
               ) : reportData ? (
                 <div className="space-y-6">
@@ -829,8 +913,8 @@ const StudentProfile: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  <p className="text-slate-500 font-medium">Select filters above to view results</p>
-                  <p className="text-sm text-slate-400 mt-1">Choose a term, year, and exam type to load academic results</p>
+                  <p className="text-slate-500 font-medium">Select a period above to view results</p>
+                  <p className="text-sm text-slate-400 mt-1">Results are loaded once for this student, then filtered instantly by period</p>
                 </div>
               )}
             </div>
