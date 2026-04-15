@@ -502,6 +502,27 @@ export default function Students() {
     setStudentPhotoPreview('');
   };
 
+  const getApiErrorMessage = (err: any, fallback: string) => {
+    const responseData = err?.response?.data;
+    if (typeof responseData === 'string' && responseData.trim()) {
+      return responseData;
+    }
+    if (responseData && typeof responseData === 'object') {
+      const fieldErrors = Object.entries(responseData)
+        .map(([field, value]) => {
+          if (Array.isArray(value)) return `${field}: ${value.join(', ')}`;
+          if (typeof value === 'string') return `${field}: ${value}`;
+          return '';
+        })
+        .filter(Boolean);
+      if (fieldErrors.length) return fieldErrors.join(' | ');
+      if (responseData.detail) return responseData.detail;
+      if (responseData.error) return responseData.error;
+      if (responseData.message) return responseData.message;
+    }
+    return err?.message || fallback;
+  };
+
   const buildStudentFormPayload = () => {
     const payload = new FormData();
     payload.append('upi_no', formData.upi_no || '');
@@ -570,7 +591,7 @@ export default function Students() {
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (err: any) {
-      setError(err.message || 'Failed to add student');
+      setError(getApiErrorMessage(err, 'Failed to add student'));
     } finally {
       setIsSubmitting(false);
     }
@@ -731,7 +752,7 @@ export default function Students() {
     } catch (err: any) {
       // Revert optimistic update on error
       await fetchStudents(currentPage);
-      setError(err.message || 'Failed to update student');
+      setError(getApiErrorMessage(err, 'Failed to update student'));
     } finally {
       setIsSubmitting(false);
     }

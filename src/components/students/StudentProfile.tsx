@@ -97,6 +97,16 @@ interface PeriodOption {
   label: string;
 }
 
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+interface DropdownDataResponse {
+  exam_types?: FilterOption[];
+  terms?: FilterOption[];
+}
+
 interface InvoiceStudent {
   id: string;
   student: string;
@@ -139,6 +149,8 @@ const StudentProfile: React.FC = () => {
   const [resultsLoading, setResultsLoading] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [selectedPeriodKey, setSelectedPeriodKey] = useState('');
+  const [termLabelMap, setTermLabelMap] = useState<Record<string, string>>({});
+  const [examTypeLabelMap, setExamTypeLabelMap] = useState<Record<string, string>>({});
 
   // Finance state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -205,9 +217,9 @@ const StudentProfile: React.FC = () => {
         class_name: student?.current_class || student?.class_field || student?.admission_class || '',
       },
       exam_info: {
-        term,
+        term: getTermDisplayLabel(term),
         academic_year,
-        exam_type,
+        exam_type: getExamTypeDisplayLabel(exam_type),
       },
       subjects: periodResults.map(r => ({
         subject: r.subject_name,
@@ -226,7 +238,7 @@ const StudentProfile: React.FC = () => {
         average: overallPercentage,
       },
     });
-  }, [selectedPeriodKey, studentResults, student]);
+  }, [selectedPeriodKey, studentResults, student, termLabelMap, examTypeLabelMap]);
 
   const fetchStudent = async () => {
     try {
@@ -285,9 +297,32 @@ const StudentProfile: React.FC = () => {
     try {
       setResultsLoading(true);
       setResultsError(null);
-      const response = await APIService.get('/api/input-marks/results/', {
-        student_id: studentId,
-      });
+      const [response, dropdownData] = await Promise.all([
+        APIService.get('/api/input-marks/results/', {
+          student_id: studentId,
+        }),
+        APIService.get<DropdownDataResponse>('/api/input-marks/dropdown-data/').catch(() => null),
+      ]);
+
+      const resolvedTermLabels = (dropdownData?.terms || []).reduce<Record<string, string>>((acc, item) => {
+        if (item?.value) acc[item.value] = item.label || item.value;
+        return acc;
+      }, {});
+      const resolvedExamTypeLabels = (dropdownData?.exam_types || []).reduce<Record<string, string>>((acc, item) => {
+        if (item?.value) acc[item.value] = item.label || item.value;
+        return acc;
+      }, {});
+
+      setTermLabelMap(resolvedTermLabels);
+      setExamTypeLabelMap(resolvedExamTypeLabels);
+
+      const getTermLabel = (term: string) => {
+        const mapped = resolvedTermLabels[term];
+        if (mapped) return mapped;
+        return /^term\s*/i.test(String(term)) ? String(term) : `Term ${term}`;
+      };
+
+      const getExamTypeLabel = (examType: string) => resolvedExamTypeLabels[examType] || examType;
 
       const records: StudentResultRecord[] = response?.results || response || [];
       setStudentResults(records);
@@ -309,7 +344,7 @@ const StudentProfile: React.FC = () => {
             term: r.term,
             academic_year: r.academic_year,
             exam_type: r.exam_type,
-            label: `${r.term} • ${r.academic_year} • ${r.exam_type}`,
+            label: `${getTermLabel(r.term)} • ${r.academic_year} • ${getExamTypeLabel(r.exam_type)}`,
           });
         }
       });
@@ -418,6 +453,18 @@ const StudentProfile: React.FC = () => {
     }
   };
 
+  const getTermDisplayLabel = (term: string) => {
+    const mapped = termLabelMap[term];
+    if (mapped) return mapped;
+    return /^term\s*/i.test(String(term)) ? String(term) : `Term ${term}`;
+  };
+
+  const getExamTypeDisplayLabel = (examType: string) => examTypeLabelMap[examType] || examType;
+
+  const getSubjectKey = (subjectName: string, subjectCode?: string) => {
+    return `${(subjectCode || '').trim().toLowerCase()}|${String(subjectName || '').trim().toLowerCase()}`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -458,6 +505,31 @@ const StudentProfile: React.FC = () => {
     .toUpperCase() || '?';
 
   const studentClass = student.current_class || student.class_field || student.class_name || student.admission_class || '—';
+
+  const selectedPeriodIndex = periodOptions.findIndex(period => period.key === selectedPeriodKey);
+  const previousPeriodOption = selectedPeriodIndex >= 0 ? periodOptions[selectedPeriodIndex + 1] : null;
+  const previousPeriodResults = previousPeriodOption
+    ? studentResults.filter(
+        r =>
+          r.term === previousPeriodOption.term &&
+          r.academic_year === previousPeriodOption.academic_year &&
+          r.exam_type === previousPeriodOption.exam_type
+      )
+    : [];
+  const previousOverallPercentage = previousPeriodResults.length
+    ? previousPeriodResults.reduce((sum, r) => sum + (Number(r.percentage) || 0), 0) / previousPeriodResults.length
+    : null;
+  const overallDeviation = reportData && previousOverallPercentage !== null
+    ? reportData.summary.overall_percentage - previousOverallPercentage
+    : null;
+  const previousSubjectPercentageMap = new Map<string, number>();
+  previousPeriodResults.forEach(subject => {
+    previousSubjectPercentageMap.set(
+      getSubjectKey(subject.subject_name, subject.subject_code),
+      Number(subject.percentage) || 0
+    );
+  });
+  const formatDeviation = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -740,7 +812,7 @@ const StudentProfile: React.FC = () => {
               ) : reportData ? (
                 <div className="space-y-6">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <SummaryCard
                       label="Total Marks"
                       value={`${reportData.summary.total_marks_obtained}/${reportData.summary.total_possible_marks}`}
@@ -760,6 +832,11 @@ const StudentProfile: React.FC = () => {
                       label="Position"
                       value={reportData.summary.position ? `${reportData.summary.position}/${reportData.summary.total_students}` : '—'}
                       color="purple"
+                    />
+                    <SummaryCard
+                      label="Δ Previous Exam"
+                      value={overallDeviation !== null ? formatDeviation(overallDeviation) : '—'}
+                      color={overallDeviation !== null ? (overallDeviation >= 0 ? 'emerald' : 'red') : 'amber'}
                     />
                   </div>
 
@@ -790,6 +867,9 @@ const StudentProfile: React.FC = () => {
                             <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Marks</th>
                             <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Percentage</th>
                             <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Grade</th>
+                            {previousPeriodOption && (
+                              <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Δ Prev %</th>
+                            )}
                             {reportData.subjects[0]?.points !== undefined && (
                               <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Points</th>
                             )}
@@ -820,6 +900,24 @@ const StudentProfile: React.FC = () => {
                                   {subject.grade}
                                 </span>
                               </td>
+                              {previousPeriodOption && (
+                                <td className="px-6 py-3.5 text-center text-sm font-semibold">
+                                  {(() => {
+                                    const previousPercentage = previousSubjectPercentageMap.get(
+                                      getSubjectKey(subject.subject, subject.subject_code)
+                                    );
+                                    if (previousPercentage === undefined) {
+                                      return <span className="text-slate-400">—</span>;
+                                    }
+                                    const deviation = subject.percentage - previousPercentage;
+                                    return (
+                                      <span className={deviation >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                                        {formatDeviation(deviation)}
+                                      </span>
+                                    );
+                                  })()}
+                                </td>
+                              )}
                               {reportData.subjects[0]?.points !== undefined && (
                                 <td className="px-6 py-3.5 text-center text-sm font-medium text-slate-700">{subject.points ?? '—'}</td>
                               )}
@@ -846,6 +944,11 @@ const StudentProfile: React.FC = () => {
                                 {reportData.summary.overall_grade}
                               </span>
                             </td>
+                            {previousPeriodOption && (
+                              <td className="px-6 py-3.5 text-center text-sm font-bold text-indigo-700">
+                                {overallDeviation !== null ? formatDeviation(overallDeviation) : '—'}
+                              </td>
+                            )}
                             {reportData.subjects[0]?.points !== undefined && (
                               <td className="px-6 py-3.5 text-center text-sm font-bold text-indigo-700">{reportData.summary.total_points ?? '—'}</td>
                             )}
