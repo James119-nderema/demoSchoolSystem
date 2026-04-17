@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ParentsAPI } from '../../services/baseUrl';
-import { getGradeColorFromMarks } from '../../utils/gradingUtils';
+import { getGradeColorFromMarks, getGradeColor as getGradeColorByLetter } from '../../utils/gradingUtils';
 import { SkeletonCards, SkeletonChart } from '../ui/Skeleton';
 
 interface StudentInfo {
@@ -161,8 +161,15 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
   };
 
   // Use centralized grading utility
-  const getGradeColor = (marks: number) => {
-    return getGradeColorFromMarks(marks);
+  const getGradeColor = (marks: number, grade?: string) => {
+    try {
+      return getGradeColorFromMarks(marks);
+    } catch {
+      if (grade) {
+        return getGradeColorByLetter(grade);
+      }
+      return 'bg-gray-100 text-gray-700';
+    }
   };
 
   if (loading) {
@@ -428,7 +435,7 @@ export default function StudentAnalytics({ onBack }: StudentAnalyticsProps) {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(subject.marks)}`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(subject.marks, subject.grade)}`}>
                           {subject.grade}
                         </span>
                       </td>

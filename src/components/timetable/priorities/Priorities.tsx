@@ -131,22 +131,6 @@ export default function Priorities() {
           Add Priority
         </button>
       </div>
-
-      {/* Stats */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Total Priorities</p>
-            <p className="text-3xl font-bold text-gray-900">{totalCount}</p>
-          </div>
-          <div className="p-3 bg-blue-100 rounded-full">
-            <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
       {/* Search Bar */}
       <div className="bg-white shadow rounded-lg p-4">
         <div className="flex items-center space-x-4">

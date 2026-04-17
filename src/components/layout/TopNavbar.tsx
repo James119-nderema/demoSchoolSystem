@@ -20,12 +20,8 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ staffInfo, onLogout }) => {
   const navigate = useNavigate();
   const permissions = usePermissions();
 
-  const initials = staffInfo.full_name
-    .split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const avatarSeed = encodeURIComponent((staffInfo.full_name || staffInfo.email || 'staff').trim());
+  const avatarUrl = `https://api.dicebear.com/9.x/notionists/svg?seed=${avatarSeed}&radius=50&backgroundType=gradientLinear`;
 
   const roleLabel =
     staffInfo.role
@@ -69,8 +65,12 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ staffInfo, onLogout }) => {
             className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-slate-50 transition-all duration-200 group"
           >
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-200/60 group-hover:shadow-md group-hover:shadow-indigo-200/80 transition-shadow">
-              <span className="text-[11px] font-bold text-white">{initials}</span>
+            <div className="w-8 h-8 rounded-full border-2 border-indigo-100 overflow-hidden bg-white shadow-sm shadow-indigo-200/60 group-hover:shadow-md group-hover:shadow-indigo-200/80 transition-shadow">
+              <img
+                src={avatarUrl}
+                alt={`${staffInfo.full_name} avatar`}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-[13px] font-semibold text-slate-700 leading-tight truncate max-w-[140px]">
@@ -91,12 +91,16 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ staffInfo, onLogout }) => {
 
           {/* Dropdown menu */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl shadow-slate-200/60 border border-slate-200/80 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-xl shadow-slate-200/60 border border-slate-200/80 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Profile header */}
               <div className="px-4 py-3 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200/50">
-                    <span className="text-sm font-bold text-white">{initials}</span>
+                  <div className="w-10 h-10 rounded-full border-2 border-indigo-100 overflow-hidden bg-white shadow-md shadow-indigo-200/50">
+                    <img
+                      src={avatarUrl}
+                      alt={`${staffInfo.full_name} avatar`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800 truncate">{staffInfo.full_name}</p>

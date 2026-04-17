@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import blockSubjectService from '../../../services/blockSubjectService';
-import type { Block, BlockStatsResponse } from '../../../types/blockSubject';
+import type { Block } from '../../../types/blockSubject';
 import AddBlockSubjectModal from './AddBlockSubjectModal';
 
 const BlockSubjects: React.FC = () => {
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [stats, setStats] = useState<BlockStatsResponse>({
-    total_blocks: 0,
-    total_subjects_in_blocks: 0
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,7 +15,6 @@ const BlockSubjects: React.FC = () => {
 
   useEffect(() => {
     fetchBlocks();
-    fetchStats();
   }, [currentPage]);
 
   const fetchBlocks = async () => {
@@ -37,15 +32,6 @@ const BlockSubjects: React.FC = () => {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const statsData = await blockSubjectService.getStats();
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-
   const handleDelete = async (identifier: string) => {
     if (!confirm('Are you sure you want to delete this block? All subjects in this block will be removed from the block.')) {
       return;
@@ -55,7 +41,6 @@ const BlockSubjects: React.FC = () => {
     try {
       await blockSubjectService.deleteBlock(identifier);
       fetchBlocks();
-      fetchStats();
     } catch (err: any) {
       console.error('Error deleting block:', err);
       alert(err.response?.data?.error || 'Failed to delete block');
@@ -66,7 +51,6 @@ const BlockSubjects: React.FC = () => {
 
   const handleAddSuccess = () => {
     fetchBlocks();
-    fetchStats();
   };
 
   const formatDate = (dateString: string) => {
@@ -94,39 +78,6 @@ const BlockSubjects: React.FC = () => {
             <Plus size={20} />
             Add Block
           </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-blue-200 transform transition-transform hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium uppercase tracking-wide">Total Blocks</p>
-                <p className="text-4xl font-bold mt-2 text-gray-900">{stats.total_blocks}</p>
-                <p className="text-gray-500 text-xs mt-1">Active block groups</p>
-              </div>
-              <div className="bg-blue-100 p-4 rounded-full">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-green-200 transform transition-transform hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-medium uppercase tracking-wide">Subjects in Blocks</p>
-                <p className="text-4xl font-bold mt-2 text-gray-900">{stats.total_subjects_in_blocks}</p>
-                <p className="text-gray-500 text-xs mt-1">Total grouped subjects</p>
-              </div>
-              <div className="bg-green-100 p-4 rounded-full">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

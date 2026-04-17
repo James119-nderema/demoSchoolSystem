@@ -27,6 +27,16 @@ interface PeriodStatsResponse {
   period_stats?: PeriodStat[];
 }
 
+interface ClassSubject {
+  id: string;
+  subject_name: string;
+  subject_code?: string;
+}
+
+interface ClassSubjectsResponse {
+  subjects?: ClassSubject[];
+}
+
 interface UsePeriodStatsOptions {
   term?: string;
   academicYear?: string;
@@ -130,10 +140,16 @@ const PeriodStepPage: React.FC<{ title: string; step2Path: string }> = ({ title,
   );
 };
 
-const ClassStepPage: React.FC<{ title: string; resultsPath: string; periodStepPath: string }> = ({
+const ClassStepPage: React.FC<{
+  title: string;
+  resultsPath: string;
+  periodStepPath: string;
+  allowAllClasses?: boolean;
+}> = ({
   title,
   resultsPath,
   periodStepPath,
+  allowAllClasses = true,
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -205,16 +221,18 @@ const ClassStepPage: React.FC<{ title: string; resultsPath: string; periodStepPa
               ))}
             </div>
 
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={() => navigate(buildResultsUrl())}
-                className="text-left border border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/40 rounded-lg p-4 transition w-full sm:w-auto"
-              >
-                <p className="text-sm font-semibold text-gray-900">All Classes</p>
-                <p className="text-xs text-gray-500">Skip class filtering and open results for all classes in this session.</p>
-              </button>
-            </div>
+            {allowAllClasses && (
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => navigate(buildResultsUrl())}
+                  className="text-left border border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/40 rounded-lg p-4 transition w-full sm:w-auto"
+                >
+                  <p className="text-sm font-semibold text-gray-900">All Classes</p>
+                  <p className="text-xs text-gray-500">Skip class filtering and open results for all classes in this session.</p>
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -225,6 +243,160 @@ const ClassStepPage: React.FC<{ title: string; resultsPath: string; periodStepPa
             className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
           >
             ← Back to Exam Session Selection
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SubjectStepPage: React.FC<{
+  title: string;
+  analyticsBasePath: string;
+  classStepPath: string;
+  periodStepPath: string;
+}> = ({ title, analyticsBasePath, classStepPath, periodStepPath }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const term = searchParams.get('term') || '';
+  const academicYear = searchParams.get('academic_year') || '';
+  const examType = searchParams.get('exam_type') || '';
+  const classId = searchParams.get('class_id') || '';
+
+  const { periods, error: periodError } = usePeriodStats({
+    term,
+    academicYear,
+    examType,
+    includeClasses: true,
+    includeMetrics: true,
+  });
+
+  const [subjects, setSubjects] = useState<ClassSubject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
+  const [subjectsError, setSubjectsError] = useState('');
+
+  const selectedPeriod = useMemo(() => {
+    if (!term || !academicYear || !examType) return null;
+    return periods.find((p) => p.term === term && p.academic_year === academicYear && p.exam_type === examType) || null;
+  }, [periods, term, academicYear, examType]);
+
+  const selectedClass = useMemo(() => {
+    if (!selectedPeriod || !classId) return null;
+    return selectedPeriod.classes.find((cls) => cls.class_id === classId) || null;
+  }, [selectedPeriod, classId]);
+
+  useEffect(() => {
+    const fetchClassSubjects = async () => {
+      if (!classId) {
+        setSubjects([]);
+        setSubjectsError('');
+        return;
+      }
+
+      try {
+        setSubjectsLoading(true);
+        setSubjectsError('');
+        const response = await authFetch(`/api/input-marks/class-subjects/${classId}/`);
+        if (!response.ok) {
+          throw new Error(`Failed to load class subjects (HTTP ${response.status})`);
+        }
+        const data: ClassSubjectsResponse = await response.json();
+        setSubjects(data.subjects || []);
+      } catch (err) {
+        setSubjectsError(err instanceof Error ? err.message : 'Failed to load class subjects');
+      } finally {
+        setSubjectsLoading(false);
+      }
+    };
+
+    fetchClassSubjects();
+  }, [classId]);
+
+  const buildAnalyticsUrl = (subjectId: string) => {
+    const params = new URLSearchParams({
+      term,
+      academic_year: academicYear,
+      exam_type: examType,
+      class_id: classId,
+    });
+    return `${analyticsBasePath}/${subjectId}?${params.toString()}`;
+  };
+
+  const buildClassStepUrl = () => {
+    const params = new URLSearchParams({
+      term,
+      academic_year: academicYear,
+      exam_type: examType,
+    });
+    return `${classStepPath}?${params.toString()}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+        <p className="text-gray-600 mb-6">Step 3 of 3: Select subject.</p>
+
+        {(!term || !academicYear || !examType || !classId) && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-sm text-yellow-700">
+            Missing context. Go back and choose exam session and class first.
+          </div>
+        )}
+
+        {periodError && <div className="text-sm text-red-600 mb-3">{periodError}</div>}
+
+        {selectedPeriod && selectedClass && (
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <p className="text-sm text-gray-700">
+              Selected session: <span className="font-semibold">{selectedPeriod.term_label}</span>,{' '}
+              <span className="font-semibold">{selectedPeriod.academic_year}</span>,{' '}
+              <span className="font-semibold">{selectedPeriod.exam_type_label}</span>
+            </p>
+            <p className="text-sm text-gray-700 mt-1">
+              Selected class: <span className="font-semibold">{selectedClass.class_name}</span>
+              {selectedClass.stream ? ` (Stream ${selectedClass.stream})` : ''}
+            </p>
+          </div>
+        )}
+
+        {subjectsLoading && <div className="text-sm text-gray-500">Loading class subjects...</div>}
+        {subjectsError && <div className="text-sm text-red-600">{subjectsError}</div>}
+
+        {!subjectsLoading && !subjectsError && classId && subjects.length === 0 && (
+          <div className="bg-white rounded-lg shadow p-6 text-sm text-gray-600">No subjects assigned to this class for now.</div>
+        )}
+
+        {!subjectsLoading && !subjectsError && subjects.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            {subjects.map((subject) => (
+              <button
+                key={subject.id}
+                type="button"
+                onClick={() => navigate(buildAnalyticsUrl(subject.id))}
+                className="text-left border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/40 rounded-lg p-4 transition"
+              >
+                <p className="text-sm font-semibold text-gray-900">{subject.subject_name}</p>
+                <p className="text-xs text-gray-500 mt-1">Code: {subject.subject_code || 'N/A'}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-4">
+          <button
+            type="button"
+            onClick={() => navigate(buildClassStepUrl())}
+            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+          >
+            ← Back to Class Selection
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(periodStepPath)}
+            className="text-gray-600 hover:text-gray-700 text-sm font-medium"
+          >
+            Back to Exam Session Selection
           </button>
         </div>
       </div>
@@ -289,5 +461,27 @@ export const ClassStatisticsClassStep: React.FC = () => (
     title="Class Statistics"
     resultsPath="/staff/statistics/classes/results"
     periodStepPath="/staff/statistics/classes/step-1"
+  />
+);
+
+export const SubjectStatisticsPeriodStep: React.FC = () => (
+  <PeriodStepPage title="Subject Statistics" step2Path="/staff/statistics/subjects/step-2" />
+);
+
+export const SubjectStatisticsClassStep: React.FC = () => (
+  <ClassStepPage
+    title="Subject Statistics"
+    resultsPath="/staff/statistics/subjects/step-3"
+    periodStepPath="/staff/statistics/subjects/step-1"
+    allowAllClasses={false}
+  />
+);
+
+export const SubjectStatisticsSubjectStep: React.FC = () => (
+  <SubjectStepPage
+    title="Subject Statistics"
+    analyticsBasePath="/staff/statistics/subject"
+    classStepPath="/staff/statistics/subjects/step-2"
+    periodStepPath="/staff/statistics/subjects/step-1"
   />
 );

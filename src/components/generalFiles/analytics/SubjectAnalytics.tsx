@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link} from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { 
-  BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area
+  LineChart, Line
 } from 'recharts';
 import { MarksAPI } from '../../../services/baseUrl';
 import { BookOpen, TrendingUp, Award, AlertCircle, Target, Users } from 'lucide-react';
@@ -56,23 +56,24 @@ interface SubjectAnalyticsProps {
   onClassClick?: (classId: string) => void;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
-
 const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({ 
   subjectId, 
-
-  onClassClick 
 }) => {
+  const [searchParams] = useSearchParams();
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);
+  const [yearlyTrends, setYearlyTrends] = useState<Record<string, { average: number; count: number }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const queryTerm = searchParams.get('term') || '';
+  const queryExamType = searchParams.get('exam_type') || '';
+  const queryAcademicYear = searchParams.get('academic_year') || '';
+  const queryClassId = searchParams.get('class_id') || '';
   
   // Filter states
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
-  const selectedClassId = '';
+  const [selectedTerm, setSelectedTerm] = useState<string>(queryTerm);
+  const [selectedExamType, setSelectedExamType] = useState<string>(queryExamType);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(queryAcademicYear);
+  const selectedClassId = queryClassId;
 
   const EXAM_TYPE_LABELS: Record<string, string> = {
     'exam_1': 'Exam 1',
@@ -136,6 +137,15 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
       }
 
       // Transform the backend response to match our frontend data structure
+      const transformedPerformanceTrends = Object.entries(data.performance_trends || {}).reduce((acc, [key, value]) => {
+        const trendData = value as any;
+        acc[key] = {
+          average: trendData?.average || 0,
+          count: trendData?.count || 0
+        };
+        return acc;
+      }, {} as Record<string, { average: number; count: number }>);
+
       const transformedData: SubjectAnalyticsData = {
         subject_info: {
           name: data.subject_info?.subject_name || data.subject_info?.name || 'Unknown Subject',
@@ -158,14 +168,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           };
           return acc;
         }, {} as Record<string, { average: number; assessments: number; pass_rate: number }>),
-        performance_trends: Object.entries(data.performance_trends || {}).reduce((acc, [key, value]) => {
-          const trendData = value as any;
-          acc[key] = {
-            average: trendData?.average || 0,
-            count: trendData?.count || 0
-          };
-          return acc;
-        }, {} as Record<string, { average: number; count: number }>),
+        performance_trends: transformedPerformanceTrends,
         challenging_topics: Array.isArray(data.challenging_topics) ? data.challenging_topics : [],
         success_areas: Array.isArray(data.success_areas) ? data.success_areas : [],
         grade_distribution: data.grade_distribution || {},
@@ -179,6 +182,34 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
 
       console.log('Transformed data:', transformedData);
       setSubjectData(transformedData);
+
+      // Fetch trend data for the whole academic year (without term/exam filters)
+      try {
+        const yearlyTrendParams: Record<string, string> = {
+          subject_id: subjectId,
+        };
+        const trendYear = overrides?.academic_year ?? selectedAcademicYear;
+        const trendClassId = overrides?.class_id ?? selectedClassId;
+        if (trendYear) yearlyTrendParams.academic_year = trendYear;
+        if (trendClassId) yearlyTrendParams.class_id = trendClassId;
+
+        const yearlyTrendResponse = await MarksAPI.get('/api/input-marks/subject-analytics/', {
+          params: yearlyTrendParams,
+        });
+        const yearlyTrendData = yearlyTrendResponse.data || yearlyTrendResponse;
+        const transformedYearlyTrends = Object.entries(yearlyTrendData?.performance_trends || {}).reduce((acc, [key, value]) => {
+          const trendData = value as any;
+          acc[key] = {
+            average: trendData?.average || 0,
+            count: trendData?.count || 0,
+          };
+          return acc;
+        }, {} as Record<string, { average: number; count: number }>);
+        setYearlyTrends(transformedYearlyTrends);
+      } catch {
+        setYearlyTrends(transformedPerformanceTrends);
+      }
+
       setError(null);
     } catch (err: any) {
       console.error('Error fetching subject analytics:', err);
@@ -191,9 +222,15 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   // Initial fetch without filters (let backend use latest results)
   useEffect(() => {
     if (subjectId) {
-      fetchSubjectData(false);
+      const hasRouteFilters = !!(queryTerm || queryExamType || queryAcademicYear || queryClassId);
+      fetchSubjectData(hasRouteFilters, {
+        term: queryTerm || undefined,
+        exam_type: queryExamType || undefined,
+        academic_year: queryAcademicYear || undefined,
+        class_id: queryClassId || undefined,
+      });
     }
-  }, [subjectId]);
+  }, [subjectId, queryTerm, queryExamType, queryAcademicYear, queryClassId]);
   
   const formatClassPerformanceData = () => {
     if (!subjectData?.class_performance) return [];
@@ -211,17 +248,64 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
     }
   };
 
-  const formatTrendsData = () => {
-    if (!subjectData?.performance_trends) return [];
+  const formatYearlyTrendsData = () => {
+    const trendSource = Object.keys(yearlyTrends || {}).length > 0
+      ? yearlyTrends
+      : (subjectData?.performance_trends || {});
+
+    if (!trendSource || Object.keys(trendSource).length === 0) return [];
     
     try {
-      return Object.entries(subjectData.performance_trends)
+      const monthIndexMap: Record<string, number> = {
+        jan: 1, january: 1,
+        feb: 2, february: 2,
+        mar: 3, march: 3,
+        apr: 4, april: 4,
+        may: 5,
+        jun: 6, june: 6,
+        jul: 7, july: 7,
+        aug: 8, august: 8,
+        sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10,
+        nov: 11, november: 11,
+        dec: 12, december: 12,
+      };
+
+      const resolveSortOrder = (monthKey: string) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(monthKey)) {
+          return Number(monthKey.slice(0, 7).replace('-', ''));
+        }
+
+        if (/^\d{4}-\d{2}$/.test(monthKey)) {
+          return Number(monthKey.replace('-', ''));
+        }
+
+        const yearMonthMatch = monthKey.match(/(\d{4})[-/](\d{1,2})/);
+        if (yearMonthMatch) {
+          const year = Number(yearMonthMatch[1]);
+          const month = Number(yearMonthMatch[2]);
+          return (year * 100) + month;
+        }
+
+        const normalized = monthKey.trim().toLowerCase();
+        if (monthIndexMap[normalized]) return monthIndexMap[normalized];
+
+        const leadingWord = normalized.split(/\s+/)[0];
+        if (monthIndexMap[leadingWord]) return monthIndexMap[leadingWord];
+
+        const quarterMatch = normalized.match(/q([1-4])/);
+        if (quarterMatch) return Number(quarterMatch[1]) * 3;
+
+        return Number.MAX_SAFE_INTEGER;
+      };
+
+      return Object.entries(trendSource)
         .map(([month, data]) => ({
           month,
           average: Math.round((data.average || 0) * 100) / 100,
           assessments: data.count || 0
         }))
-        .sort((a, b) => a.month.localeCompare(b.month));
+        .sort((a, b) => resolveSortOrder(a.month) - resolveSortOrder(b.month));
     } catch (err) {
       console.error('Error formatting trends data:', err);
       return [];
@@ -303,9 +387,8 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
 
   const performanceLevel = getPerformanceLevel(subjectData.overall_average);
   const classPerformanceData = formatClassPerformanceData();
-  const filteredClassPerformanceData = classPerformanceData.filter((classData) =>
-    classData.class.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
+  const yearlyTrendData = formatYearlyTrendsData();
+  const gradeDistributionData = formatGradeDistribution();
 
   return (
     <div className="p-6 space-y-6">
@@ -335,29 +418,15 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
         </div>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="w-full md:w-96">
-              <label className="text-sm text-gray-600 mb-1 block">Search Class</label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by class name"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      {subjectData?.current_filters && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-500">
+              Showing: Term {subjectData.current_filters.term} | {EXAM_TYPE_LABELS[subjectData.current_filters.exam_type] || subjectData.current_filters.exam_type} | {subjectData.current_filters.academic_year}
             </div>
-
-            {subjectData?.current_filters && (
-              <div className="text-sm text-gray-500 md:ml-auto">
-                Showing: Term {subjectData.current_filters.term} | {EXAM_TYPE_LABELS[subjectData.current_filters.exam_type] || subjectData.current_filters.exam_type} | {subjectData.current_filters.academic_year}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -443,7 +512,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filteredClassPerformanceData}>
+              <BarChart data={classPerformanceData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="class" />
                 <YAxis />
@@ -456,28 +525,34 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           </CardContent>
         </Card>
 
-        {/* Performance Trends */}
+        {/* Yearly Performance Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Performance Trends Over Time</CardTitle>
+            <CardTitle>Subject Performance Trend (Year)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={formatTrendsData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Area 
-                  type="monotone" 
-                  dataKey="average" 
-                  stroke="#8884d8" 
-                  fill="#8884d8" 
-                  fillOpacity={0.6}
-                  name="Average Score"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {yearlyTrendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={yearlyTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="average"
+                    stroke="#8884d8"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    name="Average Score"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-sm text-gray-500">
+                No yearly trend data available for this subject yet.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -490,25 +565,23 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
             <CardTitle>Grade Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={formatGradeDistribution()}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry: any) => `${entry.grade}: ${entry.percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {formatGradeDistribution().map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {gradeDistributionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={gradeDistributionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="grade" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#6366F1" name="Students" />
+                  <Bar dataKey="percentage" fill="#10B981" name="Percentage" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-sm text-gray-500">
+                No grade distribution data available.
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -553,58 +626,6 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           </CardContent>
         </Card>
       </div>
-
-      {/* Class Performance Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detailed Class Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredClassPerformanceData.map((classData) => (
-              <div 
-                key={classData.class}
-                className={`p-4 border rounded-lg ${
-                  onClassClick ? 'cursor-pointer hover:bg-gray-50' : ''
-                } ${
-                  classData.average >= subjectData.overall_average ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                }`}
-                onClick={() => onClassClick && onClassClick(classData.class)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{classData.class}</h4>
-                  <div className={`px-2 py-1 rounded text-xs ${
-                    classData.average >= subjectData.overall_average 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {classData.average >= subjectData.overall_average ? 'Above Avg' : 'Below Avg'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Average:</span>
-                    <span className="font-medium">{classData.average}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Pass Rate:</span>
-                    <span className="font-medium">{classData.passRate}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Assessments:</span>
-                    <span className="font-medium">{classData.assessments}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {filteredClassPerformanceData.length === 0 && (
-              <div className="col-span-full text-center text-sm text-gray-500 py-4">
-                No class performance records match your search.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Insights and Recommendations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

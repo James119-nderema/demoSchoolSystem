@@ -46,12 +46,14 @@ import {
   StudentStatisticsClassStep,
   ClassStatisticsPeriodStep,
   ClassStatisticsClassStep,
+  SubjectStatisticsPeriodStep,
+  SubjectStatisticsClassStep,
+  SubjectStatisticsSubjectStep,
 } from './components/staff/marks/MarksFlowSteps'
 import StatisticsDashboard from './pages/StatisticsDashboard'
 import { StudentAnalyticsWrapper, ClassAnalyticsWrapper, SubjectAnalyticsWrapper } from './components/staff/AnalyticsWrappers'
 import SchoolDashboard from './pages/SchoolDashboard'
 import StudentStatistics from './components/generalFiles/analytics/StudentStatistics'
-import SubjectList from './components/generalFiles/analytics/SubjectList'
 import ClassStatistics from './components/generalFiles/analytics/ClassStatistics'
 import ReportsDashboard from './components/generalFiles/reports/ReportsDashboard'
 import AdminStudents from './components/generalFiles/students/Students'
@@ -294,11 +296,19 @@ const router = createBrowserRouter([
       },
       { 
         path: 'statistics/subjects', 
-        element: (
-          <AuthenticatedRoute userType="staff">
-            <SubjectList />
-          </AuthenticatedRoute>
-        ) 
+        element: <Navigate to="/staff/statistics/subjects/step-1" replace />
+      },
+      {
+        path: 'statistics/subjects/step-1',
+        element: <SubjectStatisticsPeriodStep />
+      },
+      {
+        path: 'statistics/subjects/step-2',
+        element: <SubjectStatisticsClassStep />
+      },
+      {
+        path: 'statistics/subjects/step-3',
+        element: <SubjectStatisticsSubjectStep />
       },
       { 
         path: 'statistics/subject/:subjectId', 
@@ -846,6 +856,19 @@ const router = createBrowserRouter([
         element: (
           <AuthenticatedRoute userType="staff">
             <ClassStatistics />
+          </AuthenticatedRoute>
+        )
+      },
+
+      { path: 'statistics/subjects', element: <Navigate to="/staff/statistics/subjects/step-1" replace /> },
+      { path: 'statistics/subjects/step-1', element: <SubjectStatisticsPeriodStep /> },
+      { path: 'statistics/subjects/step-2', element: <SubjectStatisticsClassStep /> },
+      { path: 'statistics/subjects/step-3', element: <SubjectStatisticsSubjectStep /> },
+      {
+        path: 'statistics/subject/:subjectId',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <SubjectAnalyticsWrapper />
           </AuthenticatedRoute>
         )
       },

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIService } from '../../services/baseUrl';
-import { Users, BookOpen, School, UserCheck, Trophy, Calendar, Award, Target, BarChart3, RefreshCw, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, BookOpen, School, UserCheck, Trophy, Calendar, Award, Target, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface StaffInfo {
   id: number;
   first_name: string;
   last_name: string;
+  full_name: string;
   email: string;
   school?: {
     name: string;
@@ -68,7 +69,6 @@ const StaffDashboard: React.FC = () => {
   const [topPerformers, setTopPerformers] = useState<TopPerformer[]>([]);
   const [classAverages, setClassAverages] = useState<ClassAverage[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
   const [showPerformers, setShowPerformers] = useState(true);
   const [showClassPerf, setShowClassPerf] = useState(true);
   const [showActivities, setShowActivities] = useState(true);
@@ -92,7 +92,6 @@ const StaffDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      setRefreshing(true);
       const dashboardData = await APIService.get('/api/school-dashboard/comprehensive/', {}, 'staff');
       
       if (dashboardData) {
@@ -118,7 +117,6 @@ const StaffDashboard: React.FC = () => {
       ]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -176,13 +174,6 @@ const StaffDashboard: React.FC = () => {
     });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('staff_access_token');
-    localStorage.removeItem('staff_refresh_token');
-    localStorage.removeItem('staff_info');
-    navigate('/');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -229,41 +220,6 @@ const StaffDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ── Header ── */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-3 sm:py-4 gap-2">
-            {/* Left: Title */}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
-                {staffInfo?.school?.name || 'Staff Dashboard'}
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 truncate">
-                Welcome, {staffInfo?.first_name} {staffInfo?.last_name}
-              </p>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={fetchDashboardData}
-                disabled={refreshing}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* ── Main Content ── */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">

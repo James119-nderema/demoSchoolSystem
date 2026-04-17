@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Clock, AlertCircle, Download, ChevronDown, ChevronUp, Search, Layers } from 'lucide-react';
+import { Users, Calendar, AlertCircle, Download, ChevronDown, ChevronUp, Search, Layers } from 'lucide-react';
 import { generateSingleTeacherPDF, generateAllTeachersPDF } from '../../utils/teacherSchedulePdfGenerator';
 import allTeachersScheduleService from '../../services/allTeachersScheduleService';
 import type { TeacherSchedule, TimeSlot, ScheduleEntry } from '../../services/allTeachersScheduleService';
@@ -145,32 +145,6 @@ const AllTeachersSchedules: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 md:gap-4 mt-4">
-          <div className="bg-blue-50 rounded-lg p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
-              <span className="text-xs md:text-sm text-gray-600">Teachers</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-blue-900">{teachers.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-              <span className="text-xs md:text-sm text-gray-600">Days</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-green-900">{DAYS.length}</p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-              <span className="text-xs md:text-sm text-gray-600">Slots</span>
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-purple-900">{timeslots.length}</p>
-          </div>
-        </div>
-
         {/* Search */}
         <div className="mt-4 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />

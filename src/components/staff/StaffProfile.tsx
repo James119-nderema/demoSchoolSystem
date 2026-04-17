@@ -198,8 +198,9 @@ const StaffProfile: React.FC = () => {
     );
   }
 
-  const initials = staffInfo.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const roleLabel = staffInfo.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Staff';
+  const avatarSeed = encodeURIComponent((staffInfo.full_name || staffInfo.email || 'staff').trim());
+  const avatarUrl = `https://api.dicebear.com/9.x/notionists/svg?seed=${avatarSeed}&radius=50&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
   // Group assignments by class name for display
   const groupedAssignments: { [key: string]: Assignment[] } = {};
@@ -212,38 +213,22 @@ const StaffProfile: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* ─── Hero Header ─────────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 overflow-hidden">
-        {/* Decorative pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/20" />
-          <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-white/10" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/5" />
-        </div>
-
-        <div className="relative px-4 sm:px-6 lg:px-8 pt-8 pb-24">
-          <div className="flex items-center gap-2 text-indigo-200 text-sm mb-6">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span>Staff Portal</span>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span>My Profile</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">My Profile</h1>
-          <p className="mt-1 text-indigo-200 text-sm">Manage your personal information and teaching assignments</p>
-        </div>
-      </div>
+      
 
       {/* ─── Profile Card (overlaps hero) ────────────────────────────── */}
-      <div className="relative px-4 sm:px-6 lg:px-8 -mt-16 pb-8">
+      <div className="relative px-4 sm:px-6 lg:px-8 pt-6 pb-8">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
           {/* Profile strip */}
           <div className="px-6 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
             {/* Avatar */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200/60 flex-shrink-0 ring-4 ring-white">
-              <span className="text-xl sm:text-2xl font-bold text-white">{initials}</span>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[2px] bg-gradient-to-br from-fuchsia-500 via-indigo-500 to-cyan-400 shadow-lg shadow-indigo-200/60 flex-shrink-0">
+              <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/90 bg-white">
+                <img
+                  src={avatarUrl}
+                  alt={`${staffInfo.full_name} avatar`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
 
             {/* Name & role */}

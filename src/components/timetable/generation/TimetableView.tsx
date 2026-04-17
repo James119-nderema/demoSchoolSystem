@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, BookOpen, User, Clock, AlertCircle, Sparkles, Download, RefreshCw, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import timetableGenerationService from '../../../services/timetableGenerationService';
 import { generateAllClassesPDF } from '../../../utils/classTimetablePdfGenerator';
-import type { TimetableByClass, TimetableStats, TeacherIndexInfo, BlockInfo } from '../../../types/generatedTimetable';
+import type { TimetableByClass, TeacherIndexInfo, BlockInfo } from '../../../types/generatedTimetable';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -10,7 +10,6 @@ const TimetableView: React.FC = () => {
   const [timetables, setTimetables] = useState<TimetableByClass[]>([]);
   const [teachers, setTeachers] = useState<TeacherIndexInfo[]>([]);
   const [blocks, setBlocks] = useState<BlockInfo[]>([]);
-  const [stats, setStats] = useState<TimetableStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingClass, setGeneratingClass] = useState<Record<string, boolean>>({});
@@ -20,7 +19,6 @@ const TimetableView: React.FC = () => {
 
   useEffect(() => {
     fetchTimetables();
-    fetchStats();
   }, []);
 
   const fetchTimetables = async () => {
@@ -42,15 +40,6 @@ const TimetableView: React.FC = () => {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const statsData = await timetableGenerationService.getStats();
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-
   const handleGenerate = async () => {
     if (!confirm('This will clear existing timetables and generate new ones. Continue?')) return;
     setGenerating(true);
@@ -67,7 +56,6 @@ const TimetableView: React.FC = () => {
           : 'Timetable generated successfully!'
       );
       await fetchTimetables();
-      await fetchStats();
     } catch (err: any) {
       console.error('Error generating timetable:', err);
       setError(err.message || err.response?.data?.error || 'Failed to generate timetable');
@@ -93,7 +81,6 @@ const TimetableView: React.FC = () => {
           : `Timetable regenerated for ${className} successfully!`
       );
       await fetchTimetables();
-      await fetchStats();
     } catch (err: any) {
       console.error('Error generating class timetable:', err);
       setError(err.message || err.response?.data?.error || `Failed to generate timetable for ${className}`);
@@ -175,46 +162,6 @@ const TimetableView: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
-            <div className="bg-white p-3 md:p-4 rounded-lg shadow border-2 border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-600 text-xs md:text-sm font-medium uppercase">Total Entries</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.total_entries}</p>
-                </div>
-                <div className="bg-blue-100 p-2 md:p-3 rounded-full hidden sm:block">
-                  <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-3 md:p-4 rounded-lg shadow border-2 border-green-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-600 text-xs md:text-sm font-medium uppercase">Classes</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.total_classes_scheduled}</p>
-                </div>
-                <div className="bg-green-100 p-2 md:p-3 rounded-full hidden sm:block">
-                  <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-3 md:p-4 rounded-lg shadow border-2 border-red-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-red-600 text-xs md:text-sm font-medium uppercase">Failed</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.total_failed}</p>
-                </div>
-                <div className="bg-red-100 p-2 md:p-3 rounded-full hidden sm:block">
-                  <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {successMessage && (
           <div className="mb-4 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center gap-2 text-sm md:text-base">
             <AlertCircle size={18} />

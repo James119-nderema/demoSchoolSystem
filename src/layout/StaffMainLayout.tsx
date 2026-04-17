@@ -121,7 +121,7 @@ const StaffMainLayout: React.FC = () => {
       <StaffSidebar staffInfo={staffInfo} onLogout={handleLogout} />
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-visible">
         {/* Top Navbar with profile dropdown */}
         <TopNavbar staffInfo={staffInfo} onLogout={handleLogout} />
 
