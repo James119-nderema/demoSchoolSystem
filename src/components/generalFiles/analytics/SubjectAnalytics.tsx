@@ -16,6 +16,16 @@ interface AvailableFilters {
   exam_types: string[];
 }
 
+interface PerformanceTrendPoint {
+  term: string;
+  term_label: string;
+  exam_type: string;
+  exam_type_label: string;
+  label: string;
+  average: number;
+  count: number;
+}
+
 
 interface SubjectAnalyticsData {
   subject_info: {
@@ -39,6 +49,7 @@ interface SubjectAnalyticsData {
     average: number;
     count: number;
   }>;
+  performance_trend_points?: PerformanceTrendPoint[];
   challenging_topics: string[];
   success_areas: string[];
   grade_distribution: Record<string, number>;
@@ -62,6 +73,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   const [searchParams] = useSearchParams();
   const [subjectData, setSubjectData] = useState<SubjectAnalyticsData | null>(null);
   const [yearlyTrends, setYearlyTrends] = useState<Record<string, { average: number; count: number }>>({});
+  const [yearlyTrendPoints, setYearlyTrendPoints] = useState<PerformanceTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const queryTerm = searchParams.get('term') || '';
@@ -169,6 +181,9 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           return acc;
         }, {} as Record<string, { average: number; assessments: number; pass_rate: number }>),
         performance_trends: transformedPerformanceTrends,
+        performance_trend_points: Array.isArray(data.performance_trend_points)
+          ? data.performance_trend_points
+          : [],
         challenging_topics: Array.isArray(data.challenging_topics) ? data.challenging_topics : [],
         success_areas: Array.isArray(data.success_areas) ? data.success_areas : [],
         grade_distribution: data.grade_distribution || {},
@@ -206,8 +221,18 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
           return acc;
         }, {} as Record<string, { average: number; count: number }>);
         setYearlyTrends(transformedYearlyTrends);
+        setYearlyTrendPoints(
+          Array.isArray(yearlyTrendData?.performance_trend_points)
+            ? yearlyTrendData.performance_trend_points
+            : []
+        );
       } catch {
         setYearlyTrends(transformedPerformanceTrends);
+        setYearlyTrendPoints(
+          Array.isArray(transformedData.performance_trend_points)
+            ? transformedData.performance_trend_points
+            : []
+        );
       }
 
       setError(null);
@@ -249,6 +274,18 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
   };
 
   const formatYearlyTrendsData = () => {
+    const trendPointSource = yearlyTrendPoints.length > 0
+      ? yearlyTrendPoints
+      : (subjectData?.performance_trend_points || []);
+
+    if (trendPointSource.length > 0) {
+      return trendPointSource.map((point) => ({
+        period: point.label || `${point.term_label || `Term ${point.term}`} • ${point.exam_type_label || EXAM_TYPE_LABELS[point.exam_type] || point.exam_type}`,
+        average: Math.round((point.average || 0) * 100) / 100,
+        assessments: point.count || 0,
+      }));
+    }
+
     const trendSource = Object.keys(yearlyTrends || {}).length > 0
       ? yearlyTrends
       : (subjectData?.performance_trends || {});
@@ -301,11 +338,11 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
 
       return Object.entries(trendSource)
         .map(([month, data]) => ({
-          month,
+          period: month,
           average: Math.round((data.average || 0) * 100) / 100,
           assessments: data.count || 0
         }))
-        .sort((a, b) => resolveSortOrder(a.month) - resolveSortOrder(b.month));
+        .sort((a, b) => resolveSortOrder(a.period) - resolveSortOrder(b.period));
     } catch (err) {
       console.error('Error formatting trends data:', err);
       return [];
@@ -535,7 +572,7 @@ const SubjectAnalytics: React.FC<SubjectAnalyticsProps> = ({
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={yearlyTrendData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
+                  <XAxis dataKey="period" interval={0} angle={-20} textAnchor="end" height={70} />
                   <YAxis domain={[0, 100]} />
                   <Tooltip />
                   <Line
