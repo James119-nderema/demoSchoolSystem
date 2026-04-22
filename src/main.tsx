@@ -69,6 +69,7 @@ import Priorities from './components/timetable/priorities/Priorities'
 import ClassSchedules from './components/timetable/classSchedule/ClassSchedules'
 import Teachers from './components/timetable/teachers/Teachers'
 import TeacherProfile from './components/timetable/teachers/TeacherProfile'
+import TeacherIndexManager from './components/timetable/teachers/TeacherIndexManager'
 import BlockSubjects from './components/timetable/blockSubjects/BlockSubjects'
 import TimetableView from './components/timetable/generation/TimetableView'
 import TeacherTimetableView from './components/timetable/TeacherTimetableView'
@@ -483,6 +484,14 @@ const router = createBrowserRouter([
             <TeacherProfile />
           </AuthenticatedRoute>
         ) 
+      },
+      {
+        path: 'timetable/teacher-indexes',
+        element: (
+          <AuthenticatedRoute userType="staff">
+            <TeacherIndexManager />
+          </AuthenticatedRoute>
+        )
       },
       { 
         path: 'timetable/block-subjects', 

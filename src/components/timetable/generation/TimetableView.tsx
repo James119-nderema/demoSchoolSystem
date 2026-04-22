@@ -52,7 +52,7 @@ const TimetableView: React.FC = () => {
       );
       setSuccessMessage(
         result.data
-          ? `Timetable generated successfully! ${result.data.filled} of ${result.data.total_slots} slots filled. ${result.data.failed} failed.`
+          ? `Timetable generated successfully! `
           : 'Timetable generated successfully!'
       );
       await fetchTimetables();
@@ -284,7 +284,13 @@ const TimetableView: React.FC = () => {
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="text-center text-gray-400 text-xs py-4">-</div>
+                                      <div className="bg-amber-50 border-l-4 border-amber-400 rounded p-3">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <Clock size={14} className="text-amber-600" />
+                                          <span className="font-semibold text-xs text-amber-800">Unallocated Slot</span>
+                                        </div>
+                                        <div className="ml-6 text-[11px] text-amber-700">No teacher/subject scheduled</div>
+                                      </div>
                                     )}
                                   </td>
                                 );

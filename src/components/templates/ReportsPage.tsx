@@ -32,6 +32,7 @@ const transformBackendToFrontend = (backendData: BackendStudentReport, examType?
       full_name: backendData.student_info.name,
       admission_number: backendData.student_info.admission_number,
       current_class: backendData.student_info.class || backendData.student_info.class_name || '',
+      fee_balance: backendData.student_info.fee_balance,
       photo_url: backendData.student_info.photo_url || null,
       position: backendData.summary.position,
       total_students: backendData.summary.total_students
@@ -64,6 +65,7 @@ const transformBackendToFrontend = (backendData: BackendStudentReport, examType?
     },
     school_info: backendData.school_info,
     exam_info: backendData.exam_info,
+    fee_info: backendData.fee_info,
     class_teacher_name: backendData.class_teacher_name
   };
 };

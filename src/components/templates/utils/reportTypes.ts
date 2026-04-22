@@ -47,6 +47,7 @@ export interface StudentReportData {
     full_name: string;
     admission_number: string;
     current_class: string;
+    fee_balance?: number;
     photo_url?: string | null;
     gender?: string;
     kcpe_marks?: number;
@@ -85,6 +86,9 @@ export interface StudentReportData {
     term: string;
     academic_year: string;
     exam_type: string;
+  };
+  fee_info?: {
+    balance: number;
   };
   class_teacher_name?: string;
   class_teacher_remark?: string;
@@ -153,6 +157,7 @@ export interface BackendStudentReport {
     admission_number: string;
     class?: string;
     class_name?: string;
+    fee_balance?: number;
     photo_url?: string | null;
     position?: number;
     total_students?: number;
@@ -161,6 +166,9 @@ export interface BackendStudentReport {
     term: string;
     academic_year: string;
     exam_type: string;
+  };
+  fee_info?: {
+    balance: number;
   };
   subjects: BackendSubjectData[];
   summary: {

@@ -37,11 +37,31 @@ const timetableGenerationService = {
     return response;
   },
 
+  // Probe whether timetable data is already available
+  hasAnyTimetableData: async (): Promise<boolean> => {
+    try {
+      const byClass = await timetableGenerationService.getTimetableByClass();
+      return Array.isArray(byClass?.results) && byClass.results.length > 0;
+    } catch {
+      return false;
+    }
+  },
+
+  // Probe whether a specific class timetable is already available
+  hasClassTimetableData: async (classId: string): Promise<boolean> => {
+    try {
+      const byClass = await timetableGenerationService.getTimetableByClass();
+      return Array.isArray(byClass?.results) && byClass.results.some((row) => row.class_id === classId);
+    } catch {
+      return false;
+    }
+  },
+
   // Generate with polling - waits for completion
   generateTimetableWithPolling: async (
     onProgress?: (status: GenerationStatus) => void,
     pollInterval: number = 2000,
-    maxWaitTime: number = 300000 // 5 minutes max
+    maxWaitTime: number = 900000 // 15 minutes max
   ): Promise<GenerateResponse> => {
     const authType = getAuthType();
     
@@ -54,14 +74,27 @@ const timetableGenerationService = {
     
     // Poll for status
     const startTime = Date.now();
+    let sawRunning = false;
+    let idleStreak = 0;
     
     while (Date.now() - startTime < maxWaitTime) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
-      const status = await timetableGenerationService.getGenerationStatus();
+      let status: GenerationStatus;
+      try {
+        status = await timetableGenerationService.getGenerationStatus();
+      } catch {
+        // transient polling error, continue until max wait time
+        continue;
+      }
       
       if (onProgress) {
         onProgress(status);
+      }
+
+      if (status.status === 'running') {
+        sawRunning = true;
+        idleStreak = 0;
       }
       
       if (status.status === 'completed') {
@@ -82,14 +115,71 @@ const timetableGenerationService = {
         throw new Error(status.error || 'Timetable generation failed');
       }
       
-      // If idle, generation may not have started yet or was already done
       if (status.status === 'idle') {
-        // Check if we have timetable data
-        break;
+        idleStreak += 1;
+
+        // On multi-worker deployments, status can appear idle even while generation runs elsewhere.
+        // If data exists, treat as completed.
+        const hasData = await timetableGenerationService.hasAnyTimetableData();
+        if (hasData) {
+          return {
+            message: 'Timetable generation completed',
+            data: {
+              success: true,
+              generation_batch: '',
+              total_slots: 0,
+              filled: 0,
+              failed: 0,
+            },
+          };
+        }
+
+        // Keep waiting through transient idle reads.
+        if (!sawRunning && idleStreak <= 10) {
+          continue;
+        }
       }
     }
-    
-    throw new Error('Timetable generation timed out');
+
+    // Final check before timing out
+    try {
+      const finalStatus = await timetableGenerationService.getGenerationStatus();
+      if (finalStatus.status === 'completed') {
+        return {
+          message: finalStatus.message || 'Timetable generation completed',
+          data: finalStatus.result
+            ? finalStatus.result
+            : {
+                success: true,
+                generation_batch: '',
+                total_slots: 0,
+                filled: 0,
+                failed: 0,
+              },
+        };
+      }
+      if (finalStatus.status === 'running') {
+        throw new Error('Timetable generation is still running in the background. Please wait and refresh in a minute.');
+      }
+    } catch {
+      // fall through to data probe below
+    }
+
+    const hasData = await timetableGenerationService.hasAnyTimetableData();
+    if (hasData) {
+      return {
+        message: 'Timetable generation completed',
+        data: {
+          success: true,
+          generation_batch: '',
+          total_slots: 0,
+          filled: 0,
+          failed: 0,
+        },
+      };
+    }
+
+    throw new Error('Timetable generation timed out. The server may still be processing; please refresh shortly.');
   },
 
   // Get timetable organized by class
@@ -151,21 +241,33 @@ const timetableGenerationService = {
     classId: string,
     onProgress?: (status: GenerationStatus) => void,
     pollInterval: number = 2000,
-    maxWaitTime: number = 300000 // 5 minutes max
+    maxWaitTime: number = 900000 // 15 minutes max
   ): Promise<GenerateResponse> => {
     // Start generation
     await timetableGenerationService.generateClassTimetable(classId);
 
     // Poll for status
     const startTime = Date.now();
+    let sawRunning = false;
+    let idleStreak = 0;
 
     while (Date.now() - startTime < maxWaitTime) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
 
-      const status = await timetableGenerationService.getClassGenerationStatus(classId);
+      let status: GenerationStatus;
+      try {
+        status = await timetableGenerationService.getClassGenerationStatus(classId);
+      } catch {
+        continue;
+      }
 
       if (onProgress) {
         onProgress(status);
+      }
+
+      if (status.status === 'running') {
+        sawRunning = true;
+        idleStreak = 0;
       }
 
       if (status.status === 'completed') {
@@ -187,11 +289,66 @@ const timetableGenerationService = {
       }
 
       if (status.status === 'idle') {
-        break;
+        idleStreak += 1;
+
+        const hasClassData = await timetableGenerationService.hasClassTimetableData(classId);
+        if (hasClassData) {
+          return {
+            message: 'Class timetable generation completed',
+            data: {
+              success: true,
+              generation_batch: '',
+              total_slots: 0,
+              filled: 0,
+              failed: 0,
+            },
+          };
+        }
+
+        if (!sawRunning && idleStreak <= 10) {
+          continue;
+        }
       }
     }
 
-    throw new Error('Class timetable generation timed out');
+    try {
+      const finalStatus = await timetableGenerationService.getClassGenerationStatus(classId);
+      if (finalStatus.status === 'completed') {
+        return {
+          message: finalStatus.message || 'Class timetable generation completed',
+          data: finalStatus.result
+            ? finalStatus.result
+            : {
+                success: true,
+                generation_batch: '',
+                total_slots: 0,
+                filled: 0,
+                failed: 0,
+              },
+        };
+      }
+      if (finalStatus.status === 'running') {
+        throw new Error('Class timetable generation is still running in the background. Please wait and refresh in a minute.');
+      }
+    } catch {
+      // continue to data probe
+    }
+
+    const hasClassData = await timetableGenerationService.hasClassTimetableData(classId);
+    if (hasClassData) {
+      return {
+        message: 'Class timetable generation completed',
+        data: {
+          success: true,
+          generation_batch: '',
+          total_slots: 0,
+          filled: 0,
+          failed: 0,
+        },
+      };
+    }
+
+    throw new Error('Class timetable generation timed out. The server may still be processing; please refresh shortly.');
   }
 };
 

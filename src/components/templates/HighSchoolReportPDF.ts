@@ -604,9 +604,19 @@ export const generateTemplate1PDF = async ({
   y += 15;
 
   // Footer Section
+  const feeBalance = studentData.fee_info?.balance ?? studentData.student.fee_balance;
+  const formatMoney = (value?: number) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return '___________';
+    return `KES ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('Fees Arrears:', margin, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatMoney(feeBalance), margin + 18, y);
+
+  doc.setFont('helvetica', 'bold');
   doc.text('Next term fees:', margin + 80, y);
   doc.text('Total fees expected:', pageWidth - margin - 55, y);
   y += 8;
