@@ -116,7 +116,20 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleAddStaff = async (data: { phone_number: string; role: string; assigned_class?: string }) => {
+  const handleAddStaff = async (data: {
+    phone_number: string;
+    full_name?: string;
+    role: string;
+    assigned_class?: string;
+    kra_pin?: string;
+    bank_name?: string;
+    bank_account_number?: string;
+    bank_code?: string;
+    payment_method?: string;
+    nhif_number?: string;
+    nssf_number?: string;
+    department?: string;
+  }) => {
     setIsSubmitting(true);
     setMessage(null);
 

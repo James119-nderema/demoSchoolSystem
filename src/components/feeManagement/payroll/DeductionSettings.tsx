@@ -531,7 +531,7 @@ export default function DeductionSettings() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-gray-700">Net Salary</span>
                       <span className="text-lg font-bold text-emerald-600">
-                        KES {preview.net_salary.toLocaleString()}
+                        KES {(parseFloat(String(preview.net_salary)) || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -646,11 +646,12 @@ function RateRow({
 }
 
 function PreviewRow({ label, value, color, bold }: { label: string; value: number; color: string; bold?: boolean }) {
+  const numVal = parseFloat(String(value)) || 0;
   return (
     <div className="flex items-center justify-between text-sm">
       <span className={`${bold ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>{label}</span>
       <span className={`${bold ? 'font-bold' : 'font-medium'} ${color}`}>
-        KES {value.toLocaleString()}
+        KES {numVal.toLocaleString()}
       </span>
     </div>
   );

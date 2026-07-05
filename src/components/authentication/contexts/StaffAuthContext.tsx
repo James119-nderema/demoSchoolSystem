@@ -49,16 +49,18 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
           
           if (isValid) {
             const userData = JSON.parse(storedUser);
+            const normalizedRole = userData.role || userData.user_role || userData.role_name || '';
             setToken(storedToken);
             setUser({
               id: userData.id,
-              first_name: userData.first_name,
-              last_name: userData.last_name,
+              first_name: userData.first_name || userData.full_name?.split(' ')[0] || '',
+              last_name: userData.last_name || userData.full_name?.split(' ').slice(1).join(' ') || '',
               email: userData.email,
-              phone: userData.phone,
-              employee_id: userData.employee_id,
+              phone: userData.phone || userData.phone_number || '',
+              employee_id: userData.employee_id || userData.id,
               school_id: userData.school_id,
-              user_type: 'staff'
+              user_type: 'staff',
+              role: normalizedRole
             });
             
             // Set staff authorization header
@@ -87,23 +89,31 @@ export const StaffAuthProvider: React.FC<StaffAuthProviderProps> = ({ children }
       });
 
       const { access_token, staff } = response.data;
+      const normalizedRole = staff.role || staff.user_role || staff.role_name || '';
+      const normalizedStaff = {
+        ...staff,
+        role: normalizedRole,
+        first_name: staff.first_name || staff.full_name?.split(' ')[0] || '',
+        last_name: staff.last_name || staff.full_name?.split(' ').slice(1).join(' ') || '',
+        phone: staff.phone || staff.phone_number || ''
+      };
       
       // Store tokens and user info
       localStorage.setItem('staff_access_token', access_token);
-      localStorage.setItem('staff_info', JSON.stringify(staff));
+      localStorage.setItem('staff_info', JSON.stringify(normalizedStaff));
       
       // Update state
       setToken(access_token);
       setUser({
-        id: staff.id,
-        first_name: staff.first_name || staff.full_name?.split(' ')[0] || '',
-        last_name: staff.last_name || staff.full_name?.split(' ').slice(1).join(' ') || '',
-        email: staff.email,
-        phone: staff.phone || staff.phone_number || '',
-        employee_id: staff.employee_id || staff.id,
-        school_id: staff.school_id,
+        id: normalizedStaff.id,
+        first_name: normalizedStaff.first_name,
+        last_name: normalizedStaff.last_name,
+        email: normalizedStaff.email,
+        phone: normalizedStaff.phone,
+        employee_id: normalizedStaff.employee_id || normalizedStaff.id,
+        school_id: normalizedStaff.school_id,
         user_type: 'staff',
-        role: staff.role
+        role: normalizedRole
       });
       
       // Set default authorization header

@@ -238,11 +238,11 @@ export const usePermissions = () => {
   
   // Class Teacher, Director of Studies and Administrative Staff can edit students
   const canEditStudents = (): boolean => 
-    role === 'CLASS_TEACHER' || role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+    role === 'CLASS_TEACHER' || role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
   
   // Class Teacher, Director of Studies and Administrative Staff can delete students
   const canDeleteStudents = (): boolean => 
-    role === 'CLASS_TEACHER' || role === 'DIRECTOR_OF_STUDIES' || role === 'ADMINISTRATIVE_STAFF';
+    role === 'CLASS_TEACHER' || role === 'DIRECTOR_OF_STUDIES' || role === 'BURSAR' || role === 'ADMINISTRATIVE_STAFF';
   
   // Director of Studies and Bursar can view ALL students (not filtered by assigned classes)
   const canViewAllStudents = (): boolean => 

@@ -4,6 +4,7 @@ import {
   Play, Trash2, Eye, X, ChevronRight, Calendar, DollarSign,
   TrendingUp, TrendingDown, FileText, Loader2, Landmark, PiggyBank, Scale,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { payrollService } from '../../../services/payrollService';
 import type { PayrollRun, PayrollDashboardStats, PaymentTransaction, RevenueStats } from '../../../services/payrollService';
 import { FinancePageSkeleton } from '../../ui/Skeleton';
@@ -36,6 +37,10 @@ const TXN_STATUS: Record<string, { bg: string; text: string }> = {
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 export default function PayrollDashboard() {
+  // TODO: Display new staff payroll fields (kra_pin, bank_account, mpesa_number, loan_deductions, nhif_number, nssf_number, department) in dashboard tables and modals where relevant.
+
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState<PayrollDashboardStats | null>(null);
   const [revenue, setRevenue] = useState<RevenueStats | null>(null);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
@@ -168,12 +173,20 @@ export default function PayrollDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Payroll Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">Revenue overview, payroll runs, and transaction history</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4" /> New Payroll Run
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => navigate('/staff-management')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl shadow-sm hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Staff
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" /> New Payroll Run
+          </button>
+        </div>
       </div>
 
       {/* ─── Revenue vs Expenditure Banner ──────────────────────────────────── */}
@@ -263,8 +276,8 @@ export default function PayrollDashboard() {
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard icon={<Users className="w-5 h-5" />} label="Staff on Payroll" value={stats.total_staff} color="blue" />
-          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Monthly Gross" value={`KES ${stats.total_gross.toLocaleString()}`} color="emerald" />
-          <StatCard icon={<Wallet className="w-5 h-5" />} label="Monthly Net" value={`KES ${stats.total_net.toLocaleString()}`} color="violet" />
+          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Monthly Gross" value={`KES ${(parseFloat(String(stats.total_gross)) || 0).toLocaleString()}`} color="emerald" />
+          <StatCard icon={<Wallet className="w-5 h-5" />} label="Monthly Net" value={`KES ${(parseFloat(String(stats.total_net)) || 0).toLocaleString()}`} color="violet" />
           <StatCard icon={<BarChart3 className="w-5 h-5" />} label="Total Runs" value={stats.total_runs} color="amber" />
         </div>
       )}
@@ -303,7 +316,7 @@ export default function PayrollDashboard() {
                             </span>
                           </div>
                           <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                            <span>KES {run.total_amount?.toLocaleString() || 0}</span>
+                            <span>KES {(parseFloat(String(run.total_amount)) || 0).toLocaleString()}</span>
                             <span>{run.record_count || 0} staff</span>
                             {run.processed_count > 0 && (
                               <span className="text-emerald-600">{run.processed_count} paid</span>
@@ -485,7 +498,7 @@ export default function PayrollDashboard() {
                 {/* Run info */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <MiniStat label="Status" value={detailRun.status} />
-                  <MiniStat label="Total" value={`KES ${detailRun.total_amount?.toLocaleString()}`} />
+                  <MiniStat label="Total" value={`KES ${(parseFloat(String(detailRun.total_amount)) || 0).toLocaleString()}`} />
                   <MiniStat label="Paid" value={detailRun.processed_count} />
                   <MiniStat label="Failed" value={detailRun.failed_count} />
                 </div>
@@ -512,7 +525,7 @@ export default function PayrollDashboard() {
                             )}
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-semibold text-gray-900">KES {rec.net_salary.toLocaleString()}</div>
+                            <div className="text-sm font-semibold text-gray-900">KES {(parseFloat(String(rec.net_salary)) || 0).toLocaleString()}</div>
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${st.bg} ${st.text}`}>
                               {rec.status}
                             </span>

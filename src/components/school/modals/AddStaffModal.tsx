@@ -8,7 +8,20 @@ interface ClassOption {
 interface AddStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { phone_number: string; role: string; assigned_class?: string }) => Promise<void>;
+  onSubmit: (data: {
+    phone_number: string;
+    full_name?: string;
+    role: string;
+    assigned_class?: string;
+    kra_pin?: string;
+    bank_name?: string;
+    bank_account_number?: string;
+    bank_code?: string;
+    payment_method?: string;
+    nhif_number?: string;
+    nssf_number?: string;
+    department?: string;
+  }) => Promise<void>;
   roleOptions: { value: string; label: string }[];
   classOptions?: ClassOption[];
   isLoading?: boolean;
@@ -24,8 +37,17 @@ export default function AddStaffModal({
 }: AddStaffModalProps) {
   const [formData, setFormData] = useState({
     phone_number: '',
+    full_name: '',
     role: 'TEACHER',
-    assigned_class: ''
+    assigned_class: '',
+    kra_pin: '',
+    bank_name: '',
+    bank_account_number: '',
+    bank_code: '',
+    payment_method: 'mpesa',
+    nhif_number: '',
+    nssf_number: '',
+    department: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -98,9 +120,31 @@ export default function AddStaffModal({
     }
 
     try {
-      const submitData: { phone_number: string; role: string; assigned_class?: string } = {
+      const submitData: {
+        phone_number: string;
+        full_name?: string;
+        role: string;
+        assigned_class?: string;
+        kra_pin?: string;
+        bank_name?: string;
+        bank_account_number?: string;
+        bank_code?: string;
+        payment_method?: string;
+        nhif_number?: string;
+        nssf_number?: string;
+        department?: string;
+      } = {
         phone_number: formData.phone_number,
-        role: formData.role
+        full_name: formData.full_name.trim() || undefined,
+        role: formData.role,
+        kra_pin: formData.kra_pin.trim(),
+        bank_name: formData.bank_name.trim(),
+        bank_account_number: formData.bank_account_number.trim(),
+        bank_code: formData.bank_code.trim(),
+        payment_method: formData.payment_method,
+        nhif_number: formData.nhif_number.trim(),
+        nssf_number: formData.nssf_number.trim(),
+        department: formData.department.trim()
       };
       
       if (formData.role === 'CLASS_TEACHER' && formData.assigned_class) {
@@ -111,8 +155,17 @@ export default function AddStaffModal({
       // Reset form on successful submission
       setFormData({
         phone_number: '',
+        full_name: '',
         role: 'TEACHER',
-        assigned_class: ''
+        assigned_class: '',
+        kra_pin: '',
+        bank_name: '',
+        bank_account_number: '',
+        bank_code: '',
+        payment_method: 'mpesa',
+        nhif_number: '',
+        nssf_number: '',
+        department: ''
       });
       setErrors({});
     } catch (error) {
@@ -123,8 +176,17 @@ export default function AddStaffModal({
   const handleClose = () => {
     setFormData({
       phone_number: '',
+      full_name: '',
       role: 'TEACHER',
-      assigned_class: ''
+      assigned_class: '',
+      kra_pin: '',
+      bank_name: '',
+      bank_account_number: '',
+      bank_code: '',
+      payment_method: 'mpesa',
+      nhif_number: '',
+      nssf_number: '',
+      department: ''
     });
     setErrors({});
     onClose();
@@ -134,7 +196,7 @@ export default function AddStaffModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Add New Staff Member</h2>
           <button
@@ -171,6 +233,22 @@ export default function AddStaffModal({
             {errors.phone_number && (
               <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
+              Staff Name
+            </label>
+            <input
+              type="text"
+              id="full_name"
+              name="full_name"
+              value={formData.full_name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="John Doe"
+              disabled={isLoading}
+            />
           </div>
 
           <div>
@@ -229,6 +307,48 @@ export default function AddStaffModal({
               )}
             </div>
           )}
+
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">Optional Payroll Details</h3>
+            <p className="text-xs text-gray-500 mb-4">These can be added now or filled later.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="kra_pin" className="block text-sm font-medium text-gray-700 mb-2">KRA PIN</label>
+                <input id="kra_pin" name="kra_pin" value={formData.kra_pin} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="A123456789Z" />
+              </div>
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                <input id="department" name="department" value={formData.department} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="Finance" />
+              </div>
+              <div>
+                <label htmlFor="nhif_number" className="block text-sm font-medium text-gray-700 mb-2">NHIF Number</label>
+                <input id="nhif_number" name="nhif_number" value={formData.nhif_number} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="12345678" />
+              </div>
+              <div>
+                <label htmlFor="nssf_number" className="block text-sm font-medium text-gray-700 mb-2">NSSF Number</label>
+                <input id="nssf_number" name="nssf_number" value={formData.nssf_number} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="12345678" />
+              </div>
+              <div>
+                <label htmlFor="bank_name" className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                <input id="bank_name" name="bank_name" value={formData.bank_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="KCB" />
+              </div>
+              <div>
+                <label htmlFor="bank_account_number" className="block text-sm font-medium text-gray-700 mb-2">Bank Account Number</label>
+                <input id="bank_account_number" name="bank_account_number" value={formData.bank_account_number} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="1234567890" />
+              </div>
+              <div>
+                <label htmlFor="bank_code" className="block text-sm font-medium text-gray-700 mb-2">Bank Code</label>
+                <input id="bank_code" name="bank_code" value={formData.bank_code} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} placeholder="01" />
+              </div>
+              <div>
+                <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                <select id="payment_method" name="payment_method" value={formData.payment_method} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading}>
+                  <option value="mpesa">M-Pesa</option>
+                  <option value="bank">Bank Transfer</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div className="flex justify-end space-x-3 pt-4">
             <button

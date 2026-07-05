@@ -27,6 +27,13 @@ export interface SalaryStructure {
   pay_frequency: 'monthly' | 'once' | 'yearly';
   payment_method: 'mpesa' | 'bank';
   phone_number: string;
+  // Optional extended payroll/contact fields used in the frontend forms
+  kra_pin?: string;
+  mpesa_number?: string;
+  bank_account?: string;
+  nhif_number?: string;
+  nssf_number?: string;
+  department?: string;
   bank_name: string;
   bank_account_number: string;
   bank_code: string;

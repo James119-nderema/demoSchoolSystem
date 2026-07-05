@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { jsPDF } from 'jspdf';
 import {
   Send, Phone, Building2, User, AlertCircle, CheckCircle,
   Loader2, Search, Wallet, Shield, Clock, FileText, CheckSquare, Square,
@@ -63,6 +64,13 @@ export default function PaymentProcessing() {
   // Sending state
   const [sending, setSending] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [financialYear, setFinancialYear] = useState(() => {
+    const currentYear = new Date().getFullYear();
+    return `${currentYear - 1}/${currentYear}`;
+  });
+  const [showP9Modal, setShowP9Modal] = useState(false);
+  const [p9SelectedIds, setP9SelectedIds] = useState<Set<string>>(new Set());
+  const [p9Search, setP9Search] = useState('');
 
   /* ─── Fetch ────────────────────────────────────────────────────────────── */
   const fetchData = useCallback(async () => {
@@ -119,6 +127,17 @@ export default function PaymentProcessing() {
       return matchesSearch && matchesRole;
     });
   }, [payableStaff, staffSearch, roleFilter]);
+
+  const filteredP9Staff = useMemo(() => {
+    return payableStaff.filter((s) => {
+      const q = p9Search.toLowerCase();
+      return (
+        s.staffName.toLowerCase().includes(q) ||
+        s.staffRole.toLowerCase().includes(q) ||
+        s.staffEmail.toLowerCase().includes(q)
+      );
+    });
+  }, [payableStaff, p9Search]);
 
   /* ─── Unique roles for filter ──────────────────────────────────────────── */
   const availableRoles = useMemo(() => {
@@ -184,11 +203,12 @@ export default function PaymentProcessing() {
 
   const allSelected = filteredStaff.length > 0 && selectedIds.size === filteredStaff.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
+  const p9AllSelected = filteredP9Staff.length > 0 && filteredP9Staff.every((s) => p9SelectedIds.has(s.staffId));
 
   /* ─── Selected totals ──────────────────────────────────────────────────── */
   const selectedSalaries = payableStaff.filter((s) => selectedIds.has(s.staffId));
-  const totalSelectedNet = selectedSalaries.reduce((sum, s) => sum + (s.net_salary || 0), 0);
-  const totalSelectedGross = selectedSalaries.reduce((sum, s) => sum + (s.gross_salary || 0), 0);
+  const totalSelectedNet = selectedSalaries.reduce((sum, s) => sum + (parseFloat(String(s.net_salary)) || 0), 0);
+  const totalSelectedGross = selectedSalaries.reduce((sum, s) => sum + (parseFloat(String(s.gross_salary)) || 0), 0);
 
   /* ─── Open / Close Pay Modal ───────────────────────────────────────────── */
   const openPayModal = () => {
@@ -196,6 +216,35 @@ export default function PaymentProcessing() {
     setStaffSearch('');
     setRoleFilter('all');
     setShowPayModal(true);
+  };
+
+  const openP9Modal = () => {
+    setP9SelectedIds(new Set(payableStaff.map((staff) => staff.staffId)));
+    setP9Search('');
+    setShowP9Modal(true);
+  };
+
+  const closeP9Modal = () => {
+    setShowP9Modal(false);
+    setP9SelectedIds(new Set());
+    setP9Search('');
+  };
+
+  const toggleP9Selection = (staffId: string) => {
+    setP9SelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(staffId)) next.delete(staffId);
+      else next.add(staffId);
+      return next;
+    });
+  };
+
+  const toggleAllP9 = () => {
+    if (p9AllSelected) {
+      setP9SelectedIds(new Set());
+      return;
+    }
+    setP9SelectedIds(new Set(filteredP9Staff.map((staff) => staff.staffId)));
   };
 
   const closePayModal = () => {
@@ -222,7 +271,7 @@ export default function PaymentProcessing() {
     let failCount = 0;
 
     for (const staff of selectedSalaries) {
-      const amount = staff.net_salary || 0;
+      const amount = parseFloat(String(staff.net_salary)) || 0;
       if (amount <= 0) {
         failCount++;
         continue;
@@ -269,7 +318,7 @@ export default function PaymentProcessing() {
 
   /* ─── Send Single Payment ──────────────────────────────────────────────── */
   const handleSinglePay = async (staff: typeof payableStaff[0]) => {
-    const amount = staff.net_salary || 0;
+    const amount = parseFloat(String(staff.net_salary)) || 0;
     if (amount <= 0) {
       showToast('error', 'Net salary is zero');
       return;
@@ -312,6 +361,120 @@ export default function PaymentProcessing() {
     else { setTxnSort(field); setTxnSortAsc(false); }
   };
 
+  const handleDownloadP9Forms = () => {
+    const selectedStaff = payableStaff.filter((staff) => p9SelectedIds.has(staff.staffId));
+
+    if (selectedStaff.length === 0) {
+      showToast('error', 'Please select at least one staff member');
+      return;
+    }
+
+    selectedStaff.forEach((staff, index) => {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 30;
+      const bodyY = 100;
+
+      doc.setFillColor(248, 250, 252);
+      doc.rect(0, 0, pageWidth, 80, 'F');
+      doc.setDrawColor(37, 99, 235);
+      doc.setLineWidth(1.2);
+      doc.line(margin, 80, pageWidth - margin, 80);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(24);
+      doc.setTextColor(37, 99, 235);
+      doc.text('P9 FORM', margin, 45);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.text('Employee Payroll Statement', margin, 63);
+      doc.text(`Financial Year: ${financialYear}`, pageWidth - 220, 63);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(17, 24, 39);
+      doc.text('School Management System', margin, 76);
+
+      const tableHeaders = ['Name', 'Role', 'Phone', 'Email', 'Tax-Date', 'Taxable Pay', 'Pension', 'PAYE', 'AutoSHA', 'AutoNSSF', 'AutoAHL', 'AutoUnsed', 'MPR', 'MPR Value', 'Vote'];
+      const tableData = [
+        staff.staffName,
+        ROLE_LABELS[staff.staffRole] || staff.staffRole,
+        staff.staffPhone || staff.phone_number || '-',
+        staff.staffEmail || '-',
+        financialYear,
+        `KES ${(parseFloat(String(staff.basic_salary)) || 0).toLocaleString()}`,
+        `KES ${(parseFloat(String(staff.basic_salary)) || 0).toLocaleString()}`,
+        `KES ${(parseFloat(String(staff.gross_salary)) || 0).toLocaleString()}`,
+        `KES ${(parseFloat(String(staff.total_deductions)) || 0).toLocaleString()}`,
+        `KES ${(parseFloat(String(staff.total_deductions)) || 0).toLocaleString()}`,
+        `KES ${(parseFloat(String(staff.net_salary)) || 0).toLocaleString()}`,
+        '0',
+        '0',
+        `KES ${(parseFloat(String(staff.net_salary)) || 0).toLocaleString()}`,
+        staff.staffRole,
+      ];
+
+      doc.setDrawColor(209, 213, 219);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(margin, bodyY, pageWidth - margin * 2, 180, 8, 8, 'S');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(17, 24, 39);
+      doc.text('Payroll Summary', margin + 14, bodyY + 24);
+
+      const colWidth = (pageWidth - margin * 2 - 28) / tableHeaders.length;
+      const headerY = bodyY + 50;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.setFillColor(243, 244, 246);
+      tableHeaders.forEach((header, index) => {
+        const x = margin + 14 + index * colWidth;
+        doc.rect(x - 4, headerY - 14, colWidth, 18, 'F');
+        doc.setDrawColor(209, 213, 219);
+        doc.rect(x - 4, headerY - 14, colWidth, 18, 'S');
+        const lines = doc.splitTextToSize(header, colWidth - 4);
+        doc.text(lines, x, headerY - 6);
+      });
+
+      const dataY = headerY + 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(17, 24, 39);
+      tableData.forEach((value, index) => {
+        const x = margin + 14 + index * colWidth;
+        doc.setDrawColor(209, 213, 219);
+        doc.rect(x - 4, dataY - 12, colWidth, 24, 'S');
+        const lines = doc.splitTextToSize(value, colWidth - 6);
+        doc.text(lines, x, dataY + 2);
+      });
+
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(margin, bodyY + 190, pageWidth - margin * 2, 50, 8, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(5, 150, 105);
+      doc.text('Declaration', margin + 14, bodyY + 216);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.text('This statement is generated for payroll record purposes and may be used as supporting documentation.', margin + 14, bodyY + 238);
+
+      doc.setFontSize(9);
+      doc.setTextColor(107, 114, 128);
+      doc.text('Generated by School Management System', margin, pageHeight - 30);
+      doc.text(`Prepared for ${staff.staffName}`, pageWidth - 220, pageHeight - 30);
+      doc.save(`P9-${staff.staffName.replace(/\s+/g, '_')}-${financialYear}.pdf`);
+
+      if (index === selectedStaff.length - 1) {
+        showToast('success', `${selectedStaff.length} P9 form${selectedStaff.length > 1 ? 's' : ''} downloaded`);
+      }
+    });
+
+    closeP9Modal();
+  };
+
   /* ═══════════════════════════════════════════════════════════════════════════
      Render
      ═══════════════════════════════════════════════════════════════════════════ */
@@ -331,18 +494,111 @@ export default function PaymentProcessing() {
         </div>
       )}
 
+      {showP9Modal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Download P9 Forms</h3>
+                <p className="text-sm text-gray-500">Select staff members or choose all to generate PDF forms.</p>
+              </div>
+              <button onClick={closeP9Modal} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={p9Search}
+                    onChange={(e) => setP9Search(e.target.value)}
+                    placeholder="Search staff..."
+                    className="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <button
+                  onClick={toggleAllP9}
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  {p9AllSelected ? 'Clear All' : 'Select All'}
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[50vh] overflow-y-auto px-6 py-4 space-y-2">
+              {filteredP9Staff.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
+                  No staff found for this search.
+                </div>
+              ) : (
+                filteredP9Staff.map((staff) => (
+                  <label key={staff.staffId} className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 px-4 py-3 hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={p9SelectedIds.has(staff.staffId)}
+                        onChange={() => toggleP9Selection(staff.staffId)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900">{staff.staffName}</div>
+                        <div className="text-xs text-gray-500">{ROLE_LABELS[staff.staffRole] || staff.staffRole}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">{staff.staffEmail || staff.staffPhone || 'No contact'}</div>
+                  </label>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button onClick={closeP9Modal} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleDownloadP9Forms} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                Generate PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Payment Processing</h1>
           <p className="text-gray-500 text-sm mt-1">Track payments and initiate new salary disbursements</p>
         </div>
-        <button
-          onClick={openPayModal}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all"
-        >
-          <CreditCard className="w-4 h-4" /> Pay Salary
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium text-gray-600">
+            <span className="mr-2">Financial Year</span>
+            <select
+              value={financialYear}
+              onChange={(e) => setFinancialYear(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="2024/2025">2024/2025</option>
+              <option value="2025/2026">2025/2026</option>
+              <option value="2026/2027">2026/2027</option>
+              <option value="2027/2028">2027/2028</option>
+            </select>
+          </label>
+          <button
+            onClick={openP9Modal}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+          >
+            <FileText className="w-4 h-4" /> Download P9
+          </button>
+          <button
+            onClick={openPayModal}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all"
+          >
+            <CreditCard className="w-4 h-4" /> Pay Salary
+          </button>
+        </div>
       </div>
 
       {/* ─── Revenue Balance Banner ──────────────────────────────────────────── */}
@@ -717,13 +973,13 @@ export default function PaymentProcessing() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-gray-700">
-                            KES {(s.gross_salary || 0).toLocaleString()}
+                            KES {(parseFloat(String(s.gross_salary)) || 0).toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-gray-500">
-                            KES {(s.total_deductions || 0).toLocaleString()}
+                            KES {(parseFloat(String(s.total_deductions)) || 0).toLocaleString()}
                           </td>
                           <td className="px-4 py-3 font-semibold text-gray-900">
-                            KES {(s.net_salary || 0).toLocaleString()}
+                            KES {(parseFloat(String(s.net_salary)) || 0).toLocaleString()}
                           </td>
                           <td className="px-4 py-3">
                             {s.payment_method === 'mpesa' ? (

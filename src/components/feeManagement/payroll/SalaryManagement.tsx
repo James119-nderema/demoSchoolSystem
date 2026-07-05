@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { payrollService } from '../../../services/payrollService';
 import type { SalaryStructure, StaffForPayroll, DeductionPreview } from '../../../services/payrollService';
+//import { useStaffAuth } from '../../../components/authentication/contexts/StaffAuthContext';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    Constants
@@ -38,6 +39,13 @@ const EMPTY_FORM: Partial<SalaryStructure> = {
   nhif_deduction: 0,
   nssf_deduction: 0,
   sha_deduction: 0,
+  kra_pin: '',
+  bank_account: '',
+  mpesa_number: '',
+  nhif_number: '',
+  nssf_number: '',
+  department: '',
+
   housing_levy_deduction: 0,
   insurance_deduction: 0,
   loan_deduction: 0,
@@ -102,6 +110,13 @@ export default function SalaryManagement() {
     setShowForm(true);
   };
 
+  // Add fields for payroll details in the form UI
+  // Example: Add input fields for kra_pin, bank_account, mpesa_number, loan_deductions, nhif_number, nssf_number, department in the form rendering section.
+
+  // Show Add Staff button for BURSAR role
+  
+  
+  
   const openEdit = (s: SalaryStructure) => {
     setEditId(s.id ?? null);
     setForm({ ...s });
@@ -222,7 +237,7 @@ export default function SalaryManagement() {
       let cmp = 0;
       if (sortField === 'name') cmp = (a.staff_name || '').localeCompare(b.staff_name || '');
       else if (sortField === 'role') cmp = (a.staff_role || '').localeCompare(b.staff_role || '');
-      else cmp = (a.net_salary || 0) - (b.net_salary || 0);
+      else cmp = (parseFloat(String(a.net_salary)) || 0) - (parseFloat(String(b.net_salary)) || 0);
       return sortAsc ? cmp : -cmp;
     });
 
@@ -238,9 +253,9 @@ export default function SalaryManagement() {
   );
 
   /* ─── Summary Stats ────────────────────────────────────────────────────── */
-  const totalGross = salaries.reduce((s, r) => s + (r.gross_salary || 0), 0);
-  const totalDed = salaries.reduce((s, r) => s + (r.total_deductions || 0), 0);
-  const totalNet = salaries.reduce((s, r) => s + (r.net_salary || 0), 0);
+  const totalGross = salaries.reduce((s, r) => s + (parseFloat(String(r.gross_salary)) || 0), 0);
+  const totalDed = salaries.reduce((s, r) => s + (parseFloat(String(r.total_deductions)) || 0), 0);
+  const totalNet = salaries.reduce((s, r) => s + (parseFloat(String(r.net_salary)) || 0), 0);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      Render
@@ -330,9 +345,9 @@ export default function SalaryManagement() {
                         {ROLE_LABELS[s.staff_role || ''] || s.staff_role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">KES {(s.gross_salary || 0).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-700">KES {(s.total_deductions || 0).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">KES {(s.net_salary || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-700">KES {(parseFloat(String(s.gross_salary)) || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-700">KES {(parseFloat(String(s.total_deductions)) || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">KES {(parseFloat(String(s.net_salary)) || 0).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       {(() => {
                         const freq = FREQUENCY_LABELS[s.pay_frequency || 'monthly'] || FREQUENCY_LABELS.monthly;

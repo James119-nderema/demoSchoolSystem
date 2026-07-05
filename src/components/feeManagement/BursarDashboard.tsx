@@ -309,45 +309,6 @@ const BursarDashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Revenue Transaction Ledger */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden mt-8">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800">Revenue Transaction Ledger</h3>
-          <p className="text-sm text-gray-500">All money in/out with running balance</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">In</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Out</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Running Balance</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {(ledger?.transactions || []).map((tx) => (
-                <tr key={`${tx.source}-${tx.id}`} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(tx.transaction_date)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{tx.description}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500 capitalize">{tx.source.replaceAll('_', ' ')}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600">{tx.amount_in ? formatCurrency(tx.amount_in) : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-red-600">{tx.amount_out ? formatCurrency(tx.amount_out) : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">{formatCurrency(tx.running_balance)}</td>
-                </tr>
-              ))}
-              {(!ledger?.transactions || ledger.transactions.length === 0) && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">No transactions found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };
