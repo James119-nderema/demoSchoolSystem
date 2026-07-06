@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIService, API_ENDPOINTS, DataAPI } from '../../services/baseUrl';
+import { APIService, API_ENDPOINTS, DataAPI, SmsCreditsAPI } from '../../services/baseUrl';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddStudentModal from '../generalFiles/students/modals/AddStudentModal';
 import UploadStudentModal from '../generalFiles/students/modals/UploadStudentModal';
+import { sendBulkSms } from '../../services/smsService';
+import type { SmsMessage } from '../../services/smsService';
 
 interface Student {
   id: number;
@@ -53,6 +55,8 @@ interface AddStudentFormData {
   status: string;
 }
 
+type PortalRecipientMode = 'individual' | 'class' | 'school';
+
 const StaffStudents: React.FC = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
@@ -68,6 +72,7 @@ const StaffStudents: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPortalInfoModal, setShowPortalInfoModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -77,6 +82,14 @@ const StaffStudents: React.FC = () => {
   const [studentPhoto, setStudentPhoto] = useState<File | null>(null);
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [isSendingPortalInfo, setIsSendingPortalInfo] = useState(false);
+  const [isLoadingPortalRecipients, setIsLoadingPortalRecipients] = useState(false);
+  const [portalRecipientMode, setPortalRecipientMode] = useState<PortalRecipientMode>('individual');
+  const [portalSearchTerm, setPortalSearchTerm] = useState('');
+  const [portalSelectedClass, setPortalSelectedClass] = useState('');
+  const [portalSelectedStudentId, setPortalSelectedStudentId] = useState('');
+  const [portalStudents, setPortalStudents] = useState<Student[]>([]);
+  const [portalResult, setPortalResult] = useState<string>('');
   
   // Form data for add student modal
   const [formData, setFormData] = useState<AddStudentFormData>({
@@ -305,6 +318,146 @@ const StaffStudents: React.FC = () => {
   // Since we're using server-side filtering, we don't need to filter again
   const filteredStudents = students;
 
+  const getStudentClass = (student: Student) => (
+    student.current_class || student.admission_class || student.class_field || student.class || ''
+  );
+
+  const portalClasses = [...new Set(portalStudents.map(getStudentClass).filter(Boolean))].sort();
+
+  const getPortalSearchMatches = () => {
+    const query = portalSearchTerm.trim().toLowerCase();
+    return portalStudents.filter(student => {
+      const matchesMode = portalRecipientMode === 'school'
+        || (portalRecipientMode === 'class' && getStudentClass(student) === portalSelectedClass)
+        || portalRecipientMode === 'individual';
+
+      if (!matchesMode) return false;
+      if (!query) return true;
+
+      return (
+        student.full_name?.toLowerCase().includes(query) ||
+        student.admission_number?.toLowerCase().includes(query)
+      );
+    });
+  };
+
+  const getPortalRecipients = () => {
+    if (portalRecipientMode === 'individual') {
+      return portalStudents.filter(student => student.id.toString() === portalSelectedStudentId);
+    }
+
+    return getPortalSearchMatches();
+  };
+
+  const openPortalInfoModal = async () => {
+    setShowPortalInfoModal(true);
+    setPortalRecipientMode('individual');
+    setPortalSearchTerm('');
+    setPortalSelectedClass('');
+    setPortalSelectedStudentId('');
+    setPortalResult('');
+    setError('');
+    setIsLoadingPortalRecipients(true);
+
+    try {
+      const allRows: Student[] = [];
+      const pageLimit = 200;
+      let page = 1;
+      let totalAvailable: number | null = null;
+
+      while (true) {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          page_size: pageLimit.toString(),
+          status: 'active',
+        });
+
+        if (canViewAllStudents()) {
+          params.append('view_all', 'true');
+        }
+
+        const response = await APIService.get(`/api/students/?${params.toString()}`, undefined, 'staff');
+        const rows: Student[] = response?.results ? response.results : (Array.isArray(response) ? response : []);
+
+        if (typeof response?.count === 'number') {
+          totalAvailable = response.count;
+        }
+
+        allRows.push(...rows);
+
+        if (!response?.results || rows.length === 0) break;
+        if (totalAvailable !== null && allRows.length >= totalAvailable) break;
+        if (rows.length < pageLimit && !response?.next) break;
+
+        page += 1;
+      }
+
+      setPortalStudents(allRows);
+      if (allRows.length > 0) {
+        setPortalSelectedStudentId(allRows[0].id.toString());
+      }
+    } catch (err: any) {
+      console.error('Error loading portal recipients:', err);
+      setPortalResult(err.message || 'Failed to load students for portal info.');
+      setPortalStudents([]);
+    } finally {
+      setIsLoadingPortalRecipients(false);
+    }
+  };
+
+  const closePortalInfoModal = () => {
+    if (isSendingPortalInfo) return;
+    setShowPortalInfoModal(false);
+    setPortalResult('');
+  };
+
+  const handleSendPortalInfo = async () => {
+    const recipients = getPortalRecipients();
+    const messages: SmsMessage[] = recipients
+      .filter(student => student.parent_guardian_phone)
+      .map(student => ({
+        recipient: {
+          phoneNumber: student.parent_guardian_phone,
+          studentName: student.full_name,
+          studentId: student.id.toString(),
+          parentName: student.parent_guardian_name || undefined,
+        },
+        message: `Dear Parent/Guardian, to register or access the parent portal for ${student.full_name}, use Student Name: ${student.full_name} and Admission No: ${student.admission_number} exactly as registered in the school system.`,
+      }));
+
+    if (messages.length === 0) {
+      setPortalResult('No parent phone numbers found for the selected students.');
+      return;
+    }
+
+    setIsSendingPortalInfo(true);
+    setError('');
+    setSuccessMessage('');
+    setPortalResult('');
+
+    try {
+      const result = await sendBulkSms(messages);
+      try {
+        await SmsCreditsAPI.recordUsage({
+          recipient_count: messages.length,
+          successful_count: result.totalSent,
+          failed_count: result.totalFailed,
+          message_type: 'parent_portal_registration_info',
+        });
+      } catch {
+        // Keep the visible result focused on SMS delivery.
+      }
+      const message = `Sent ${result.totalSent} parent portal info message(s). Failed: ${result.totalFailed}.`;
+      setPortalResult(message);
+      setSuccessMessage(message);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err: any) {
+      setPortalResult(err.message || 'Failed to send parent portal information.');
+    } finally {
+      setIsSendingPortalInfo(false);
+    }
+  };
+
   // Edit student handler
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -457,8 +610,24 @@ const StaffStudents: React.FC = () => {
             </div>
             
             {/* Add/Upload buttons for Director of Studies and Bursar */}
-            {(canAddStudents() || canUploadStudents()) && (
+            {(canAddStudents() || canUploadStudents() || filteredStudents.length > 0) && (
               <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+                {filteredStudents.length > 0 && (
+                  <button
+                    onClick={openPortalInfoModal}
+                    disabled={isLoadingPortalRecipients}
+                    className="inline-flex items-center px-4 py-2 border border-amber-300 rounded-md shadow-sm text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
+                  >
+                    {isLoadingPortalRecipients ? (
+                      <span className="-ml-1 mr-2 h-5 w-5 animate-spin rounded-full border-2 border-amber-700 border-t-transparent" />
+                    ) : (
+                      <svg className="-ml-1 mr-2 h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                    Send Portal Info
+                  </button>
+                )}
                 {canUploadStudents() && (
                   <button
                     onClick={() => setShowUploadModal(true)}
@@ -992,6 +1161,191 @@ const StaffStudents: React.FC = () => {
         </div>
       </div>
       
+      {/* Parent Portal Info Modal */}
+      {showPortalInfoModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 py-6">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={closePortalInfoModal} />
+            <div className="relative w-full max-w-3xl overflow-hidden bg-white rounded-lg shadow-xl">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Send Parent Portal Info</h3>
+                  <p className="mt-1 text-sm text-gray-500">Choose recipients, then send the student name and admission number parents should use.</p>
+                </div>
+                <button
+                  onClick={closePortalInfoModal}
+                  disabled={isSendingPortalInfo}
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(['individual', 'class', 'school'] as PortalRecipientMode[]).map(mode => (
+                    <label key={mode} className={`border rounded-lg p-3 cursor-pointer ${portalRecipientMode === mode ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
+                      <input
+                        type="radio"
+                        name="portalRecipientMode"
+                        value={mode}
+                        checked={portalRecipientMode === mode}
+                        onChange={() => {
+                          setPortalRecipientMode(mode);
+                          setPortalResult('');
+                        }}
+                        className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-gray-900">
+                        {mode === 'individual' ? 'Individual Student' : mode === 'class' ? 'Class' : 'Whole School'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Search by name or admission no</label>
+                    <input
+                      type="text"
+                      value={portalSearchTerm}
+                      onChange={(e) => setPortalSearchTerm(e.target.value)}
+                      placeholder="Type student name or admission number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+
+                  {portalRecipientMode === 'class' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                      <select
+                        value={portalSelectedClass}
+                        onChange={(e) => setPortalSelectedClass(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      >
+                        <option value="">Select class</option>
+                        {portalClasses.map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {isLoadingPortalRecipients ? (
+                  <div className="py-10 flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  (() => {
+                    const visibleRows = getPortalSearchMatches();
+                    const recipients = getPortalRecipients();
+                    const reachableCount = recipients.filter(student => student.parent_guardian_phone).length;
+                    const missingCount = recipients.length - reachableCount;
+
+                    return (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-xs text-gray-500">Selected</p>
+                            <p className="text-lg font-semibold text-gray-900">{recipients.length}</p>
+                          </div>
+                          <div className="bg-green-50 rounded-lg p-3">
+                            <p className="text-xs text-green-700">Ready to send</p>
+                            <p className="text-lg font-semibold text-green-900">{reachableCount}</p>
+                          </div>
+                          <div className="bg-amber-50 rounded-lg p-3">
+                            <p className="text-xs text-amber-700">Missing phone</p>
+                            <p className="text-lg font-semibold text-amber-900">{missingCount}</p>
+                          </div>
+                        </div>
+
+                        <div className="border border-gray-200 rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                          {visibleRows.length === 0 ? (
+                            <div className="p-4 text-sm text-gray-500 text-center">No students match this selection.</div>
+                          ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50 sticky top-0">
+                                <tr>
+                                  {portalRecipientMode === 'individual' && <th className="px-4 py-2"></th>}
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Parent Phone</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {visibleRows.slice(0, 100).map(student => (
+                                  <tr key={student.id}>
+                                    {portalRecipientMode === 'individual' && (
+                                      <td className="px-4 py-3">
+                                        <input
+                                          type="radio"
+                                          name="portalStudent"
+                                          checked={portalSelectedStudentId === student.id.toString()}
+                                          onChange={() => setPortalSelectedStudentId(student.id.toString())}
+                                          className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                      </td>
+                                    )}
+                                    <td className="px-4 py-3 text-sm">
+                                      <p className="font-medium text-gray-900">{student.full_name}</p>
+                                      <p className="text-gray-500">{student.admission_number}</p>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{getStudentClass(student) || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{student.parent_guardian_phone || 'Missing'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                        {visibleRows.length > 100 && (
+                          <p className="text-xs text-gray-500">Showing first 100 matching students. Narrow the search to pick an individual student faster.</p>
+                        )}
+                      </>
+                    );
+                  })()
+                )}
+
+                {portalResult && (
+                  <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-3 text-sm">
+                    {portalResult}
+                  </div>
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closePortalInfoModal}
+                  disabled={isSendingPortalInfo}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendPortalInfo}
+                  disabled={
+                    isSendingPortalInfo ||
+                    isLoadingPortalRecipients ||
+                    (portalRecipientMode === 'individual' && !portalSelectedStudentId) ||
+                    (portalRecipientMode === 'class' && !portalSelectedClass) ||
+                    getPortalRecipients().filter(student => student.parent_guardian_phone).length === 0
+                  }
+                  className="px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSendingPortalInfo && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                  Send SMS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Student Modal */}
       <AddStudentModal
         isOpen={showAddModal}

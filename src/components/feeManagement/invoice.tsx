@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { APIService } from '../../services/baseUrl';
+import { APIService, SmsCreditsAPI } from '../../services/baseUrl';
 import { usePermissions } from '../../hooks/usePermissions';
+import { sendBulkSms } from '../../services/smsService';
+import type { SmsMessage } from '../../services/smsService';
 
 // Types
 interface InvoiceItem {
@@ -39,6 +41,9 @@ interface Invoice {
     student_name: string;
     admission_number: string;
     class_name: string;
+    parent_guardian_name?: string;
+    parent_guardian_phone?: string;
+    parent_guardian_email?: string;
     amount_paid: number;
     payment_status: string;
     total_amount: number;
@@ -56,6 +61,24 @@ interface CreateInvoiceData {
   items: { item_name: string; amount: number; description?: string }[];
 }
 
+interface FeeBalanceReminder {
+  id: string;
+  student: string;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  parent_guardian_name?: string;
+  parent_guardian_phone?: string;
+  parent_guardian_email?: string;
+  invoice_number: string;
+  due_date?: string | null;
+  total_amount: number;
+  amount_paid: number;
+  balance: number;
+}
+
+type NotificationRecipientMode = 'individual' | 'class' | 'school';
+
 const InvoiceManagement: React.FC = () => {
   const permissions = usePermissions();
   
@@ -69,8 +92,10 @@ const InvoiceManagement: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [notificationInvoice, setNotificationInvoice] = useState<Invoice | null>(null);
   
   // Form state
   const [term, setTerm] = useState('');
@@ -87,9 +112,98 @@ const InvoiceManagement: React.FC = () => {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sendingNotifications, setSendingNotifications] = useState(false);
+  const [notificationMode, setNotificationMode] = useState<'created' | 'reminders'>('created');
+  const [reminderBalances, setReminderBalances] = useState<FeeBalanceReminder[]>([]);
+  const [notificationResult, setNotificationResult] = useState<string | null>(null);
+  const [notificationRecipientMode, setNotificationRecipientMode] = useState<NotificationRecipientMode>('school');
+  const [notificationSearchTerm, setNotificationSearchTerm] = useState('');
+  const [notificationSelectedClass, setNotificationSelectedClass] = useState('');
+  const [notificationSelectedStudentKey, setNotificationSelectedStudentKey] = useState('');
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
+
+  const buildFeeMessage = (item: {
+    student_name: string;
+    admission_number: string;
+    invoice_number: string;
+    balance: number;
+    due_date?: string | null;
+  }) => {
+    const dueText = item.due_date ? ` Due date: ${formatDate(item.due_date)}.` : '';
+    return `Dear Parent, ${item.student_name} (${item.admission_number}) has a fee balance of ${formatCurrency(Number(item.balance || 0))} on invoice ${item.invoice_number}.${dueText} Please clear the balance or contact the school accounts office.`;
+  };
+
+  const getBaseNotificationRows = () => {
+    if (notificationMode === 'created') {
+      return (notificationInvoice?.invoice_students || [])
+        .filter(student => Number(student.balance || 0) > 0)
+        .map(student => ({
+          id: student.id,
+          student_name: student.student_name,
+          admission_number: student.admission_number,
+          class_name: student.class_name,
+          parent_guardian_name: student.parent_guardian_name,
+          parent_guardian_phone: student.parent_guardian_phone,
+          invoice_number: notificationInvoice?.invoice_number || '',
+          due_date: notificationInvoice?.due_date || null,
+          balance: Number(student.balance || 0)
+        }));
+    }
+
+    return reminderBalances
+      .filter(student => Number(student.balance || 0) > 0)
+      .map(student => ({
+        id: student.id,
+        student_name: student.student_name,
+        admission_number: student.admission_number,
+        parent_guardian_name: student.parent_guardian_name,
+        parent_guardian_phone: student.parent_guardian_phone,
+        class_name: student.class_name,
+        invoice_number: student.invoice_number,
+        due_date: student.due_date || null,
+        balance: Number(student.balance || 0)
+      }));
+  };
+
+  const getNotificationRows = () => {
+    const query = notificationSearchTerm.trim().toLowerCase();
+
+    return getBaseNotificationRows().filter(row => {
+      const matchesMode = notificationRecipientMode === 'school'
+        || (notificationRecipientMode === 'class' && row.class_name === notificationSelectedClass)
+        || (notificationRecipientMode === 'individual' && row.admission_number === notificationSelectedStudentKey);
+
+      if (!matchesMode) return false;
+      if (!query) return true;
+
+      return (
+        row.student_name.toLowerCase().includes(query) ||
+        row.admission_number.toLowerCase().includes(query)
+      );
+    });
+  };
+
+  const getNotificationSearchRows = () => {
+    const query = notificationSearchTerm.trim().toLowerCase();
+
+    return getBaseNotificationRows().filter(row => {
+      const matchesMode = notificationRecipientMode === 'school'
+        || (notificationRecipientMode === 'class' && row.class_name === notificationSelectedClass)
+        || notificationRecipientMode === 'individual';
+
+      if (!matchesMode) return false;
+      if (!query) return true;
+
+      return (
+        row.student_name.toLowerCase().includes(query) ||
+        row.admission_number.toLowerCase().includes(query)
+      );
+    });
+  };
+
+  const notificationClasses = [...new Set(getBaseNotificationRows().map(row => row.class_name).filter(Boolean))].sort();
 
   // Fetch invoices
   const fetchInvoices = useCallback(async () => {
@@ -264,15 +378,99 @@ const InvoiceManagement: React.FC = () => {
         data.class_id = selectedClass;
       }
 
-      await APIService.post('/api/finance/invoices/', data, 'staff');
+      const createdInvoice = await APIService.post<Invoice>('/api/finance/invoices/', data, 'staff');
       
       closeCreateModal();
+      setNotificationMode('created');
+      setNotificationInvoice(createdInvoice);
+      setReminderBalances([]);
+      setNotificationResult(null);
+      setNotificationRecipientMode('school');
+      setNotificationSearchTerm('');
+      setNotificationSelectedClass('');
+      setNotificationSelectedStudentKey('');
+      setShowNotifyModal(true);
       fetchInvoices();
     } catch (err: any) {
       console.error('Error creating invoice:', err);
       setError(err.message || 'Failed to create invoice');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openReminderModal = async () => {
+    try {
+      setSubmitting(true);
+      setError(null);
+      const balances = await APIService.get<FeeBalanceReminder[]>('/api/finance/invoice-student-balances/', {}, 'staff');
+      setNotificationMode('reminders');
+      setNotificationInvoice(null);
+      setReminderBalances(Array.isArray(balances) ? balances : []);
+      setNotificationResult(null);
+      setNotificationRecipientMode('school');
+      setNotificationSearchTerm('');
+      setNotificationSelectedClass('');
+      setNotificationSelectedStudentKey('');
+      setShowNotifyModal(true);
+    } catch (err: any) {
+      console.error('Error loading fee balances:', err);
+      setError(err.message || 'Failed to load fee balances');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const closeNotifyModal = () => {
+    setShowNotifyModal(false);
+    setNotificationInvoice(null);
+    setReminderBalances([]);
+    setNotificationResult(null);
+    setNotificationRecipientMode('school');
+    setNotificationSearchTerm('');
+    setNotificationSelectedClass('');
+    setNotificationSelectedStudentKey('');
+  };
+
+  const sendFeeNotifications = async () => {
+    const rows = getNotificationRows();
+    const messages: SmsMessage[] = rows
+      .filter(row => row.parent_guardian_phone)
+      .map(row => ({
+        recipient: {
+          phoneNumber: row.parent_guardian_phone || '',
+          studentName: row.student_name,
+          studentId: row.id,
+          parentName: row.parent_guardian_name || undefined,
+        },
+        message: buildFeeMessage(row),
+      }));
+
+    if (messages.length === 0) {
+      setNotificationResult('No parent phone numbers were found for these fee balances.');
+      return;
+    }
+
+    try {
+      setSendingNotifications(true);
+      setNotificationResult(null);
+      const result = await sendBulkSms(messages);
+      try {
+        await SmsCreditsAPI.recordUsage({
+          recipient_count: messages.length,
+          successful_count: result.totalSent,
+          failed_count: result.totalFailed,
+          message_type: notificationMode === 'created' ? 'fee_invoice_created' : 'fee_balance_reminder',
+        });
+      } catch {
+        // SMS delivery result is more important to show here than credit logging failure.
+      }
+      setNotificationResult(`Sent ${result.totalSent} notification(s). Failed: ${result.totalFailed}.`);
+    } catch (err: any) {
+      console.error('Error sending fee notifications:', err);
+      setNotificationResult(err.message || 'Failed to send fee notifications.');
+    } finally {
+      setSendingNotifications(false);
     }
   };
 
@@ -445,15 +643,27 @@ const InvoiceManagement: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-800">Invoice Management</h2>
           <p className="text-gray-600">Create and manage student invoices</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Invoice
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={openReminderModal}
+            disabled={submitting}
+            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Send Fee Reminders
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Invoice
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -849,6 +1059,195 @@ const InvoiceManagement: React.FC = () => {
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 )}
                 Create Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fee Notification Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {notificationMode === 'created' ? 'Notify Parents' : 'Send Fee Balance Reminders'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {notificationMode === 'created'
+                      ? `Invoice ${notificationInvoice?.invoice_number || ''} has been created.`
+                      : 'Parents with outstanding student fee balances will receive an SMS reminder.'}
+                  </p>
+                </div>
+                <button
+                  onClick={closeNotifyModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(['individual', 'class', 'school'] as NotificationRecipientMode[]).map(mode => (
+                  <label key={mode} className={`border rounded-lg p-3 cursor-pointer ${notificationRecipientMode === mode ? 'border-amber-500 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+                    <input
+                      type="radio"
+                      name="notificationRecipientMode"
+                      value={mode}
+                      checked={notificationRecipientMode === mode}
+                      onChange={() => {
+                        setNotificationRecipientMode(mode);
+                        setNotificationSelectedStudentKey('');
+                        setNotificationResult(null);
+                      }}
+                      className="mr-2 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-sm font-medium text-gray-900">
+                      {mode === 'individual' ? 'Individual Student' : mode === 'class' ? 'Class' : 'Whole School'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search by name or admission no</label>
+                  <input
+                    type="text"
+                    value={notificationSearchTerm}
+                    onChange={(e) => setNotificationSearchTerm(e.target.value)}
+                    placeholder="Type student name or admission number"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  />
+                </div>
+
+                {notificationRecipientMode === 'class' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                    <select
+                      value={notificationSelectedClass}
+                      onChange={(e) => setNotificationSelectedClass(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    >
+                      <option value="">Select class</option>
+                      {notificationClasses.map(cls => (
+                        <option key={cls} value={cls}>{cls}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {(() => {
+                const rows = getNotificationRows();
+                const visibleRows = getNotificationSearchRows();
+                const reachableCount = rows.filter(row => row.parent_guardian_phone).length;
+                const missingCount = rows.length - reachableCount;
+
+                return (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500">Balances</p>
+                        <p className="text-lg font-semibold text-gray-900">{rows.length}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3">
+                        <p className="text-xs text-green-700">Ready to send</p>
+                        <p className="text-lg font-semibold text-green-900">{reachableCount}</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-3">
+                        <p className="text-xs text-amber-700">Missing phone</p>
+                        <p className="text-lg font-semibold text-amber-900">{missingCount}</p>
+                      </div>
+                    </div>
+
+                    {visibleRows.length === 0 ? (
+                      <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+                        No outstanding balances were found.
+                      </div>
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50 sticky top-0">
+                            <tr>
+                              {notificationRecipientMode === 'individual' && <th className="px-4 py-2"></th>}
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Parent Phone</th>
+                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {visibleRows.slice(0, 50).map(row => (
+                              <tr key={`${row.id}-${row.invoice_number}`}>
+                                {notificationRecipientMode === 'individual' && (
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="radio"
+                                      name="notificationStudent"
+                                      checked={notificationSelectedStudentKey === row.admission_number}
+                                      onChange={() => setNotificationSelectedStudentKey(row.admission_number)}
+                                      className="text-amber-600 focus:ring-amber-500"
+                                    />
+                                  </td>
+                                )}
+                                <td className="px-4 py-3 text-sm">
+                                  <p className="font-medium text-gray-900">{row.student_name}</p>
+                                  <p className="text-gray-500">{row.admission_number}</p>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{row.invoice_number}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{row.class_name || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{row.parent_guardian_phone || 'Missing'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900 text-right">{formatCurrency(row.balance)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {visibleRows.length > 50 && (
+                      <p className="text-xs text-gray-500">Showing first 50 matching balances. Use search to narrow the list.</p>
+                    )}
+                  </>
+                );
+              })()}
+
+              {notificationResult && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-3 text-sm">
+                  {notificationResult}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={closeNotifyModal}
+                disabled={sendingNotifications}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={sendFeeNotifications}
+                disabled={
+                  sendingNotifications ||
+                  (notificationRecipientMode === 'individual' && !notificationSelectedStudentKey) ||
+                  (notificationRecipientMode === 'class' && !notificationSelectedClass) ||
+                  getNotificationRows().filter(row => row.parent_guardian_phone).length === 0
+                }
+                className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {sendingNotifications && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Send SMS
               </button>
             </div>
           </div>

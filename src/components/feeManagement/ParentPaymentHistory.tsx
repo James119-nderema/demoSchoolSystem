@@ -202,7 +202,7 @@ export default function ParentPaymentHistory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payment History</h1>
+          
           <p className="text-sm sm:text-base text-gray-600 mt-1">
             Student: <span className="font-medium">{data.student_name}</span>
           </p>

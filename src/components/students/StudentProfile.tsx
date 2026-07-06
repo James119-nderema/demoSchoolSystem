@@ -533,37 +533,8 @@ const StudentProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ─── Hero Header ─────────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 overflow-hidden">
-        {/* Decorative pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/20" />
-          <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-white/10" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/5" />
-        </div>
-
-        <div className="relative px-4 sm:px-6 lg:px-8 pt-6 pb-24">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-indigo-200 text-sm mb-6">
-            <button onClick={() => navigate(backPath)} className="hover:text-white transition-colors flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Students
-            </button>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-white font-medium">{student.full_name}</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Student Profile</h1>
-          <p className="mt-1 text-indigo-200 text-sm">View detailed student information, academic results, and fee records</p>
-        </div>
-      </div>
-
       {/* ─── Profile Card (overlaps hero) ────────────────────────────── */}
-      <div className="relative px-4 sm:px-6 lg:px-8 -mt-16 pb-8">
+      <div className="relative px-4 sm:px-6 lg:px-8 pt-6 pb-8">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
           {/* Profile strip */}
           <div className="px-6 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">

@@ -226,16 +226,7 @@ export default function PackageSelection() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-3">All combinations (31)</h2>
-          <div className="max-h-44 overflow-y-auto flex flex-wrap gap-2">
-            {allCombinations.map((combo, idx) => (
-              <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                {combo.map(c => PACKAGE_LABELS[c]).join(' + ')}
-              </span>
-            ))}
-          </div>
-        </div>
+        
 
         <div className="bg-white rounded-2xl shadow-xl p-6 flex items-center justify-between">
           <div>

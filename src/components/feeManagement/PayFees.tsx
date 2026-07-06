@@ -246,7 +246,6 @@ export default function PayFees() {
     <div className="p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pay School Fees</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1">Choose your preferred payment method</p>
       </div>
 
