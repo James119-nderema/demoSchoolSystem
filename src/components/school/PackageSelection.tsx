@@ -23,6 +23,7 @@ interface RegistrationData {
   motto?: string;
   vision?: string;
   mission?: string;
+  country?: string;
 }
 
 interface LocationState {
@@ -120,6 +121,9 @@ export default function PackageSelection() {
         formData.append('website', normalizedRegistrationData.school_domain);
       }
       formData.append('principal_name', normalizedRegistrationData.principal_name || '');
+      if (normalizedRegistrationData.country) {
+        formData.append('country', normalizedRegistrationData.country);
+      }
       formData.append('selected_packages', JSON.stringify(selectedPackages));
       formData.append('package_name', deriveLegacyPackageName(selectedPackages));
       formData.append('billing_cycle', billingCycle);

@@ -1,6 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+const EAST_AFRICAN_COUNTRIES = [
+  'Tanzania',
+  'Kenya',
+  'Uganda',
+  'Rwanda',
+  'Burundi',
+  'South Sudan',
+  'DR Congo',
+  'Ethiopia',
+  'Somalia',
+  'Eritrea',
+  'Djibouti',
+]
+
 interface SchoolFormData {
   school_name: string
   principal_name: string
@@ -14,6 +28,7 @@ interface SchoolFormData {
   motto: string
   vision: string
   mission: string
+  country: string
 }
 
 export default function SchoolRegistration() {
@@ -31,12 +46,13 @@ export default function SchoolRegistration() {
     logo: null,
     motto: '',
     vision: '',
-    mission: ''
+    mission: '',
+    country: ''
   })
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -77,6 +93,9 @@ export default function SchoolRegistration() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
+    if (!formData.country) {
+      newErrors.country = 'Country is required'
+    }
     if (!formData.password) {
       newErrors.password = 'Password is required'
     } else if (formData.password.length < 8) {
@@ -109,6 +128,7 @@ export default function SchoolRegistration() {
       motto: formData.motto,
       vision: formData.vision,
       mission: formData.mission,
+      country: formData.country,
     }
     
     // Store in sessionStorage for persistence across pages
@@ -241,6 +261,25 @@ export default function SchoolRegistration() {
                 </div>
               </div>
               
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                  Country *
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white ${errors.country ? 'border-red-500' : 'border-gray-300'}`}
+                >
+                  <option value="">Select your country</option>
+                  {EAST_AFRICAN_COUNTRIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
+              </div>
+
               <div>
                 <label htmlFor="principal_name" className="block text-sm font-medium text-gray-700 mb-2">
                   Principal/Head Teacher Name *

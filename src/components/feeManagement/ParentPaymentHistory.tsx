@@ -14,6 +14,7 @@ interface PaymentHistoryItem {
   type: 'invoice' | 'payment';
   debit: number | null;
   credit: number | null;
+  payment_method?: string;  // e.g. 'gepg', 'mpesa', 'cash', 'bank_transfer'
 }
 
 interface PaymentHistoryStats {
@@ -393,6 +394,9 @@ export default function ParentPaymentHistory() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Invoice # / Receipt #
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Channel
+                    </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Debit
                     </th>
@@ -429,6 +433,21 @@ export default function ParentPaymentHistory() {
                           {item.invoice_number}
                         </span>
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                        {item.type === 'payment' && item.payment_method ? (
+                          item.payment_method === 'gepg' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              GePG
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 capitalize">
+                              {item.payment_method.replace('_', ' ')}
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
                         {formatCurrency(item.debit)}
                       </td>
@@ -440,7 +459,7 @@ export default function ParentPaymentHistory() {
                 </tbody>
                 <tfoot className="bg-gray-100">
                   <tr>
-                    <td colSpan={4} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                    <td colSpan={5} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
                       Totals:
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-red-600">
@@ -451,7 +470,7 @@ export default function ParentPaymentHistory() {
                     </td>
                   </tr>
                   <tr className="bg-gray-200">
-                    <td colSpan={4} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                    <td colSpan={5} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
                       Balance Due:
                     </td>
                     <td colSpan={2} className={`px-4 py-3 whitespace-nowrap text-sm text-right font-bold ${

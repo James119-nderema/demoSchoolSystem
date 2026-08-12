@@ -8,6 +8,20 @@ import {
   type SchoolPackage,
 } from '../../config/packageAccess';
 
+const EAST_AFRICAN_COUNTRIES = [
+  'Tanzania',
+  'Kenya',
+  'Uganda',
+  'Rwanda',
+  'Burundi',
+  'South Sudan',
+  'DR Congo',
+  'Ethiopia',
+  'Somalia',
+  'Eritrea',
+  'Djibouti',
+];
+
 interface SchoolProfile {
   id: string;
   school_name: string;
@@ -19,6 +33,7 @@ interface SchoolProfile {
   motto: string;
   vision: string;
   mission: string;
+  country: string;
   logo: string;
   logo_url: string | null;
   created_at: string;
@@ -47,6 +62,7 @@ export default function SchoolProfile() {
     motto: '',
     vision: '',
     mission: '',
+    country: '',
     logo: null as File | null
   });
 
@@ -90,6 +106,7 @@ export default function SchoolProfile() {
         motto: response.motto || '',
         vision: response.vision || '',
         mission: response.mission || '',
+        country: response.country || '',
         logo: null
       });
       
@@ -107,7 +124,7 @@ export default function SchoolProfile() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -156,6 +173,7 @@ export default function SchoolProfile() {
       if (formData.motto) submitData.append('motto', formData.motto);
       if (formData.vision) submitData.append('vision', formData.vision);
       if (formData.mission) submitData.append('mission', formData.mission);
+      if (formData.country) submitData.append('country', formData.country);
       if (formData.logo) submitData.append('logo', formData.logo);
 
       await DataAPI.updateSchool(schoolId.toString(), submitData as any);
@@ -186,6 +204,7 @@ export default function SchoolProfile() {
         motto: profile.motto || '',
         vision: profile.vision || '',
         mission: profile.mission || '',
+        country: profile.country || '',
         logo: null
       });
       
@@ -564,6 +583,29 @@ export default function SchoolProfile() {
                   </div>
                 </div>
 
+                {/* Country */}
+                <div className="flex items-start gap-3.5 p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+                  <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 21l1.9-5.7a8.5 8.5 0 113.8 3.8L3 21" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Country</label>
+                    {editing ? (
+                      <select name="country" value={formData.country} onChange={handleInputChange}
+                        className="mt-1 block w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                        <option value="">Select country</option>
+                        {EAST_AFRICAN_COUNTRIES.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="mt-1 text-sm font-medium text-slate-800">{profile.country || '—'}</p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Registered */}
                 <div className="flex items-start gap-3.5 p-4 rounded-xl bg-slate-50/70 border border-slate-100">
                   <div className="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center flex-shrink-0">
@@ -711,6 +753,73 @@ export default function SchoolProfile() {
               </div>
             )}
           </div>
+        {/* ─── GePG Integration (Tanzania only) ─────────────────────── */}
+        {profile.country === 'Tanzania' && (
+          <div className="mt-6 bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <div className="px-6 py-5 sm:px-8 sm:py-6 flex items-center gap-3 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">GePG Fee Collection Integration</h3>
+                <p className="text-sm text-slate-500 mt-0.5">Tanzania Government Electronic Payment Gateway — configure school fee payment via GePG</p>
+              </div>
+              <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700">
+                Tanzania Only
+              </span>
+            </div>
+
+            <div className="px-6 py-6 sm:px-8 space-y-4">
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                <strong>Setup required:</strong> To enable GePG fee collection, an administrator must configure the GePG credentials
+                (Service Provider ID, Biller ID, API endpoint, certificates) in the GePG settings panel. Contact your GePG onboarding
+                officer for the official credentials.
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-1">Supported Payment Channels</h4>
+                  <ul className="text-sm text-slate-600 space-y-1 mt-2">
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />NMB Bank</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />CRDB Bank</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />NBC Bank</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />M-Pesa</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />Airtel Money</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />Other GePG-supported channels</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-1">How It Works</h4>
+                  <ol className="text-sm text-slate-600 space-y-1 mt-2 list-decimal list-inside">
+                    <li>School creates a student fee invoice</li>
+                    <li>System generates a GePG bill automatically</li>
+                    <li>Parent receives an official GePG control number</li>
+                    <li>Parent pays via any supported channel</li>
+                    <li>GePG confirms payment to the system</li>
+                    <li>Student balance updates automatically</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 flex-wrap gap-3">
+                <p className="text-sm text-slate-500">GePG integration settings are managed by your school administrator in the Finance &gt; GePG Settings panel.</p>
+                <a
+                  href="/dashboard/finance/gepg-settings"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-200/50"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  GePG Settings
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
         </form>
       </div>
     </div>
