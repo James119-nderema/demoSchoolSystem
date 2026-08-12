@@ -5,6 +5,11 @@ import { API_BASE_URL } from '../../config/environment';
 
 type UserType = 'school_admin' | 'staff' | null;
 
+const EAST_AFRICAN_COUNTRIES = [
+  'Tanzania', 'Kenya', 'Uganda', 'Rwanda', 'Burundi', 'South Sudan',
+  'DR Congo', 'Ethiopia', 'Somalia', 'Eritrea', 'Djibouti',
+];
+
 interface LocationState {
   userType?: UserType;
 }
@@ -20,6 +25,7 @@ interface SchoolFormData {
   confirmPassword: string;
   address: string;
   motto: string;
+  country: string;
 }
 
 // Staff Registration Form Data
@@ -51,7 +57,8 @@ const UnifiedRegister: React.FC = () => {
     password: '',
     confirmPassword: '',
     address: '',
-    motto: ''
+    motto: '',
+    country: ''
   });
 
   // Staff form data
@@ -63,7 +70,7 @@ const UnifiedRegister: React.FC = () => {
     confirm_password: ''
   });
 
-  const handleSchoolInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleSchoolInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSchoolFormData(prev => ({
       ...prev,
@@ -100,6 +107,9 @@ const UnifiedRegister: React.FC = () => {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schoolFormData.email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+    if (!schoolFormData.country) {
+      newErrors.country = 'Country is required';
     }
     if (!schoolFormData.password) {
       newErrors.password = 'Password is required';
@@ -138,6 +148,7 @@ const UnifiedRegister: React.FC = () => {
       password: schoolFormData.password,
       address: schoolFormData.address,
       motto: schoolFormData.motto,
+      country: schoolFormData.country,
     };
 
     sessionStorage.setItem('pendingSchoolRegistration', JSON.stringify(registrationData));
@@ -395,6 +406,27 @@ const UnifiedRegister: React.FC = () => {
                     placeholder="e.g., 0712345678"
                   />
                   {errors.phone_number && <p className="text-red-500 text-xs mt-1">{errors.phone_number}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country *
+                  </label>
+                  <select
+                    name="country"
+                    value={schoolFormData.country}
+                    onChange={handleSchoolInputChange}
+                    required
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white ${
+                      errors.country ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select your country</option>
+                    {EAST_AFRICAN_COUNTRIES.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                  {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
                 </div>
 
                 <div>

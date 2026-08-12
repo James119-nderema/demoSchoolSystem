@@ -14,10 +14,13 @@ interface PackageInfo {
 interface RegistrationData {
   name?: string;
   school_name?: string;
+  principal_name?: string;
   school_email?: string;
   email?: string;
   password: string;
   motto?: string;
+  vision?: string;
+  mission?: string;
   school_address?: string;
   address?: string;
   school_type?: string;
@@ -99,9 +102,13 @@ export default function SubscriptionPayment() {
       // Prepare form data for school registration
       const formData = new FormData();
       formData.append('name', registrationData.name || registrationData.school_name || '');
+      // Required by SchoolRegistrationSerializer; it is collected on step one.
+      formData.append('principal_name', registrationData.principal_name || '');
       formData.append('school_email', registrationData.school_email || registrationData.email || '');
       formData.append('password', registrationData.password);
       formData.append('motto', registrationData.motto || '');
+      formData.append('vision', registrationData.vision || '');
+      formData.append('mission', registrationData.mission || '');
       formData.append('school_address', registrationData.school_address || registrationData.address || '');
       formData.append('school_type', registrationData.school_type || '');
       formData.append('curriculum', registrationData.curriculum || '');
@@ -121,6 +128,16 @@ export default function SubscriptionPayment() {
       formData.append('subscription_amount', packageInfo.amount.toString());
       formData.append('mpesa_receipt_number', mpesaReceipt);
 
+      // The registration page keeps the logo as a data URL while the user
+      // selects a package and completes payment. Restore it to a File here.
+      const logoDataUrl = sessionStorage.getItem('school_logo');
+      if (logoDataUrl) {
+        const logoName = sessionStorage.getItem('school_logo_name') || 'school-logo.png';
+        const logoType = sessionStorage.getItem('school_logo_type') || 'image/png';
+        const logoBlob = await fetch(logoDataUrl).then(result => result.blob());
+        formData.append('logo', new File([logoBlob], logoName, { type: logoType }));
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/schools/`, {
         method: 'POST',
         body: formData,
@@ -134,6 +151,9 @@ export default function SubscriptionPayment() {
 
       // Clear pending registration from sessionStorage
       sessionStorage.removeItem('pendingSchoolRegistration');
+      sessionStorage.removeItem('school_logo');
+      sessionStorage.removeItem('school_logo_name');
+      sessionStorage.removeItem('school_logo_type');
       
       setStatusMessage('School account created successfully! Redirecting to login...');
       return true;
