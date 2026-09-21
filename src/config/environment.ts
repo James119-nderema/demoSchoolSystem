@@ -12,7 +12,7 @@ const resolveDefaultApiBaseUrl = () => {
     return '';
   }
 
-  return 'https://api.schoolmaster.co.ke';
+  return 'https://school.ngaosports.com';
 };
 
 const DEFAULT_API_BASE_URL = resolveDefaultApiBaseUrl();

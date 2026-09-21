@@ -7,7 +7,7 @@ export default defineConfig(() => ({
   server: {
     proxy: {
       '/api': {
-        target: 'https://api.schoolmaster.co.ke',
+        target: 'https://school.ngaosports.com',
         changeOrigin: true,
         secure: false,
       }
